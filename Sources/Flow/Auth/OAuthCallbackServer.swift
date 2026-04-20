@@ -1,7 +1,4 @@
 import Foundation
-#if canImport(Darwin)
-import Darwin
-#endif
 
 /// A minimal HTTP server that runs on localhost to catch OAuth callbacks.
 ///
@@ -74,7 +71,7 @@ final class OAuthCallbackServer {
         var addrLen = socklen_t(MemoryLayout.size(ofValue: addr))
         var assignedAddr = sockaddr_in()
         getsockname(serverSocket, UnsafeMutablePointer(&assignedAddr).withMemoryRebound(to: sockaddr.self, capacity: 1) { $0 }, &addrLen)
-        port = ntohs(assignedAddr.sin_port)
+        port = UInt16(bigEndian: assignedAddr.sin_port)
 
         // Start listening
         guard listen(serverSocket, 1) == 0 else {

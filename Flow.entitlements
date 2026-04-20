@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Microphone access -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+    <!-- Accessibility for CGEventTap + text injection -->
+    <key>com.apple.security.automation.accessibility</key>
+    <true/>
+    <!-- Network for Realtime API -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <!-- Incoming connections (OAuth callback server) -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <!-- Keychain access -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)ai.flow.app</string>
+    </array>
+</dict>
+</plist>

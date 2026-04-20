@@ -65,24 +65,24 @@ final class GroqWhisperClient {
 
         var body = Data()
         // File
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"\r\n")
-        body.append("Content-Type: audio/wav\r\n\r\n")
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"\r\n".utf8))
+        body.append(Data("Content-Type: audio/wav\r\n\r\n".utf8))
         body.append(wav)
-        body.append("\r\n")
+        body.append(Data("\r\n".utf8))
         // Model
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
-        body.append("whisper-large-v3-turbo\r\n")
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"model\"\r\n\r\n".utf8))
+        body.append(Data("whisper-large-v3-turbo\r\n".utf8))
         // Language
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n")
-        body.append("\(language)\r\n")
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"language\"\r\n\r\n".utf8))
+        body.append(Data("\(language)\r\n".utf8))
         // Response format
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n")
-        body.append("json\r\n")
-        body.append("--\(boundary)--\r\n")
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".utf8))
+        body.append(Data("json\r\n".utf8))
+        body.append(Data("--\(boundary)--\r\n".utf8))
 
         request.httpBody = body
 
@@ -103,7 +103,7 @@ final class GroqWhisperClient {
 
     // MARK: - WAV Encoding
 
-    private static func pcm16ToWav(_ pcm: Data, sampleRate: Int, channels: Int) -> Data {
+    static func pcm16ToWav(_ pcm: Data, sampleRate: Int, channels: Int) -> Data {
         let dataSize = Int32(pcm.count)
         let fileSize = dataSize + 36
         let byteRate = Int32(sampleRate * channels * 2)

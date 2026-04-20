@@ -13,6 +13,11 @@ final class AudioCapture {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
 
+    /// Whether the audio engine is currently capturing.
+    var isRunning: Bool {
+        engine?.isRunning ?? false
+    }
+
     /// Target format: 24kHz mono PCM16 (what OpenAI Realtime expects)
     static let targetSampleRate: Double = 24000.0
     static let targetFormat = AVAudioFormat(
@@ -26,7 +31,18 @@ final class AudioCapture {
     var onAudioData: ((Data) -> Void)?
 
     /// Start capturing audio from default microphone.
-    func start() throws {
+    func start() async throws {
+        // Request microphone permission first
+        let granted = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
+            AVAudioApplication.requestRecordPermission { granted in
+                cont.resume(returning: granted)
+            }
+        }
+
+        guard granted else {
+            throw AudioError.permissionDenied
+        }
+
         let engine = AVAudioEngine()
         self.engine = engine
 
@@ -43,19 +59,6 @@ final class AudioCapture {
         // Install tap — deliver buffers in target format
         inputNode.installTap(onBus: 0, bufferSize: 2048, format: hardwareFormat) { [weak self] buffer, _ in
             self?.processBuffer(buffer, sourceFormat: hardwareFormat)
-        }
-
-        // Request microphone permission if needed
-        let granted = await { @MainActor in
-            await withCheckedContinuation { cont in
-                AVAudioApplication.requestRecordPermission { granted in
-                    cont.resume(returning: granted)
-                }
-            }
-        }
-
-        guard granted else {
-            throw AudioError.permissionDenied
         }
 
         try engine.start()
@@ -86,16 +89,10 @@ final class AudioCapture {
         ) else { return }
 
         var error: NSError?
-        let inputPosition: AVAudioFramePosition = 0
 
-        converter.convert(to: outputBuffer, error: &error) { _, outStatus in
-            if inputPosition < buffer.frameLength {
-                outStatus.pointee = .haveData
-                return buffer
-            } else {
-                outStatus.pointee = .endOfStream
-                return nil
-            }
+        converter.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
         }
 
         if let error = error {

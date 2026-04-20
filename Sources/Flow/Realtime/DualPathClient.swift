@@ -70,7 +70,7 @@ final class DualPathRealtimeClient {
         }
 
         // Developer API fallback (requires OPENAI_API_KEY)
-        if let apiKey = config.resolveAPIKey() ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"] {
+        if let apiKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] {
             let client = RealtimeClient()
             wireCallbacks(client)
             try await client.connect(accessToken: apiKey, model: config.realtimeModel, mode: mode)

@@ -125,7 +125,7 @@ final class ChatGPTBackendClient {
         let sdpAnswer = String(data: data, encoding: .utf8) ?? ""
 
         // Parse call_id from Location header
-        let callId = httpResponse.value(forHeaderField: "Location")?
+        let callId = httpResponse.value(forHTTPHeaderField: "Location")?
             .components(separatedBy: "/").last ?? UUID().uuidString
 
         return RealtimeCallResponse(sdp: sdpAnswer, callId: callId)

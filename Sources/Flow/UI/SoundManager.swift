@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import AppKit
 
 /// Lightweight sound effects for recording state transitions.
 ///
@@ -7,10 +8,6 @@ import AVFoundation
 /// so sounds don't get captured by the mic.
 final class SoundManager {
     static let shared = SoundManager()
-
-    private var startSound: SystemSoundID?
-    private var stopSound: SystemSoundID?
-    private var errorSound: SystemSoundID?
 
     private init() {}
 
@@ -23,7 +20,13 @@ final class SoundManager {
 
     /// Play a system sound.
     func play(_ sound: Sound) {
-        // Use macOS system sounds
+        // Use NSSound for system sounds — simple, reliable, doesn't interfere with audio capture
+        if let nsSound = NSSound(named: NSSound.Name(sound.rawValue)) {
+            nsSound.play()
+            return
+        }
+
+        // Fallback: play via file URL
         let soundPath: String
         switch sound {
         case .startRecording:
@@ -36,14 +39,10 @@ final class SoundManager {
             soundPath = "/System/Library/Sounds/Basso.aiff"
         }
 
-        guard let url = URL(string: "file://\(soundPath)"),
-              let buffer = try? AVAudioPCMBuffer(url: url) else {
-            // Fallback: use NSSound
-            if let nsSound = NSSound(named: NSSound.Name(sound.rawValue)) {
-                nsSound.play()
-            }
-            return
-        }
+        let url = URL(fileURLWithPath: soundPath)
+        guard let audioFile = try? AVAudioFile(forReading: url),
+              let buffer = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat, frameCapacity: AVAudioFrameCount(audioFile.length)) else { return }
+        try? audioFile.read(into: buffer)
 
         // Play via a separate audio player (not the capture engine)
         Task.detached {

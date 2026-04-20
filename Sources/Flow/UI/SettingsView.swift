@@ -109,7 +109,7 @@ struct SettingsView: View {
         VStack(spacing: 16) {
             Image(systemName: "mic.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(.accent)
+                .foregroundColor(.accentColor)
             Text("Flow")
                 .font(.title)
                 .bold()

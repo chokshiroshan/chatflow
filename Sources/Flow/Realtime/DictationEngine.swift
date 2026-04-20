@@ -93,7 +93,7 @@ final class DictationEngine {
                     dualClient.sendAudio(data)
                 }
             }
-            try audioCapture.start()
+            try await audioCapture.start()
             onStateChanged?(.recording)
 
         } catch {
@@ -165,7 +165,7 @@ final class DictationEngine {
                 self?.groqClient?.appendAudio(data)
             }
             do {
-                try audioCapture.start()
+                try await audioCapture.start()
                 onStateChanged?(.recording)
             } catch {
                 onStateChanged?(.error("Audio capture failed: \(error.localizedDescription)"))

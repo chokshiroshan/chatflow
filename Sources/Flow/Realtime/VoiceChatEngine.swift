@@ -83,7 +83,7 @@ final class VoiceChatEngine {
             audioCapture.onAudioData = { [weak dualClient] data in
                 dualClient?.sendAudio(data)
             }
-            try audioCapture.start()
+            try await audioCapture.start()
             try audioPlayer.start()
 
             isActive = true

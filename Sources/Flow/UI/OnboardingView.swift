@@ -14,7 +14,7 @@ struct OnboardingView: View {
             // Header
             Image(systemName: "mic.fill.badge.plus")
                 .font(.system(size: 48))
-                .foregroundStyle(.accent)
+                .foregroundColor(.accentColor)
             Text("Welcome to Flow")
                 .font(.largeTitle)
                 .bold()

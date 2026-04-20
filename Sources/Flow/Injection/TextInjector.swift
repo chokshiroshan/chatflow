@@ -69,8 +69,10 @@ struct TextInjector {
         let systemWide = AXUIElementCreateSystemWide()
         var focused: AnyObject?
 
-        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
-              let element = focused else { return false }
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused) == .success else {
+            return false
+        }
+        let element = focused as! AXUIElement
 
         // Get existing text + cursor position
         var existing: AnyObject?
@@ -109,13 +111,16 @@ struct TextInjector {
         let src = CGEventSource(stateID: .hidSystemState)
         for char in text {
             let chars = Array(char.utf16)
-            let down = CGEvent(keyboardEventSource: src, virtualKey: 0, keyDown: true)
-            down?.keyboardSetUnicodeString(stringLength: 1, unicodeString: UnsafeMutablePointer(mutating: chars))
-            down?.post(tap: .cghidEventTap)
+            chars.withUnsafeBufferPointer { buffer in
+                guard let ptr = buffer.baseAddress else { return }
+                let down = CGEvent(keyboardEventSource: src, virtualKey: 0, keyDown: true)
+                down?.keyboardSetUnicodeString(stringLength: 1, unicodeString: UnsafeMutablePointer(mutating: ptr))
+                down?.post(tap: .cghidEventTap)
 
-            let up = CGEvent(keyboardEventSource: src, virtualKey: 0, keyDown: false)
-            up?.keyboardSetUnicodeString(stringLength: 1, unicodeString: UnsafeMutablePointer(mutating: chars))
-            up?.post(tap: .cghidEventTap)
+                let up = CGEvent(keyboardEventSource: src, virtualKey: 0, keyDown: false)
+                up?.keyboardSetUnicodeString(stringLength: 1, unicodeString: UnsafeMutablePointer(mutating: ptr))
+                up?.post(tap: .cghidEventTap)
+            }
         }
         return true
     }

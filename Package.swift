@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 5.10
 import PackageDescription
 
 let package = Package(
@@ -10,10 +10,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "Flow",
-            path: "Sources/Flow",
-            swiftSettings: [
-                .unsafeFlags(["-parse-as-library"]),
-            ]
+            path: "Sources/Flow"
         ),
         .testTarget(
             name: "FlowTests",

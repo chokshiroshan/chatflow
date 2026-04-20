@@ -58,8 +58,8 @@ final class OAuthCallbackServer {
         addr.sin_addr.s_addr = INADDR_ANY // 0.0.0.0 — only accessible locally
         addr.sin_port = 0 // OS picks a port
 
-        let bindResult = withUnsafePointer(to: &addr) { ptr in
-            bind(serverSocket, UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout.size(ofValue: addr)))
+        let bindResult = addr.withUnsafeBytes { ptr in
+            bind(serverSocket, ptr.baseAddress!.assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
         }
 
         guard bindResult == 0 else {
@@ -68,9 +68,13 @@ final class OAuthCallbackServer {
         }
 
         // Get the assigned port
-        var addrLen = socklen_t(MemoryLayout.size(ofValue: addr))
         var assignedAddr = sockaddr_in()
-        getsockname(serverSocket, UnsafeMutablePointer(&assignedAddr).withMemoryRebound(to: sockaddr.self, capacity: 1) { $0 }, &addrLen)
+        var addrLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+        withUnsafeMutablePointer(to: &assignedAddr) { ptr in
+            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
+                getsockname(serverSocket, rebound, &addrLen)
+            }
+        }
         port = UInt16(bigEndian: assignedAddr.sin_port)
 
         // Start listening

@@ -70,7 +70,7 @@ final class OAuthCallbackServer {
         // Get the assigned port
         var assignedAddr = sockaddr_in()
         var addrLen = socklen_t(MemoryLayout<sockaddr_in>.size)
-        withUnsafeMutablePointer(to: &assignedAddr) { ptr in
+        _ = withUnsafeMutablePointer(to: &assignedAddr) { ptr in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
                 getsockname(serverSocket, rebound, &addrLen)
             }
@@ -162,7 +162,7 @@ final class OAuthCallbackServer {
         \(html)
         """
         let data = Data(httpResponse.utf8)
-        data.withUnsafeBytes { ptr in
+        _ = data.withUnsafeBytes { ptr in
             send(socket, ptr.baseAddress, data.count, 0)
         }
     }

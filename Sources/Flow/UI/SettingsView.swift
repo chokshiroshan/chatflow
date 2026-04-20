@@ -2,28 +2,29 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var coordinator: AppCoordinator
+    @State private var autoStartEnabled = AutoStartManager.shared.isEnabled
 
     var body: some View {
         TabView {
-            GeneralSettingsView(coordinator: coordinator)
+            generalView
                 .tabItem { Label("General", systemImage: "gear") }
 
-            HotkeySettingsView(coordinator: coordinator)
+            hotkeyView
                 .tabItem { Label("Hotkey", systemImage: "keyboard") }
+
+            aboutView
+                .tabItem { Label("About", systemImage: "info.circle") }
         }
-        .frame(width: 400, height: 280)
+        .frame(width: 420, height: 300)
     }
-}
 
-struct GeneralSettingsView: View {
-    @ObservedObject var coordinator: AppCoordinator
+    // MARK: - General
 
-    var body: some View {
+    @ViewBuilder
+    private var generalView: some View {
         Form {
             Picker("Default Mode", selection: $coordinator.config.preferredMode) {
-                ForEach(AppMode.allCases, id: \.self) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
+                ForEach(AppMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
 
             Picker("Voice (Voice Chat)", selection: $coordinator.config.voiceChatVoice) {
@@ -43,21 +44,28 @@ struct GeneralSettingsView: View {
                 Text("Japanese").tag("ja")
                 Text("Chinese").tag("zh")
                 Text("Korean").tag("ko")
+                Text("Portuguese").tag("pt")
+                Text("Italian").tag("it")
+                Text("Dutch").tag("nl")
             }
 
             Picker("Model", selection: $coordinator.config.realtimeModel) {
-                Text("gpt-realtime-1.5").tag("gpt-realtime-1.5")
+                Text("gpt-realtime-1.5 (latest)").tag("gpt-realtime-1.5")
                 Text("gpt-4o-realtime-preview").tag("gpt-4o-realtime-preview-2024-12-17")
             }
+
+            Toggle("Launch at Login", isOn: $autoStartEnabled)
+                .onChange(of: autoStartEnabled) { _, newValue in
+                    do { try AutoStartManager.shared.toggle() } catch { }
+                }
         }
         .padding()
     }
-}
 
-struct HotkeySettingsView: View {
-    @ObservedObject var coordinator: AppCoordinator
+    // MARK: - Hotkey
 
-    var body: some View {
+    @ViewBuilder
+    private var hotkeyView: some View {
         Form {
             Picker("Trigger Key", selection: $coordinator.config.hotkey) {
                 Text("Fn / Globe").tag("fn")
@@ -79,7 +87,46 @@ struct HotkeySettingsView: View {
                 Text("Accessibility API").tag(FlowConfig.InjectMethod.accessibility)
                 Text("Keystroke simulation").tag(FlowConfig.InjectMethod.keystrokes)
             }
+
+            Section {
+                HStack {
+                    Text("Shortcuts")
+                        .font(.headline)
+                    Spacer()
+                }
+                LabeledContent("Dictation", value: coordinator.config.hotkey)
+                LabeledContent("Settings", value: "⌘,")
+                LabeledContent("Quit", value: "⌘Q")
+            }
         }
         .padding()
+    }
+
+    // MARK: - About
+
+    @ViewBuilder
+    private var aboutView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.accent)
+            Text("Flow")
+                .font(.title)
+                .bold()
+            Text("Voice dictation & chat powered by ChatGPT")
+                .foregroundStyle(.secondary)
+            Text("v1.0.0")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
+            Divider()
+
+            Text("Free with your ChatGPT subscription.")
+                .font(.callout)
+
+            Spacer()
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -11,7 +11,7 @@ struct FlowApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        // Voice chat window (hidden by default, shown when voice chat active)
+        // Voice chat window
         Window("Voice Chat", id: "voice-chat") {
             VoiceChatView(coordinator: coordinator)
         }
@@ -23,5 +23,14 @@ struct FlowApp: App {
         Settings {
             SettingsView(coordinator: coordinator)
         }
+
+        // Onboarding (shown on first launch or missing permissions)
+        Window("Welcome to Flow", id: "onboarding") {
+            OnboardingView(onComplete: { coordinator.completeOnboarding() })
+        }
+        .windowStyle(.titleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .defaultSize(width: 420, height: 440)
     }
 }

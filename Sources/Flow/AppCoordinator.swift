@@ -10,14 +10,37 @@ final class AppCoordinator: ObservableObject {
     @Published var userTranscript: String = ""
     @Published var assistantTranscript: String = ""
     @Published var config: FlowConfig = .load()
+    @Published var showOnboarding: Bool = false
 
     private(set) var voiceChatActive = false
 
     private let auth = ChatGPTAuth()
     private var dictationEngine: DictationEngine?
     private var voiceChatEngine: VoiceChatEngine?
+    private let floatingPill = FloatingPillWindowController()
+    private let sounds = SoundManager.shared
+    private let permissions = PermissionsManager.shared
+    private let autoStart = AutoStartManager.shared
 
     init() {
+        checkPermissionsAndAuth()
+    }
+
+    // MARK: - Startup
+
+    private func checkPermissionsAndAuth() {
+        let permStatus = permissions.checkAll()
+
+        if !permStatus.allGranted {
+            showOnboarding = true
+            return
+        }
+
+        checkAuth()
+    }
+
+    func completeOnboarding() {
+        showOnboarding = false
         checkAuth()
     }
 
@@ -30,8 +53,6 @@ final class AppCoordinator: ObservableObject {
             let email = auth.currentUserEmail ?? "Unknown"
             let plan = auth.currentPlan ?? "ChatGPT"
             authState = .signedIn(email: email, plan: plan)
-
-            // Auto-activate dictation on sign-in
             activateDictation()
         } catch {
             authState = .error(error.localizedDescription)
@@ -50,18 +71,16 @@ final class AppCoordinator: ObservableObject {
             let plan = tokens.plan ?? "ChatGPT"
             authState = .signedIn(email: email, plan: plan)
 
-            // Auto-refresh if expired
             if tokens.isExpired {
                 Task {
                     do {
                         _ = try await auth.getAccessToken()
                     } catch {
-                        authState = .error("Session expired. Please sign in again.")
+                        authState = .error("Session expired. Sign in again.")
                     }
                 }
             }
 
-            // Auto-activate
             activateDictation()
         }
     }
@@ -71,15 +90,11 @@ final class AppCoordinator: ObservableObject {
     func switchMode(to mode: AppMode) {
         config.preferredMode = mode
         config.save()
-
         deactivateAll()
 
         switch mode {
-        case .dictation:
-            activateDictation()
-        case .voiceChat:
-            // Voice chat requires manual start via button
-            break
+        case .dictation: activateDictation()
+        case .voiceChat: break // Manual start
         }
     }
 
@@ -90,13 +105,19 @@ final class AppCoordinator: ObservableObject {
 
         let engine = DictationEngine(auth: auth, config: config)
         engine.onStateChanged = { [weak self] newState in
-            Task { @MainActor in self?.state = newState }
+            Task { @MainActor in
+                self?.state = newState
+                self?.handleStateChange(newState)
+            }
         }
         engine.onPartialTranscript = { [weak self] text in
             Task { @MainActor in self?.partialTranscript = text }
         }
         engine.activate()
         self.dictationEngine = engine
+
+        // Show floating pill
+        floatingPill.show(coordinator: self)
     }
 
     // MARK: - Voice Chat
@@ -106,7 +127,10 @@ final class AppCoordinator: ObservableObject {
 
         let engine = VoiceChatEngine(auth: auth, config: config)
         engine.onStateChanged = { [weak self] newState in
-            Task { @MainActor in self?.state = newState }
+            Task { @MainActor in
+                self?.state = newState
+                self?.handleStateChange(newState)
+            }
         }
         engine.onUserTranscript = { [weak self] text in
             Task { @MainActor in self?.userTranscript = text }
@@ -136,6 +160,25 @@ final class AppCoordinator: ObservableObject {
         voiceChatEngine?.interrupt()
     }
 
+    // MARK: - State Changes + Sound Effects
+
+    private func handleStateChange(_ newState: FlowState) {
+        switch newState {
+        case .recording:
+            sounds.play(.startRecording)
+        case .processing, .injecting:
+            sounds.play(.stopRecording)
+        case .idle:
+            if state == .injecting {
+                sounds.play(.success)
+            }
+        case .error:
+            sounds.play(.error)
+        default:
+            break
+        }
+    }
+
     // MARK: - Cleanup
 
     private func deactivateAll() {
@@ -144,6 +187,7 @@ final class AppCoordinator: ObservableObject {
         voiceChatEngine?.stop()
         voiceChatEngine = nil
         voiceChatActive = false
+        floatingPill.hide()
         state = .idle
     }
 }

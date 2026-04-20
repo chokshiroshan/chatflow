@@ -14,15 +14,29 @@ final class AppCoordinator: ObservableObject {
 
     private(set) var voiceChatActive = false
 
-    private let auth = ChatGPTAuth()
+    private let auth = ChatGPTAuth.shared
     private var dictationEngine: DictationEngine?
     private var voiceChatEngine: VoiceChatEngine?
     private let floatingPill = FloatingPillWindowController()
     private let sounds = SoundManager.shared
     private let permissions = PermissionsManager.shared
-    private let autoStart = AutoStartManager.shared
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
+        auth.$authState
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$authState)
+
+        auth.$userEmail
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] email in
+                if let email = email {
+                    self?.authState = .signedIn(email: email, plan: "ChatGPT")
+                    self?.activateDictation()
+                }
+            }
+            .store(in: &cancellables)
+
         checkPermissionsAndAuth()
     }
 
@@ -30,12 +44,10 @@ final class AppCoordinator: ObservableObject {
 
     private func checkPermissionsAndAuth() {
         let permStatus = permissions.checkAll()
-
         if !permStatus.allGranted {
             showOnboarding = true
             return
         }
-
         checkAuth()
     }
 
@@ -46,17 +58,8 @@ final class AppCoordinator: ObservableObject {
 
     // MARK: - Auth
 
-    func signIn() async {
-        authState = .signingIn
-        do {
-            try await auth.signIn()
-            let email = auth.currentUserEmail ?? "Unknown"
-            let plan = auth.currentPlan ?? "ChatGPT"
-            authState = .signedIn(email: email, plan: plan)
-            activateDictation()
-        } catch {
-            authState = .error(error.localizedDescription)
-        }
+    func signIn() {
+        auth.signIn()
     }
 
     func signOut() {
@@ -67,20 +70,8 @@ final class AppCoordinator: ObservableObject {
 
     private func checkAuth() {
         if let tokens = KeychainStore.shared.loadTokens() {
-            let email = tokens.email ?? "Unknown"
-            let plan = tokens.plan ?? "ChatGPT"
-            authState = .signedIn(email: email, plan: plan)
-
-            if tokens.isExpired {
-                Task {
-                    do {
-                        _ = try await auth.getAccessToken()
-                    } catch {
-                        authState = .error("Session expired. Sign in again.")
-                    }
-                }
-            }
-
+            let email = ChatGPTAuth.extractEmailFromJWT(tokens.accessToken) ?? "ChatGPT User"
+            authState = .signedIn(email: email, plan: "ChatGPT")
             activateDictation()
         }
     }
@@ -91,46 +82,35 @@ final class AppCoordinator: ObservableObject {
         config.preferredMode = mode
         config.save()
         deactivateAll()
-
         switch mode {
         case .dictation: activateDictation()
-        case .voiceChat: break // Manual start
+        case .voiceChat: break
         }
     }
 
     // MARK: - Dictation
 
     private func activateDictation() {
-        guard authState.isSignedIn else { return }
-
+        guard case .signedIn = authState else { return }
         let engine = DictationEngine(auth: auth, config: config)
         engine.onStateChanged = { [weak self] newState in
-            Task { @MainActor in
-                self?.state = newState
-                self?.handleStateChange(newState)
-            }
+            Task { @MainActor in self?.state = newState; self?.handleStateChange(newState) }
         }
         engine.onPartialTranscript = { [weak self] text in
             Task { @MainActor in self?.partialTranscript = text }
         }
         engine.activate()
         self.dictationEngine = engine
-
-        // Show floating pill
         floatingPill.show(coordinator: self)
     }
 
     // MARK: - Voice Chat
 
     func startVoiceChat() async {
-        guard authState.isSignedIn else { return }
-
+        guard case .signedIn = authState else { return }
         let engine = VoiceChatEngine(auth: auth, config: config)
         engine.onStateChanged = { [weak self] newState in
-            Task { @MainActor in
-                self?.state = newState
-                self?.handleStateChange(newState)
-            }
+            Task { @MainActor in self?.state = newState; self?.handleStateChange(newState) }
         }
         engine.onUserTranscript = { [weak self] text in
             Task { @MainActor in self?.userTranscript = text }
@@ -143,7 +123,6 @@ final class AppCoordinator: ObservableObject {
         }
         self.voiceChatEngine = engine
         voiceChatActive = true
-
         await engine.start()
     }
 
@@ -164,18 +143,12 @@ final class AppCoordinator: ObservableObject {
 
     private func handleStateChange(_ newState: FlowState) {
         switch newState {
-        case .recording:
-            sounds.play(.startRecording)
-        case .processing, .injecting:
-            sounds.play(.stopRecording)
+        case .recording: sounds.play(.startRecording)
+        case .processing, .injecting: sounds.play(.stopRecording)
         case .idle:
-            if state == .injecting {
-                sounds.play(.success)
-            }
-        case .error:
-            sounds.play(.error)
-        default:
-            break
+            if state == .injecting { sounds.play(.success) }
+        case .error: sounds.play(.error)
+        default: break
         }
     }
 

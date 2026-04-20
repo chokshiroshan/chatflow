@@ -1,6 +1,7 @@
 import Foundation
 import WebKit
 import AppKit
+import CommonCrypto
 
 /// Authenticates with ChatGPT via a web view.
 ///
@@ -8,23 +9,27 @@ import AppKit
 /// then intercept the access token from cookies/localStorage.
 ///
 /// This is the same approach used by ChatGPT's own desktop app.
-final class ChatGPTAuth: ObservableObject {
+final class ChatGPTAuth: NSObject, ObservableObject {
     static let shared = ChatGPTAuth()
 
     @Published var authState: AuthState = .signedOut
     @Published var userEmail: String?
 
+    /// Current access token (if signed in)
+    private(set) var accessToken: String?
+
     private let keychain = KeychainStore.shared
     private var webView: WKWebView?
     private var window: NSWindow?
 
-    private init() {
+    override init() {
+        super.init()
         // Check for existing token
         if let tokens = keychain.loadTokens() {
-            if let email = extractEmailFromJWT(tokens.accessToken) {
-                userEmail = email
-                authState = .signedIn(email: email, plan: "ChatGPT")
-            }
+            let email = Self.extractEmailFromJWT(tokens.accessToken)
+            self.accessToken = tokens.accessToken
+            self.userEmail = email
+            self.authState = .signedIn(email: email ?? "ChatGPT User", plan: "ChatGPT")
         }
     }
 
@@ -39,6 +44,7 @@ final class ChatGPTAuth: ObservableObject {
 
     func signOut() {
         keychain.deleteTokens()
+        accessToken = nil
         userEmail = nil
         authState = .signedOut
         webView = nil
@@ -51,14 +57,6 @@ final class ChatGPTAuth: ObservableObject {
     private func showLoginWindow() {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
-
-        // Inject script to capture access tokens
-        let script = WKUserScript(
-            source: tokenCaptureScript,
-            injectionTime: .atDocumentEnd,
-            forMainFrameOnly: false
-        )
-        config.userContentController.addUserScript(script)
 
         let webView = WKWebView(frame: .init(x: 0, y: 0, width: 480, height: 700), configuration: config)
         webView.navigationDelegate = self
@@ -81,38 +79,6 @@ final class ChatGPTAuth: ObservableObject {
             webView.load(URLRequest(url: url))
         }
     }
-
-    // MARK: - Token Capture
-
-    private let tokenCaptureScript = """
-    // Monitor for access tokens in localStorage and cookies
-    (function() {
-        function checkTokens() {
-            // ChatGPT stores tokens in localStorage
-            var token = localStorage.getItem('accessToken');
-            if (token) {
-                window.webkit.messageHandlers.tokenCapture.postMessage({
-                    type: 'accessToken',
-                    token: token
-                });
-                return;
-            }
-
-            // Also check for session token in cookies
-            var cookies = document.cookie;
-            if (cookies.includes('__Secure-next-auth.session-token')) {
-                window.webkit.messageHandlers.tokenCapture.postMessage({
-                    type: 'sessionCookie',
-                    cookies: cookies
-                });
-            }
-        }
-
-        // Check periodically
-        setInterval(checkTokens, 1000);
-        checkTokens();
-    })();
-    """
 
     // MARK: - JWT Parsing
 
@@ -149,18 +115,17 @@ final class ChatGPTAuth: ObservableObject {
     }
 }
 
-// MARK: - WKNavigationDelegate & Script Message Handler
+// MARK: - WKNavigationDelegate
 
-extension ChatGPTAuth: WKNavigationDelegate, WKScriptMessageHandler {
+extension ChatGPTAuth: WKNavigationDelegate {
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         let url = navigationAction.request.url
 
         // If redirected to chatgpt.com (logged in), try to extract token
         if let host = url?.host, host.contains("chatgpt.com") {
             if url?.path == "/" || url?.path == "/auth/login" {
-                // Inject token capture after page loads
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    webView.evaluateJavaScript("localStorage.getItem('accessToken')") { [weak self] result, _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                    webView.evaluateJavaScript("localStorage.getItem('accessToken')") { result, _ in
                         if let token = result as? String, !token.isEmpty {
                             self?.handleToken(token)
                         }
@@ -172,19 +137,11 @@ extension ChatGPTAuth: WKNavigationDelegate, WKScriptMessageHandler {
         decisionHandler(.allow)
     }
 
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let type = body["type"] as? String else { return }
-
-        if type == "accessToken", let token = body["token"] as? String {
-            handleToken(token)
-        }
-    }
-
     private func handleToken(_ token: String) {
         guard !token.isEmpty else { return }
 
-        // Store in keychain
+        self.accessToken = token
+
         let tokens = KeychainStore.AuthTokens(
             accessToken: token,
             refreshToken: nil,
@@ -193,7 +150,6 @@ extension ChatGPTAuth: WKNavigationDelegate, WKScriptMessageHandler {
         )
         keychain.saveTokens(tokens)
 
-        // Extract user info
         let email = Self.extractEmailFromJWT(token) ?? "ChatGPT User"
         DispatchQueue.main.async {
             self.userEmail = email
@@ -203,6 +159,3 @@ extension ChatGPTAuth: WKNavigationDelegate, WKScriptMessageHandler {
         }
     }
 }
-
-// CommonCrypto import
-import CommonCrypto

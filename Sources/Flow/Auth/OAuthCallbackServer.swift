@@ -58,8 +58,8 @@ final class OAuthCallbackServer {
         addr.sin_addr.s_addr = INADDR_ANY // 0.0.0.0 — only accessible locally
         addr.sin_port = 0 // OS picks a port
 
-        let bindResult = addr.withUnsafeBytes { ptr in
-            bind(serverSocket, ptr.baseAddress!.assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
+        let bindResult = withUnsafePointer(to: addr) { ptr in
+            bind(serverSocket, UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
         }
 
         guard bindResult == 0 else {

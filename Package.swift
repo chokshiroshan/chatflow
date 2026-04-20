@@ -15,5 +15,10 @@ let package = Package(
                 .unsafeFlags(["-parse-as-library"]),
             ]
         ),
+        .testTarget(
+            name: "FlowTests",
+            dependencies: ["Flow"],
+            path: "Tests/FlowTests"
+        ),
     ]
 )

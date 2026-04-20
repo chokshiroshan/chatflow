@@ -6,40 +6,27 @@ struct MenuView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header
             header
-
             Divider()
-
-            // Mode picker
             modePicker
-
             Divider()
-
-            // Status
             statusSection
-
             Divider()
 
-            // Voice chat controls (only in voice chat mode)
             if coordinator.config.preferredMode == .voiceChat {
                 voiceChatControls
                 Divider()
             }
 
-            // Auth
             authSection
-
             Divider()
-
-            // Footer
             footer
         }
         .padding(10)
-        .frame(width: 260)
+        .frame(width: 280)
     }
 
-    // MARK: - Sections
+    // MARK: - Header
 
     @ViewBuilder
     private var header: some View {
@@ -51,6 +38,8 @@ struct MenuView: View {
                 .font(.title3)
         }
     }
+
+    // MARK: - Mode Picker
 
     @ViewBuilder
     private var modePicker: some View {
@@ -65,6 +54,8 @@ struct MenuView: View {
         }
     }
 
+    // MARK: - Status
+
     @ViewBuilder
     private var statusSection: some View {
         HStack {
@@ -74,6 +65,7 @@ struct MenuView: View {
             Text(statusText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .lineLimit(2)
             Spacer()
         }
 
@@ -82,24 +74,32 @@ struct MenuView: View {
                 .font(.caption)
                 .lineLimit(3)
                 .foregroundStyle(.secondary)
+                .padding(.top, 2)
         }
     }
 
+    // MARK: - Voice Chat Controls
+
     @ViewBuilder
     private var voiceChatControls: some View {
-        HStack(spacing: 12) {
+        HStack {
             if coordinator.voiceChatActive {
-                Button("Stop") { coordinator.stopVoiceChat() }
+                Button("Stop Chat") { coordinator.stopVoiceChat() }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
                     .controlSize(.small)
+                Button("Interrupt") { coordinator.interruptVoiceChat() }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
             } else {
-                Button("Start Voice Chat") { Task { await coordinator.startVoiceChat() } }
+                Button("🎙️ Start Voice Chat") { Task { await coordinator.startVoiceChat() } }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             }
         }
     }
+
+    // MARK: - Auth
 
     @ViewBuilder
     private var authSection: some View {
@@ -108,6 +108,13 @@ struct MenuView: View {
             Button("Sign in with ChatGPT") { Task { await coordinator.signIn() } }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+
+            if case .error(let msg) = coordinator.authState {
+                Text(msg)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+                    .lineLimit(2)
+            }
 
         case .signingIn:
             HStack {
@@ -119,14 +126,18 @@ struct MenuView: View {
 
         case .signedIn(let email, let plan):
             VStack(alignment: .leading, spacing: 2) {
-                Text(email)
-                    .font(.caption)
-                    .lineLimit(1)
-                if let plan, !plan.isEmpty {
-                    Text(plan)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                HStack {
+                    Text(email)
+                        .font(.caption)
+                        .lineLimit(1)
+                    Spacer()
+                    Text("✓")
+                        .font(.caption)
+                        .foregroundStyle(.green)
                 }
+                Text(plan)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             Spacer()
             Button("Sign Out") { coordinator.signOut() }
@@ -135,10 +146,12 @@ struct MenuView: View {
         }
     }
 
+    // MARK: - Footer
+
     @ViewBuilder
     private var footer: some View {
         HStack {
-            Text("v1.0")
+            Text("v1.0 · Free with ChatGPT sub")
                 .font(.caption2)
                 .foregroundStyle(.quaternary)
             Spacer()
@@ -165,12 +178,12 @@ struct MenuView: View {
 
     private var statusText: String {
         switch coordinator.state {
-        case .idle: return "Ready — press Fn to dictate"
+        case .idle: return "Ready — press \(coordinator.config.hotkey) to dictate"
         case .connecting: return "Connecting..."
-        case .recording: return "🔴 Recording..."
+        case .recording: return "🔴 Recording — speak now"
         case .processing: return "Transcribing..."
         case .injecting: return "Injecting text..."
-        case .speaking: return "🔊 ChatGPT is speaking"
+        case .speaking: return "🔊 ChatGPT speaking"
         case .error(let msg): return "Error: \(msg)"
         }
     }

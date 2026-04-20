@@ -28,7 +28,7 @@ struct OnboardingView: View {
                     title: "Microphone",
                     desc: "Needed to capture your voice",
                     granted: micGranted,
-                    action: { await requestMic() }
+                    action: { Task { await requestMic() } }
                 )
 
                 permissionRow(

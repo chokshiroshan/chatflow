@@ -2,22 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Microphone access -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
     <key>com.apple.security.device.audio-input</key>
     <true/>
-    <!-- Accessibility for CGEventTap + text injection -->
-    <key>com.apple.security.automation.accessibility</key>
+    <key>com.apple.security.automation.apple-events</key>
     <true/>
-    <!-- Network for Realtime API -->
-    <key>com.apple.security.network.client</key>
+    <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
-    <!-- Incoming connections (OAuth callback server) -->
-    <key>com.apple.security.network.server</key>
-    <true/>
-    <!-- Keychain access -->
     <key>keychain-access-groups</key>
     <array>
-        <string>$(AppIdentifierPrefix)ai.flow.app</string>
+        <string>$(AppIdentifierPrefix)com.chatflow.app</string>
     </array>
 </dict>
 </plist>

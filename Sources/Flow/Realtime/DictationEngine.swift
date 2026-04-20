@@ -76,7 +76,7 @@ final class DictationEngine {
                 Task { @MainActor in
                     print("⚠️ Realtime error: \(err)")
                     // Try Groq fallback
-                    self?.tryGroqFallback()
+                    Task { await self?.tryGroqFallback() }
                 }
             }
 
@@ -98,7 +98,7 @@ final class DictationEngine {
 
         } catch {
             print("⚠️ Connect failed: \(error)")
-            tryGroqFallback()
+            await tryGroqFallback()
         }
     }
 
@@ -135,7 +135,7 @@ final class DictationEngine {
 
     // MARK: - Groq Fallback
 
-    private func tryGroqFallback() {
+    private func tryGroqFallback() async {
         guard let groqKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"],
               !groqKey.isEmpty else {
             onStateChanged?(.error("Connection failed. Set GROQ_API_KEY for free fallback."))

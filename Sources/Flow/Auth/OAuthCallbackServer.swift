@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#endif
 
 /// A minimal HTTP server that runs on localhost to catch OAuth callbacks.
 ///
@@ -157,8 +160,10 @@ final class OAuthCallbackServer {
         \r
         \(html)
         """
-        let data = httpResponse.utf8
-        send(socket, data, data.count, 0)
+        let data = Data(httpResponse.utf8)
+        data.withUnsafeBytes { ptr in
+            send(socket, ptr.baseAddress, data.count, 0)
+        }
     }
 }
 

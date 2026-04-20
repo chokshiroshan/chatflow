@@ -34,7 +34,9 @@ final class DualPathRealtimeClient {
     /// Connect using the best available path.
     /// Tries ChatGPT backend first, falls back to developer API.
     func connect(mode: RealtimeClient.ConnectionMode) async throws {
-        let token = try await auth.getAccessToken()
+        guard let token = auth.accessToken else {
+            throw DualPathError.noValidPath
+        }
 
         // Try backend path first (free with subscription)
         if useBackend {

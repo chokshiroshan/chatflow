@@ -105,7 +105,7 @@ struct MenuView: View {
     private var authSection: some View {
         switch coordinator.authState {
         case .signedOut, .error:
-            Button("Sign in with ChatGPT") { Task { await coordinator.signIn() } }
+            Button("Sign in with ChatGPT") { Task { coordinator.signIn() } }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 

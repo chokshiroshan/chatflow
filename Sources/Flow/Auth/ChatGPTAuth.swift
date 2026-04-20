@@ -104,7 +104,7 @@ final class ChatGPTAuth: NSObject, ObservableObject {
     static func sha256Base64URL(_ input: String) -> String {
         let data = input.data(using: .utf8)!
         var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
-        data.withUnsafeBytes { ptr in
+        _ = data.withUnsafeBytes { ptr in
             CC_SHA256(ptr.baseAddress, CC_LONG(data.count), &hash)
         }
         return Data(hash)
@@ -142,18 +142,21 @@ extension ChatGPTAuth: WKNavigationDelegate {
 
         self.accessToken = token
 
+        let email = Self.extractEmailFromJWT(token)
         let tokens = KeychainStore.AuthTokens(
             accessToken: token,
-            refreshToken: nil,
-            expiresIn: 3600,
-            scope: nil
+            refreshToken: "",
+            idToken: nil,
+            expiresAt: Date().addingTimeInterval(3600),
+            email: email,
+            plan: "ChatGPT"
         )
-        keychain.saveTokens(tokens)
+        try? keychain.saveTokens(tokens)
 
-        let email = Self.extractEmailFromJWT(token) ?? "ChatGPT User"
+        let displayEmail = email ?? "ChatGPT User"
         DispatchQueue.main.async {
-            self.userEmail = email
-            self.authState = .signedIn(email: email, plan: "ChatGPT")
+            self.userEmail = displayEmail
+            self.authState = .signedIn(email: displayEmail, plan: "ChatGPT")
             self.window?.close()
             self.window = nil
         }

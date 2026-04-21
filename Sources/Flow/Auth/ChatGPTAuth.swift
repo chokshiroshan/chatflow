@@ -11,7 +11,7 @@ import AppKit
 /// 5. User pastes token into the page → sent to our local server
 ///
 /// This avoids WKWebView entirely (which has sandbox issues in SPM projects).
-final class ChatGPTAuth: NSObject, ObservableObject {
+final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     static let shared = ChatGPTAuth()
 
     @Published var authState: AuthState = .signedOut
@@ -23,8 +23,7 @@ final class ChatGPTAuth: NSObject, ObservableObject {
     private let keychain = KeychainStore.shared
     private var callbackServer: TokenCaptureServer?
 
-    override init() {
-        super.init()
+    @unchecked Sendable init() {
         // Restore existing session
         if let tokens = keychain.loadTokens(), !tokens.isExpired {
             let email = Self.extractEmailFromJWT(tokens.accessToken)
@@ -42,7 +41,7 @@ final class ChatGPTAuth: NSObject, ObservableObject {
             self.authState = .signingIn
         }
 
-        Task {
+        Task { @MainActor in
             do {
                 let server = TokenCaptureServer()
                 self.callbackServer = server

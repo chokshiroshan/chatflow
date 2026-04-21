@@ -17,40 +17,96 @@ final class HotkeyManager {
     private var keyIsDown = false
     private var isRecording = false
 
-    struct KeyCombo: Codable, Equatable {
+    struct KeyCombo: Equatable {
         let keyCode: CGKeyCode
-        let modifiers: CGEventFlags
+        let modifiers: Set<ModifierFlag>
         let displayName: String
+
+        /// Modifier flags that can be stored as Codable
+        enum ModifierFlag: String, Codable, CaseIterable {
+            case control
+            case command
+            case option
+            case shift
+
+            var cgFlag: CGEventFlags {
+                switch self {
+                case .control: return .maskControl
+                case .command: return .maskCommand
+                case .option:  return .maskAlternate
+                case .shift:   return .maskShift
+                }
+            }
+
+            var displayName: String {
+                switch self {
+                case .control: return "Ctrl"
+                case .command: return "⌘"
+                case .option:  return "⌥"
+                case .shift:   return "⇧"
+                }
+            }
+        }
+
+        var cgModifiers: CGEventFlags {
+            var flags: CGEventFlags = []
+            for mod in modifiers { flags.insert(mod.cgFlag) }
+            return flags
+        }
+
+        // Codable conformance
+        enum CodingKeys: String, CodingKey { case keyCode, modifiers, displayName }
+
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(keyCode, forKey: .keyCode)
+            try c.encode(modifiers.map { $0.rawValue }, forKey: .modifiers)
+            try c.encode(displayName, forKey: .displayName)
+        }
+
+        init(keyCode: CGKeyCode, modifiers: Set<ModifierFlag>, displayName: String) {
+            self.keyCode = keyCode
+            self.modifiers = modifiers
+            self.displayName = displayName
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            keyCode = try c.decode(CGKeyCode.self, forKey: .keyCode)
+            let modStrings = try c.decode([String].self, forKey: .modifiers)
+            modifiers = Set(modStrings.compactMap { ModifierFlag(rawValue: $0) })
+            displayName = try c.decode(String.self, forKey: .displayName)
+        }
 
         /// Parse a combo string like "ctrl+space", "cmd+shift+d", "f5"
         static func parse(_ string: String) -> KeyCombo {
-            var modifiers: CGEventFlags = []
+            var mods = Set<ModifierFlag>()
             var keyPart = string.lowercased().trimmingCharacters(in: .whitespaces)
 
-            // Extract modifiers
             if keyPart.contains("ctrl+") || keyPart.contains("control+") {
-                modifiers.insert(.maskControl)
+                mods.insert(.control)
                 keyPart = keyPart.replacingOccurrences(of: "ctrl+", with: "")
                 keyPart = keyPart.replacingOccurrences(of: "control+", with: "")
             }
             if keyPart.contains("cmd+") || keyPart.contains("command+") {
-                modifiers.insert(.maskCommand)
+                mods.insert(.command)
                 keyPart = keyPart.replacingOccurrences(of: "cmd+", with: "")
                 keyPart = keyPart.replacingOccurrences(of: "command+", with: "")
             }
             if keyPart.contains("opt+") || keyPart.contains("alt+") || keyPart.contains("option+") {
-                modifiers.insert(.maskAlternate)
+                mods.insert(.option)
                 keyPart = keyPart.replacingOccurrences(of: "opt+", with: "")
                 keyPart = keyPart.replacingOccurrences(of: "alt+", with: "")
                 keyPart = keyPart.replacingOccurrences(of: "option+", with: "")
             }
             if keyPart.contains("shift+") {
-                modifiers.insert(.maskShift)
+                mods.insert(.shift)
                 keyPart = keyPart.replacingOccurrences(of: "shift+", with: "")
             }
 
-            let (keyCode, displayName) = resolveKey(keyPart)
-            return KeyCombo(keyCode: keyCode, modifiers: modifiers, displayName: displayName)
+            let (kc, dn) = resolveKey(keyPart)
+            let fullDisplayName = mods.sorted { $0.displayName < $1.displayName }.map { $0.displayName }.joined() + dn
+            return KeyCombo(keyCode: kc, modifiers: mods, displayName: fullDisplayName)
         }
 
         private static func resolveKey(_ name: String) -> (CGKeyCode, String) {
@@ -140,16 +196,12 @@ final class HotkeyManager {
         // Check modifiers if combo requires them
         if !keyCombo.modifiers.isEmpty {
             let flags = event.flags
-            let requiredFlags = keyCombo.modifiers
-            let modifierFlags: CGEventFlags = [.maskControl, .maskCommand, .maskAlternate, .maskShift]
+            let requiredFlags = keyCombo.cgModifiers
 
             // Check that ALL required modifiers are present
-            let requiredSet = flags.intersection(requiredFlags)
-            if requiredSet != requiredFlags {
+            if !flags.contains(requiredFlags) {
                 return Unmanaged.passUnretained(event)
             }
-
-            // For combos, also check no extra modifiers are held (optional — remove for more flexibility)
         }
 
         let down: Bool

@@ -49,7 +49,7 @@ enum AuthState: Equatable {
 // MARK: - Configuration
 
 struct FlowConfig: Codable {
-    var hotkey: String = "fn"
+    var hotkey: String = "ctrl+space"
     var hotkeyMode: HotkeyMode = .hold
     var language: String = "en"
     var realtimeModel: String = "gpt-realtime-1.5"

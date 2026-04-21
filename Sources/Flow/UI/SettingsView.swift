@@ -68,9 +68,12 @@ struct SettingsView: View {
     private var hotkeyView: some View {
         Form {
             Picker("Trigger Key", selection: $coordinator.config.hotkey) {
-                Text("Fn / Globe").tag("fn")
+                Text("Ctrl+Space").tag("ctrl+space")
+                Text("Cmd+Shift+D").tag("cmd+shift+d")
+                Text("Ctrl+D").tag("ctrl+d")
                 Text("Right ⌘").tag("rightcmd")
                 Text("Right ⌥").tag("rightopt")
+                Text("Fn / Globe").tag("fn")
                 Text("F5").tag("f5")
                 Text("F6").tag("f6")
                 Text("F7").tag("f7")

@@ -9,10 +9,6 @@ import AVFoundation
 /// - Channels: 1 (mono)
 ///
 /// Apple Silicon hardware captures at 48kHz natively, so we convert.
-///
-/// IMPORTANT: On macOS, AVAudioEngine input taps don't fire unless the
-/// input node is connected to a downstream node. We connect input → mainMixer
-/// with volume = 0 to prevent audio feedback while keeping the tap alive.
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
@@ -69,20 +65,27 @@ final class AudioCapture {
         }
         self.converter = newConverter
 
-        // CRITICAL macOS FIX: Connect input → mainMixer so the tap actually fires.
-        // Without a downstream connection, AVAudioEngine doesn't schedule the input tap.
-        // We mute the mixer to prevent mic audio from playing through speakers.
+        // Connect input → mainMixer so the graph is active
         let mixer = engine.mainMixerNode
         engine.connect(inputNode, to: mixer, format: hardwareFormat)
         mixer.outputVolume = 0  // Mute to prevent feedback
 
-        // Install tap on the input node
-        inputNode.installTap(onBus: 0, bufferSize: 2048, format: hardwareFormat) { [weak self] buffer, _ in
+        // Start engine FIRST, then install tap
+        try engine.start()
+        print("🎙️ Engine started. Installing tap...")
+        
+        // Install tap AFTER engine start — macOS requirement
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: hardwareFormat) { [weak self] buffer, _ in
             self?.processBuffer(buffer, sourceFormat: hardwareFormat)
         }
-
-        try engine.start()
-        print("🎙️ Audio capture started (\(Int(hardwareFormat.sampleRate))Hz → 24kHz mono PCM16)")
+        
+        print("🎙️ Tap installed on input node (format: \(Int(hardwareFormat.sampleRate))Hz, \(hardwareFormat.channelCount)ch)")
+        
+        // Verify tap is active
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            print("🎙️ After 0.5s: \(self.chunkCount) chunks received, engine running: \(self.engine?.isRunning ?? false)")
+        }
     }
 
     /// Stop capturing audio.
@@ -98,26 +101,18 @@ final class AudioCapture {
     // MARK: - Processing
 
     private func processBuffer(_ buffer: AVAudioPCMBuffer, sourceFormat: AVAudioFormat) {
-        guard let converter = self.converter else {
-            print("⚠️ processBuffer called but converter is nil")
-            return
-        }
+        guard let converter = self.converter else { return }
         let targetFormat = Self.targetFormat
 
-        // Calculate output frame count
         let ratio = targetFormat.sampleRate / sourceFormat.sampleRate
         let outputFrameCount = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1024
 
         guard let outputBuffer = AVAudioPCMBuffer(
             pcmFormat: targetFormat,
             frameCapacity: outputFrameCount
-        ) else {
-            print("⚠️ Failed to create output buffer")
-            return
-        }
+        ) else { return }
 
         var error: NSError?
-
         converter.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
             outStatus.pointee = .haveData
             return buffer
@@ -129,12 +124,8 @@ final class AudioCapture {
         }
 
         let outFrames = Int(outputBuffer.frameLength)
-        if outFrames == 0 {
-            print("⚠️ Converter produced 0 frames (input: \(buffer.frameLength) frames)")
-            return
-        }
+        if outFrames == 0 { return }
 
-        // Extract PCM16 data (interleaved = channel data packed together)
         if let channelData = outputBuffer.int16ChannelData {
             let channels = Int(targetFormat.channelCount)
             let bytesToCopy = outFrames * channels * MemoryLayout<Int16>.size
@@ -144,8 +135,6 @@ final class AudioCapture {
                 print("🎙️ First audio chunk: \(data.count) bytes (\(outFrames) frames)")
             }
             onAudioData?(data)
-        } else {
-            print("⚠️ No int16 channel data in output buffer")
         }
     }
 }

@@ -65,7 +65,7 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
                     accessToken: token,
                     refreshToken: "",
                     idToken: nil,
-                    expiresAt: Date().addingTimeInterval(3600),
+                    expiresAt: Self.extractExpiryFromJWT(token) ?? Date().addingTimeInterval(3600),
                     email: email,
                     plan: "ChatGPT"
                 )
@@ -133,6 +133,31 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         }
 
         return json["email"] as? String ?? json["name"] as? String
+    }
+
+    static func extractExpiryFromJWT(_ jwt: String) -> Date? {
+        let parts = jwt.split(separator: ".")
+        guard parts.count >= 2 else { return nil }
+
+        var payload = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+
+        while payload.count % 4 != 0 { payload += "=" }
+
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = json["exp"] as? TimeInterval else {
+            return nil
+        }
+
+        return Date(timeIntervalSince1970: exp)
+    }
+
+    /// Check if the current token is still valid
+    var isTokenValid: Bool {
+        guard let tokens = keychain.loadTokens() else { return false }
+        return !tokens.isExpired
     }
 }
 

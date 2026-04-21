@@ -3,12 +3,8 @@ import AVFoundation
 
 /// Captures microphone audio via AVAudioEngine, outputs 24kHz mono PCM16.
 ///
-/// The OpenAI Realtime API expects:
-/// - Format: PCM16 (signed 16-bit LE)
-/// - Sample rate: 24000 Hz
-/// - Channels: 1 (mono)
-///
-/// Apple Silicon hardware captures at 48kHz natively, so we convert.
+/// Uses the mainMixerNode tap instead of inputNode tap — more reliable on macOS.
+/// The mixer receives data from the input node via the engine's graph.
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
@@ -48,51 +44,46 @@ final class AudioCapture {
         self.engine = engine
 
         let inputNode = engine.inputNode
+        let mixer = engine.mainMixerNode
         let hardwareFormat = inputNode.outputFormat(forBus: 0)
         
         print("🎤 Input format: \(hardwareFormat.sampleRate)Hz, \(hardwareFormat.channelCount) channels, \(hardwareFormat.commonFormat)")
         
         if hardwareFormat.sampleRate == 0 {
-            print("❌ No audio input device detected! Mac minis need an external mic.")
+            print("❌ No audio input device detected!")
             throw AudioError.noInputDevice
         }
 
+        // Mute the mixer so mic audio doesn't play through speakers
+        mixer.outputVolume = 0
+
         let targetFormat = Self.targetFormat
 
-        // Create converter from hardware format to target format
-        guard let newConverter = AVAudioConverter(from: hardwareFormat, to: targetFormat) else {
+        // Create converter from mixer format (same as hardware) to target format
+        let mixerFormat = mixer.outputFormat(forBus: 0)
+        guard let newConverter = AVAudioConverter(from: mixerFormat, to: targetFormat) else {
             throw AudioError.unsupportedFormat
         }
         self.converter = newConverter
 
-        // Connect input → mainMixer so the graph is active
-        let mixer = engine.mainMixerNode
-        engine.connect(inputNode, to: mixer, format: hardwareFormat)
-        mixer.outputVolume = 0  // Mute to prevent feedback
-
-        // Start engine FIRST, then install tap
+        // Start engine first
         try engine.start()
-        print("🎙️ Engine started. Installing tap...")
-        
-        // Install tap AFTER engine start — macOS requirement
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: hardwareFormat) { [weak self] buffer, _ in
-            self?.processBuffer(buffer, sourceFormat: hardwareFormat)
+        print("🎙️ Engine started, input running: \(inputNode.inputFormat(forBus: 0).sampleRate)Hz")
+
+        // Install tap on mainMixerNode (not inputNode) — this is more reliable on macOS
+        // The mixer receives the input audio through the engine's internal graph
+        mixer.installTap(onBus: 0, bufferSize: 4096, format: mixerFormat) { [weak self] buffer, _ in
+            self?.processBuffer(buffer, sourceFormat: mixerFormat)
         }
         
-        print("🎙️ Tap installed on input node (format: \(Int(hardwareFormat.sampleRate))Hz, \(hardwareFormat.channelCount)ch)")
-        
-        // Verify tap is active
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self else { return }
-            print("🎙️ After 0.5s: \(self.chunkCount) chunks received, engine running: \(self.engine?.isRunning ?? false)")
-        }
+        print("🎙️ Tap installed on mainMixerNode (\(Int(mixerFormat.sampleRate))Hz, \(mixerFormat.channelCount)ch)")
     }
 
     /// Stop capturing audio.
     func stop() {
         print("🛑 Audio capture stopped. Sent \(chunkCount) chunks total.")
         chunkCount = 0
-        engine?.inputNode.removeTap(onBus: 0)
+        engine?.mainMixerNode.removeTap(onBus: 0)
         engine?.stop()
         engine = nil
         converter = nil
@@ -150,7 +141,7 @@ enum AudioError: LocalizedError {
         case .unsupportedFormat: return "Cannot convert to 24kHz PCM16"
         case .permissionDenied: return "Microphone permission denied. Grant in System Settings → Privacy."
         case .notRunning: return "Audio capture not running"
-        case .noInputDevice: return "No microphone detected. Connect an external mic or headset (Mac minis have no built-in mic)."
+        case .noInputDevice: return "No microphone detected. Connect an external mic or headset."
         }
     }
 }

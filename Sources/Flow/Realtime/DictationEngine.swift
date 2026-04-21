@@ -56,6 +56,14 @@ final class DictationEngine {
         guard !isConnected else { return }
         onStateChanged?(.connecting)
         onPartialTranscript?("")
+
+        // Check if token is still valid before connecting
+        if !auth.isTokenValid {
+            print("⚠️ Token expired — please sign in again")
+            onStateChanged?(.error("Session expired. Please sign in again (⌘, → Sign In)."))
+            return
+        }
+
         print("🎤 Starting dictation...")
 
         do {

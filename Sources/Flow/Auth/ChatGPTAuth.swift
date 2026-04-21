@@ -18,9 +18,10 @@ final class ChatGPTAuth: NSObject, ObservableObject {
 
     // Codex CLI public client ID
     private static let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"
-    // Discovered from https://auth.openai.com/v2.0/.well-known/openid-configuration
-    private static let authorizeURL = "https://auth.openai.com/api/accounts/authorize"
-    private static let tokenURL = "https://auth.openai.com/api/accounts/oauth/token"
+    // Codex CLI overrides OIDC discovery endpoints with these specific paths
+    // (discovered from Codex CLI source code: auth.tsx)
+    private static let authorizeURL = "https://auth.openai.com/oauth/authorize"
+    private static let tokenURL = "https://auth.openai.com/oauth/token"
     private static let callbackPath = "/auth/callback"
     private static let callbackPort: UInt16 = 1455
 
@@ -71,7 +72,8 @@ final class ChatGPTAuth: NSObject, ObservableObject {
                 server.fixedPort = Self.callbackPort
                 self.callbackServer = server
 
-                let redirectURI = "http://127.0.0.1:\(Self.callbackPort)\(Self.callbackPath)"
+                // Use 'localhost' (not '127.0.0.1') to match Codex CLI's registered redirect URI
+                let redirectURI = "http://localhost:\(Self.callbackPort)\(Self.callbackPath)"
 
                 // 3. Build authorize URL
                 var components = URLComponents(string: Self.authorizeURL)!
@@ -83,6 +85,7 @@ final class ChatGPTAuth: NSObject, ObservableObject {
                     URLQueryItem(name: "code_challenge_method", value: "S256"),
                     URLQueryItem(name: "state", value: state),
                     URLQueryItem(name: "scope", value: "openid profile email offline_access"),
+                    URLQueryItem(name: "id_token_add_organizations", value: "true"),
                 ]
 
                 guard let authURL = components.url else {

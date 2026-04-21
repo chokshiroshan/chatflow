@@ -66,7 +66,8 @@ final class OAuthCallbackServer {
         var addr = sockaddr_in()
         addr.sin_len = UInt8(MemoryLayout.size(ofValue: addr))
         addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_addr.s_addr = UInt32(inet_addr("127.0.0.1"))
+        // Bind to 0.0.0.0 so we accept connections regardless of how localhost resolves
+        addr.sin_addr.s_addr = INADDR_ANY
         addr.sin_port = fixedPort.map { UInt16(bigEndian: $0) } ?? 0
 
         let bindResult = withUnsafePointer(to: addr) { ptr in

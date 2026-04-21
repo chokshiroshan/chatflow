@@ -9,6 +9,10 @@ import AVFoundation
 /// - Channels: 1 (mono)
 ///
 /// Apple Silicon hardware captures at 48kHz natively, so we convert.
+///
+/// IMPORTANT: On macOS, AVAudioEngine input taps don't fire unless the
+/// input node is connected to a downstream node. We connect input → mainMixer
+/// with volume = 0 to prevent audio feedback while keeping the tap alive.
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
@@ -44,9 +48,6 @@ final class AudioCapture {
             throw AudioError.permissionDenied
         }
 
-        // Check for available input device
-        let sharedInstance = AVAudioApplication.shared
-        _ = sharedInstance // suppress unused warning
         let engine = AVAudioEngine()
         self.engine = engine
 
@@ -68,7 +69,14 @@ final class AudioCapture {
         }
         self.converter = newConverter
 
-        // Install tap — deliver buffers in target format
+        // CRITICAL macOS FIX: Connect input → mainMixer so the tap actually fires.
+        // Without a downstream connection, AVAudioEngine doesn't schedule the input tap.
+        // We mute the mixer to prevent mic audio from playing through speakers.
+        let mixer = engine.mainMixerNode
+        engine.connect(inputNode, to: mixer, format: hardwareFormat)
+        mixer.outputVolume = 0  // Mute to prevent feedback
+
+        // Install tap on the input node
         inputNode.installTap(onBus: 0, bufferSize: 2048, format: hardwareFormat) { [weak self] buffer, _ in
             self?.processBuffer(buffer, sourceFormat: hardwareFormat)
         }
@@ -133,7 +141,7 @@ final class AudioCapture {
             let data = Data(bytes: channelData[0], count: bytesToCopy)
             chunkCount += 1
             if chunkCount == 1 {
-                print("🎙️ First audio chunk: \(data.count) bytes (​\(outFrames) frames)")
+                print("🎙️ First audio chunk: \(data.count) bytes (\(outFrames) frames)")
             }
             onAudioData?(data)
         } else {

@@ -286,14 +286,15 @@ final class TokenCaptureServer {
 
           <div class="step">
             <span class="step-num">3</span>
-            <p>Paste this and press Enter:</p>
+            <p>Paste this and press Enter — your token will auto-fill below:</p>
             <br><br>
-            <code id="snippet">JSON.parse(localStorage.getItem('auth0:session::https://api.openai.com/v1')).accessToken || localStorage.getItem('accessToken')</code>
+            <code id="snippet">fetch('/api/auth/session').then(r=>r.json()).then(d=>console.log(d.accessToken))</code>
+            <br><span style="color:#888;font-size:12px">Copy the long string that prints out (starts with eyJ...)</span>
           </div>
 
           <div class="step">
             <span class="step-num">4</span>
-            <p>Copy the token string that appears, and paste it below:</p>
+            <p>Copy the token from the console and paste it below:</p>
           </div>
 
           <textarea id="token" placeholder="Paste your access token here (starts with eyJ...)"></textarea>

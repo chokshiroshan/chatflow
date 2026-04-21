@@ -57,14 +57,15 @@ final class DictationEngine {
         onStateChanged?(.connecting)
         onPartialTranscript?("")
 
-        // Check if token is still valid before connecting
-        if !auth.isTokenValid {
-            print("⚠️ Token expired — please sign in again")
-            onStateChanged?(.error("Session expired. Please sign in again (⌘, → Sign In)."))
-            return
-        }
-
         print("🎤 Starting dictation...")
+
+        do {
+            // Ensure we have a valid token (auto-refreshes if expired)
+            guard let token = await auth.ensureValidToken() else {
+                print("⚠️ No valid token — please sign in again")
+                onStateChanged?(.error("Session expired. Please sign in again."))
+                return
+            }
 
         do {
             let dualClient = DualPathRealtimeClient(auth: auth, config: config)

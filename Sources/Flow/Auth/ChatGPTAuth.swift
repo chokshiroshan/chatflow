@@ -1,16 +1,19 @@
 import Foundation
 import AppKit
+import CryptoKit
+import CommonCrypto
 
-/// Authenticates with ChatGPT via the system browser + a local token capture page.
+/// Authenticates with ChatGPT via OAuth PKCE using the ChatGPT web app client ID.
 ///
-/// Strategy:
-/// 1. Start a local HTTP server on a random port
-/// 2. Open system browser to a local HTML page with a "Get Token" button
-/// 3. The HTML page tries to read chatgpt.com's localStorage via an iframe/proxy
-/// 4. If that fails (CORS), it shows instructions to manually copy the token
-/// 5. User pastes token into the page → sent to our local server
+/// Uses the same client ID as chatgpt.com web app (app_X8zY6vW2pQ9tR3dE7nK1jL5gH)
+/// which works with regular ChatGPT subscriptions (no API org needed).
 ///
-/// This avoids WKWebView entirely (which has sandbox issues in SPM projects).
+/// Flow:
+/// 1. Generate PKCE code_verifier + code_challenge
+/// 2. Open system browser to auth.openai.com/authorize
+/// 3. User logs in → browser redirects to localhost with auth code
+/// 4. Exchange code for tokens (access + refresh via offline_access scope)
+/// 5. Store refresh token → auto-refresh access tokens before expiry
 final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     static let shared = ChatGPTAuth()
 
@@ -21,7 +24,14 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     private(set) var accessToken: String?
 
     private let keychain = KeychainStore.shared
-    private var callbackServer: TokenCaptureServer?
+    private var callbackServer: OAuthCallbackServer?
+
+    // MARK: - OAuth Config (ChatGPT web app client)
+
+    private let clientID = "app_X8zY6vW2pQ9tR3dE7nK1jL5gH"
+    private let issuer = "https://auth.openai.com"
+    private let scopes = "openid email profile offline_access model.request model.read organization.read"
+    private let redirectPath = "/auth/callback"
 
     init() {
         // Restore existing session
@@ -43,32 +53,53 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
 
         Task { @MainActor in
             do {
-                let server = TokenCaptureServer()
+                // Generate PKCE
+                let verifier = Self.generateCodeVerifier()
+                let challenge = Self.generateCodeChallenge(from: verifier)
+                let state = Self.randomString(length: 32)
+
+                // Start callback server
+                let server = OAuthCallbackServer()
+                server.path = redirectPath
                 self.callbackServer = server
+                let port = try server.start(fixedPort: 1455)
+                let redirectURI = "http://localhost:\(port)\(redirectPath)"
 
-                // Start server and get the HTML page URL
-                let pageURL = try server.start()
+                // Build authorize URL
+                var components = URLComponents(string: "\(issuer)/oauth/authorize")!
+                components.queryItems = [
+                    URLQueryItem(name: "client_id", value: clientID),
+                    URLQueryItem(name: "redirect_uri", value: redirectURI),
+                    URLQueryItem(name: "response_type", value: "code"),
+                    URLQueryItem(name: "scope", value: scopes),
+                    URLQueryItem(name: "code_challenge", value: challenge),
+                    URLQueryItem(name: "code_challenge_method", value: "S256"),
+                    URLQueryItem(name: "state", value: state),
+                    URLQueryItem(name: "audience", value: "https://api.openai.com/v1"),
+                ]
 
-                print("🌐 Opening token capture page: \(pageURL)")
-                // Open the local HTML page in system browser
-                NSWorkspace.shared.open(URL(string: pageURL)!)
+                guard let authURL = components.url else {
+                    throw AuthError.serverFailed
+                }
 
-                // Wait for the user to submit their token
-                let token = try await server.waitForToken()
+                print("🌐 Opening OAuth: \(authURL)")
+                NSWorkspace.shared.open(authURL)
+
+                // Wait for callback with auth code
+                let result = try await server.waitForCallback()
                 server.stop()
                 self.callbackServer = nil
 
-                self.accessToken = token
-                let email = Self.extractEmailFromJWT(token)
+                guard result.state == state else {
+                    throw AuthError.authFailed("State mismatch")
+                }
 
-                let tokens = KeychainStore.AuthTokens(
-                    accessToken: token,
-                    refreshToken: "",
-                    idToken: nil,
-                    expiresAt: Self.extractExpiryFromJWT(token) ?? Date().addingTimeInterval(3600),
-                    email: email,
-                    plan: "ChatGPT"
-                )
+                // Exchange code for tokens
+                let tokens = try await exchangeCode(result.code, verifier: verifier, redirectURI: redirectURI)
+
+                self.accessToken = tokens.accessToken
+                let email = Self.extractEmailFromJWT(tokens.accessToken)
+
                 try keychain.saveTokens(tokens)
 
                 let displayEmail = email ?? "ChatGPT User"
@@ -76,14 +107,14 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
                     self.userEmail = displayEmail
                     self.authState = .signedIn(email: displayEmail, plan: "ChatGPT")
                 }
-                print("✅ Authenticated as \(displayEmail)")
+                print("✅ Authenticated as \(displayEmail) (refresh token: \(tokens.refreshToken.isEmpty ? "NO" : "YES"))")
 
             } catch {
                 print("❌ Auth failed: \(error)")
                 self.callbackServer?.stop()
                 self.callbackServer = nil
                 DispatchQueue.main.async {
-                    self.authState = .signedOut
+                    self.authState = .error(error.localizedDescription)
                 }
             }
         }
@@ -102,17 +133,176 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
 
     @discardableResult
     func refreshAccessToken() async -> Bool {
-        guard let tokens = keychain.loadTokens(), !tokens.isExpired else { return false }
-        accessToken = tokens.accessToken
-        return true
+        guard let tokens = keychain.loadTokens(),
+              !tokens.refreshToken.isEmpty else {
+            return false
+        }
+
+        // If not expired, just return current token
+        if !tokens.isExpired {
+            accessToken = tokens.accessToken
+            return true
+        }
+
+        print("🔄 Refreshing access token...")
+        do {
+            let newTokens = try await refreshToken(tokens.refreshToken)
+            try keychain.saveTokens(newTokens)
+            accessToken = newTokens.accessToken
+
+            let email = Self.extractEmailFromJWT(newTokens.accessToken) ?? userEmail
+            DispatchQueue.main.async {
+                self.userEmail = email
+                self.authState = .signedIn(email: email ?? "ChatGPT User", plan: "ChatGPT")
+            }
+            print("✅ Token refreshed successfully")
+            return true
+        } catch {
+            print("❌ Token refresh failed: \(error)")
+            return false
+        }
     }
 
     func ensureValidToken() async -> String? {
+        // If token is still valid, return it
         if let tokens = keychain.loadTokens(), !tokens.isExpired {
             accessToken = tokens.accessToken
             return accessToken
         }
+
+        // Try to refresh
+        if await refreshAccessToken() {
+            return accessToken
+        }
+
+        // Refresh failed, need re-auth
+        DispatchQueue.main.async {
+            self.authState = .signedOut
+        }
         return nil
+    }
+
+    /// Check if the current token is still valid
+    var isTokenValid: Bool {
+        guard let tokens = keychain.loadTokens() else { return false }
+        return !tokens.isExpired
+    }
+
+    // MARK: - OAuth Token Exchange
+
+    private func exchangeCode(_ code: String, verifier: String, redirectURI: String) async throws -> KeychainStore.AuthTokens {
+        var request = URLRequest(url: URL(string: "\(issuer)/oauth/token")!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let body = [
+            "grant_type": "authorization_code",
+            "code": code,
+            "code_verifier": verifier,
+            "client_id": clientID,
+            "redirect_uri": redirectURI,
+        ]
+
+        request.httpBody = body.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResp = response as? HTTPURLResponse else {
+            throw AuthError.authFailed("Invalid response")
+        }
+
+        guard httpResp.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "unknown"
+            print("❌ Token exchange failed (\(httpResp.statusCode)): \(body)")
+            throw AuthError.authFailed("Token exchange failed: \(httpResp.statusCode)")
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        guard let accessToken = json["access_token"] as? String else {
+            throw AuthError.authFailed("No access_token in response")
+        }
+
+        let refreshToken = json["refresh_token"] as? String ?? ""
+        let expiresIn = json["expires_in"] as? TimeInterval ?? 3600
+        let idToken = json["id_token"] as? String
+
+        let email = Self.extractEmailFromJWT(accessToken)
+
+        print("📋 Token response scopes: \(json["scope"] ?? "none")")
+        print("📋 Refresh token present: \(!refreshToken.isEmpty)")
+
+        return KeychainStore.AuthTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            idToken: idToken,
+            expiresAt: Date().addingTimeInterval(expiresIn - 60),
+            email: email,
+            plan: "ChatGPT"
+        )
+    }
+
+    private func refreshToken(_ refreshToken: String) async throws -> KeychainStore.AuthTokens {
+        var request = URLRequest(url: URL(string: "\(issuer)/oauth/token")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = [
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+            "client_id": clientID,
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "unknown"
+            throw AuthError.authFailed("Refresh failed: \(body)")
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        guard let accessToken = json["access_token"] as? String else {
+            throw AuthError.authFailed("No access_token in refresh response")
+        }
+
+        let newRefreshToken = json["refresh_token"] as? String ?? refreshToken
+        let expiresIn = json["expires_in"] as? TimeInterval ?? 3600
+        let idToken = json["id_token"] as? String
+        let email = Self.extractEmailFromJWT(accessToken)
+
+        return KeychainStore.AuthTokens(
+            accessToken: accessToken,
+            refreshToken: newRefreshToken,
+            idToken: idToken,
+            expiresAt: Date().addingTimeInterval(expiresIn - 60),
+            email: email,
+            plan: "ChatGPT"
+        )
+    }
+
+    // MARK: - PKCE Helpers
+
+    private static func generateCodeVerifier() -> String {
+        var buffer = [UInt8](repeating: 0, count: 64)
+        _ = SecRandomCopyBytes(kSecRandomDefault, 64, &buffer)
+        return Data(buffer).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func generateCodeChallenge(from verifier: String) -> String {
+        let data = verifier.data(using: .utf8)!
+        let hashed = SHA256.hash(data: data)
+        return Data(hashed).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private static func randomString(length: Int) -> String {
+        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return String((0..<length).map { _ in chars.randomElement()! })
     }
 
     // MARK: - JWT Parsing
@@ -153,249 +343,16 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
 
         return Date(timeIntervalSince1970: exp)
     }
-
-    /// Check if the current token is still valid
-    var isTokenValid: Bool {
-        guard let tokens = keychain.loadTokens() else { return false }
-        return !tokens.isExpired
-    }
-}
-
-// MARK: - Token Capture Server
-
-/// A local HTTP server that serves an HTML page for token capture
-/// and waits for the user to paste their access token.
-final class TokenCaptureServer {
-    private var serverSocket: Int32 = -1
-    private var port: UInt16 = 0
-    private var continuation: CheckedContinuation<String, Error>?
-
-    /// Start the server and return the URL of the capture page.
-    func start() throws -> String {
-        serverSocket = socket(AF_INET, SOCK_STREAM, 0)
-        guard serverSocket != -1 else { throw AuthError.serverFailed }
-
-        var reuse: Int32 = 1
-        setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout.size(ofValue: reuse)))
-
-        var addr = sockaddr_in()
-        addr.sin_len = UInt8(MemoryLayout.size(ofValue: addr))
-        addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_addr.s_addr = INADDR_ANY
-        addr.sin_port = 0
-
-        let bindResult = withUnsafePointer(to: addr) { ptr in
-            bind(serverSocket, UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
-        }
-        guard bindResult == 0 else { close(serverSocket); throw AuthError.serverFailed }
-
-        var assignedAddr = sockaddr_in()
-        var addrLen = socklen_t(MemoryLayout<sockaddr_in>.size)
-        _ = withUnsafeMutablePointer(to: &assignedAddr) { ptr in
-            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
-                getsockname(serverSocket, rebound, &addrLen)
-            }
-        }
-        port = UInt16(bigEndian: assignedAddr.sin_port)
-
-        guard listen(serverSocket, 5) == 0 else { close(serverSocket); throw AuthError.serverFailed }
-
-        // Accept connections in background
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.acceptLoop()
-        }
-
-        return "http://localhost:\(port)/"
-    }
-
-    func stop() {
-        if serverSocket != -1 {
-            shutdown(serverSocket, SHUT_RDWR)
-            close(serverSocket)
-            serverSocket = -1
-        }
-    }
-
-    func waitForToken() async throws -> String {
-        try await withCheckedThrowingContinuation { cont in
-            self.continuation = cont
-        }
-    }
-
-    deinit { stop() }
-
-    // MARK: - Accept Loop
-
-    private func acceptLoop() {
-        while serverSocket != -1 {
-            var clientAddr = sockaddr()
-            var clientLen = socklen_t(MemoryLayout.size(ofValue: clientAddr))
-            let clientSocket = accept(serverSocket, &clientAddr, &clientLen)
-            guard clientSocket != -1 else { return }
-            defer { close(clientSocket) }
-
-            var buffer = [UInt8](repeating: 0, count: 16384)
-            let bytesRead = recv(clientSocket, &buffer, buffer.count, 0)
-            guard bytesRead > 0 else { continue }
-
-            let request = String(bytes: buffer.prefix(bytesRead), encoding: .utf8) ?? ""
-
-            if request.hasPrefix("GET / ") || request.hasPrefix("GET /capture") {
-                // Serve the HTML capture page
-                sendResponse(clientSocket, html: capturePageHTML())
-            } else if request.hasPrefix("POST /token") {
-                // User submitted their token
-                let body = extractBody(from: request)
-                if let token = parseToken(from: body), !token.isEmpty {
-                    sendResponse(clientSocket, html: successHTML())
-                    continuation?.resume(returning: token)
-                    return // Done
-                } else {
-                    sendResponse(clientSocket, html: errorHTML())
-                }
-            } else if request.hasPrefix("GET /success") {
-                sendResponse(clientSocket, html: successHTML())
-            } else {
-                sendResponse(clientSocket, html: capturePageHTML())
-            }
-        }
-    }
-
-    // MARK: - HTML Pages
-
-    private func capturePageHTML() -> String {
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="utf-8">
-        <title>Flow — Sign in to ChatGPT</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-          .container { max-width: 520px; width: 100%; padding: 40px; }
-          h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #fff; }
-          .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
-          .step { background: #16213e; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
-          .step-num { display: inline-block; background: #0f3460; color: #e94560; font-weight: 700; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 13px; margin-right: 10px; }
-          .step p { font-size: 14px; line-height: 1.5; display: inline; }
-          .step code { background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #e94560; user-select: all; cursor: pointer; }
-          textarea { width: 100%; height: 100px; background: #0f3460; border: 1px solid #1a3a6e; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 11px; resize: vertical; margin-top: 16px; }
-          textarea:focus { outline: none; border-color: #e94560; }
-          textarea::placeholder { color: #555; }
-          .btn { display: block; width: 100%; padding: 14px; background: #e94560; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
-          .btn:hover { background: #c81e45; }
-          .btn:disabled { background: #555; cursor: not-allowed; }
-          .or { text-align: center; color: #555; margin: 16px 0; font-size: 13px; }
-          .open-btn { display: inline-block; padding: 8px 16px; background: #0f3460; color: #e94560; border: 1px solid #1a3a6e; border-radius: 6px; font-size: 13px; text-decoration: none; margin-top: 8px; }
-          .open-btn:hover { background: #1a3a6e; }
-          .try-auto { padding: 10px 20px; background: #16213e; color: #e0e0e0; border: 1px solid #1a3a6e; border-radius: 8px; font-size: 14px; cursor: pointer; width: 100%; margin-top: 8px; }
-          .try-auto:hover { background: #1a3a6e; }
-        </style>
-        </head>
-        <body>
-        <div class="container">
-          <h1>🛰️ Flow — Connect ChatGPT</h1>
-          <p class="subtitle">Get your access token to enable dictation & voice chat (free with subscription)</p>
-
-          <div class="step">
-            <span class="step-num">1</span>
-            <p>Open <a href="https://chatgpt.com" target="_blank" style="color:#e94560">chatgpt.com</a> and make sure you're logged in</p>
-          </div>
-
-          <div class="step">
-            <span class="step-num">2</span>
-            <p>Open DevTools (press <code>F12</code> or <code>⌘⌥I</code>) → <strong>Console</strong> tab</p>
-          </div>
-
-          <div class="step">
-            <span class="step-num">3</span>
-            <p>Paste this and press Enter — your token will auto-fill below:</p>
-            <br><br>
-            <code id="snippet">fetch('/api/auth/session').then(r=>r.json()).then(d=>console.log(d.accessToken))</code>
-            <br><span style="color:#888;font-size:12px">Copy the long string that prints out (starts with eyJ...)</span>
-          </div>
-
-          <div class="step">
-            <span class="step-num">4</span>
-            <p>Copy the token from the console and paste it below:</p>
-          </div>
-
-          <textarea id="token" placeholder="Paste your access token here (starts with eyJ...)"></textarea>
-          <button class="btn" id="submitBtn" onclick="submitToken()">Connect</button>
-        </div>
-        <script>
-        function submitToken() {
-          const token = document.getElementById('token').value.trim();
-          if (!token || token.length < 20) {
-            alert('Please paste a valid access token');
-            return;
-          }
-          document.getElementById('submitBtn').disabled = true;
-          document.getElementById('submitBtn').textContent = 'Connecting...';
-          fetch('/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'token=' + encodeURIComponent(token)
-          }).then(r => {
-            if (r.ok) {
-              document.querySelector('.container').innerHTML = '<h1>✅ Connected!</h1><p class=\"subtitle\">You can close this tab and go back to Flow.</p><script>setTimeout(() => window.close(), 2000)<\\/script>';
-            }
-          });
-        }
-        </script>
-        </body>
-        </html>
-        """
-    }
-
-    private func successHTML() -> String {
-        return """
-        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Flow — Connected</title>
-        <style>body{font-family:system-ui;text-align:center;padding-top:20%;background:#1a1a2e;color:#e0e0e0}
-        h1{font-size:28px;margin-bottom:8px}</style></head>
-        <body><h1>✅ Connected!</h1><p>You can close this tab and go back to Flow.</p>
-        <script>setTimeout(()=>window.close(),2000)</script></body></html>
-        """
-    }
-
-    private func errorHTML() -> String {
-        return """
-        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Flow — Error</title>
-        <style>body{font-family:system-ui;text-align:center;padding-top:20%;background:#1a1a2e;color:#e0e0e0}</style></head>
-        <body><h1>❌ Invalid token</h1><p>Please go back and try again.</p></body></html>
-        """
-    }
-
-    // MARK: - Helpers
-
-    private func sendResponse(_ socket: Int32, html: String) {
-        let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nContent-Length: \(html.utf8.count)\r\n\r\n\(html)"
-        let data = Data(response.utf8)
-        _ = data.withUnsafeBytes { ptr in
-            send(socket, ptr.baseAddress, data.count, 0)
-        }
-    }
-
-    private func extractBody(from request: String) -> String {
-        guard let range = request.range(of: "\r\n\r\n") else { return "" }
-        return String(request[range.upperBound...])
-    }
-
-    private func parseToken(from body: String) -> String? {
-        // Parse "token=xxx"
-        let parts = body.split(separator: "=", maxSplits: 1)
-        guard parts.count == 2 && parts[0] == "token" else { return nil }
-        return String(parts[1]).removingPercentEncoding ?? String(parts[1])
-    }
 }
 
 enum AuthError: LocalizedError {
     case serverFailed
+    case authFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .serverFailed: return "Could not start local auth server"
+        case .authFailed(let msg): return "Auth failed: \(msg)"
         }
     }
 }

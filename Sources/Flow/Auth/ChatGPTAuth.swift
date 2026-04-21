@@ -23,7 +23,7 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     private let keychain = KeychainStore.shared
     private var callbackServer: TokenCaptureServer?
 
-    @unchecked Sendable init() {
+    init() {
         // Restore existing session
         if let tokens = keychain.loadTokens(), !tokens.isExpired {
             let email = Self.extractEmailFromJWT(tokens.accessToken)

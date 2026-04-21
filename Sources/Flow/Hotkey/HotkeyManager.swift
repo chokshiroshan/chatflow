@@ -162,6 +162,11 @@ final class HotkeyManager {
             userInfo: userInfo
         ) else {
             print("⚠️ CGEventTap failed. Grant Input Monitoring in System Settings → Privacy & Security → Input Monitoring.")
+            print("⚠️ Also ensure Flow is not sandboxed. Try: open System Settings → Privacy & Security → Input Monitoring → add Flow")
+            // Try alternative: Accessibility permission
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
+            let trusted = AXIsProcessTrustedWithOptions(options)
+            print("⚠️ Accessibility trusted: \(trusted)")
             return
         }
 
@@ -225,15 +230,24 @@ final class HotkeyManager {
         case .hold:
             if down && !keyIsDown {
                 keyIsDown = true
-                if !isRecording { isRecording = true; onStart?() }
+                if !isRecording {
+                    isRecording = true
+                    print("⌨️ Hotkey DOWN — starting dictation")
+                    onStart?()
+                }
             } else if !down && keyIsDown {
                 keyIsDown = false
-                if isRecording { isRecording = false; onStop?() }
+                if isRecording {
+                    isRecording = false
+                    print("⌨️ Hotkey UP — stopping dictation")
+                    onStop?()
+                }
             }
         case .toggle:
             if down && !keyIsDown {
                 keyIsDown = true
                 isRecording.toggle()
+                print("⌨️ Hotkey TOGGLE — \(isRecording ? "starting" : "stopping") dictation")
                 if isRecording { onStart?() } else { onStop?() }
             } else if !down {
                 keyIsDown = false

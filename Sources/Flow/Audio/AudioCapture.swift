@@ -45,10 +45,8 @@ final class AudioCapture {
         }
 
         // Check for available input device
-        let audioSession = AVAudioApplication.shared
-        let inputDevices = AVAudioApplication.shared.inputDevices
-        // Actually use the shared instance's isInputAvailable if possible
-        
+        let sharedInstance = AVAudioApplication.shared
+        _ = sharedInstance // suppress unused warning
         let engine = AVAudioEngine()
         self.engine = engine
 
@@ -157,6 +155,5 @@ enum AudioError: LocalizedError {
         case .notRunning: return "Audio capture not running"
         case .noInputDevice: return "No microphone detected. Connect an external mic or headset (Mac minis have no built-in mic)."
         }
-    }
     }
 }

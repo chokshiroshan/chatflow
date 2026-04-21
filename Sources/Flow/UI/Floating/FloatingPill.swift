@@ -15,8 +15,7 @@ struct FloatingPill: View {
     @State private var pulseScale: CGFloat = 1.0
     @State private var wavePhase: CGFloat = 0
     @State private var waveAmplitudes: [CGFloat] = [0.3, 0.5, 0.8, 1.0, 0.8, 0.5, 0.3]
-    @State private var displayLink: NSDisplayLink?
-    @State private var animationTimer: Timer?
+
 
     var body: some View {
         Group {

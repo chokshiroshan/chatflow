@@ -12,6 +12,7 @@ import AVFoundation
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
+    private var chunkCount = 0
 
     /// Whether the audio engine is currently capturing.
     var isRunning: Bool {
@@ -67,6 +68,8 @@ final class AudioCapture {
 
     /// Stop capturing audio.
     func stop() {
+        print("🛑 Audio capture stopped. Sent \(chunkCount) chunks total.")
+        chunkCount = 0
         engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()
         engine = nil
@@ -106,6 +109,10 @@ final class AudioCapture {
             let channels = Int(targetFormat.channelCount)
             let bytesToCopy = frameCount * channels * MemoryLayout<Int16>.size
             let data = Data(bytes: channelData[0], count: bytesToCopy)
+            chunkCount += 1
+            if chunkCount == 1 {
+                print("🎙️ First audio chunk: \(data.count) bytes")
+            }
             onAudioData?(data)
         }
     }

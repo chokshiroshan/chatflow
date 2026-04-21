@@ -152,7 +152,11 @@ final class RealtimeClient {
         let event = """
         {"type":"input_audio_buffer.append","audio":"\(base64)"}
         """
-        try? send(event)
+        do {
+            try send(event)
+        } catch {
+            print("⚠️ Failed to send audio chunk: \(error)")
+        }
     }
 
     /// Signal end of speech — commit buffer and request response.

@@ -95,6 +95,7 @@ final class DictationEngine {
             }
             try await audioCapture.start()
             onStateChanged?(.recording)
+            print("🎙️ Audio capture started — streaming to Realtime API")
 
         } catch {
             print("⚠️ Connect failed: \(error)")
@@ -107,15 +108,20 @@ final class DictationEngine {
         onStateChanged?(.processing)
 
         audioCapture.stop()
+        print("🛑 Audio capture stopped")
+
+        // Give the WebSocket a moment to flush remaining audio chunks
+        try? await Task.sleep(for: .milliseconds(300))
 
         if fallbackMode, let groq = groqClient {
             // Groq path: send buffered audio for transcription
             await groq.transcribe(language: config.language)
         } else {
             // Realtime path: commit buffer and request response
+            print("📤 Committing audio buffer and requesting transcript...")
             client?.commitAndRespond()
-            // Wait for final transcript (max 5s)
-            try? await Task.sleep(for: .seconds(5))
+            // Wait for final transcript (max 8s)
+            try? await Task.sleep(for: .seconds(8))
         }
 
         if isConnected || fallbackMode {

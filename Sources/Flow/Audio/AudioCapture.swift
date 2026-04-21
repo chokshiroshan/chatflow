@@ -44,11 +44,24 @@ final class AudioCapture {
             throw AudioError.permissionDenied
         }
 
+        // Check for available input device
+        let audioSession = AVAudioApplication.shared
+        let inputDevices = AVAudioApplication.shared.inputDevices
+        // Actually use the shared instance's isInputAvailable if possible
+        
         let engine = AVAudioEngine()
         self.engine = engine
 
         let inputNode = engine.inputNode
         let hardwareFormat = inputNode.outputFormat(forBus: 0)
+        
+        print("🎤 Input format: \(hardwareFormat.sampleRate)Hz, \(hardwareFormat.channelCount) channels, \(hardwareFormat.commonFormat)")
+        
+        if hardwareFormat.sampleRate == 0 {
+            print("❌ No audio input device detected! Mac minis need an external mic.")
+            throw AudioError.noInputDevice
+        }
+
         let targetFormat = Self.targetFormat
 
         // Create converter from hardware format to target format
@@ -79,7 +92,10 @@ final class AudioCapture {
     // MARK: - Processing
 
     private func processBuffer(_ buffer: AVAudioPCMBuffer, sourceFormat: AVAudioFormat) {
-        guard let converter = self.converter else { return }
+        guard let converter = self.converter else {
+            print("⚠️ processBuffer called but converter is nil")
+            return
+        }
         let targetFormat = Self.targetFormat
 
         // Calculate output frame count
@@ -89,7 +105,10 @@ final class AudioCapture {
         guard let outputBuffer = AVAudioPCMBuffer(
             pcmFormat: targetFormat,
             frameCapacity: outputFrameCount
-        ) else { return }
+        ) else {
+            print("⚠️ Failed to create output buffer")
+            return
+        }
 
         var error: NSError?
 
@@ -103,17 +122,24 @@ final class AudioCapture {
             return
         }
 
+        let outFrames = Int(outputBuffer.frameLength)
+        if outFrames == 0 {
+            print("⚠️ Converter produced 0 frames (input: \(buffer.frameLength) frames)")
+            return
+        }
+
         // Extract PCM16 data (interleaved = channel data packed together)
         if let channelData = outputBuffer.int16ChannelData {
-            let frameCount = Int(outputBuffer.frameLength)
             let channels = Int(targetFormat.channelCount)
-            let bytesToCopy = frameCount * channels * MemoryLayout<Int16>.size
+            let bytesToCopy = outFrames * channels * MemoryLayout<Int16>.size
             let data = Data(bytes: channelData[0], count: bytesToCopy)
             chunkCount += 1
             if chunkCount == 1 {
-                print("🎙️ First audio chunk: \(data.count) bytes")
+                print("🎙️ First audio chunk: \(data.count) bytes (​\(outFrames) frames)")
             }
             onAudioData?(data)
+        } else {
+            print("⚠️ No int16 channel data in output buffer")
         }
     }
 }
@@ -122,12 +148,15 @@ enum AudioError: LocalizedError {
     case unsupportedFormat
     case permissionDenied
     case notRunning
+    case noInputDevice
 
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat: return "Cannot convert to 24kHz PCM16"
         case .permissionDenied: return "Microphone permission denied. Grant in System Settings → Privacy."
         case .notRunning: return "Audio capture not running"
+        case .noInputDevice: return "No microphone detected. Connect an external mic or headset (Mac minis have no built-in mic)."
         }
+    }
     }
 }

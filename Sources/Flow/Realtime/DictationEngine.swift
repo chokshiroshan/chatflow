@@ -66,8 +66,8 @@ final class DictationEngine {
                 onStateChanged?(.error("Session expired. Please sign in again."))
                 return
             }
+            _ = token // Token is now set on auth.accessToken
 
-        do {
             let dualClient = DualPathRealtimeClient(auth: auth, config: config)
             self.client = dualClient
 

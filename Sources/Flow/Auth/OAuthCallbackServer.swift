@@ -29,6 +29,13 @@ final class OAuthCallbackServer {
         let state: String?
     }
 
+    /// Start the server on a specific or random port. Returns the port used.
+    func start(fixedPort: UInt16? = nil) throws -> UInt16 {
+        self.fixedPort = fixedPort
+        try startServer()
+        return port
+    }
+
     /// Start the server and return the auth code + state from the callback.
     func waitForCallback() async throws -> CallbackResult {
         try startServer()

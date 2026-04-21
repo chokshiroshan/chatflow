@@ -41,14 +41,10 @@ final class RealtimeClient {
     ///   - mode: Dictation (text-only) or VoiceChat (audio+text)
     ///   - backendMode: If true, use chatgpt.com backend (subscription-billed)
     func connect(accessToken: String, model: String = "gpt-realtime-1.5", mode: ConnectionMode, backendMode: Bool = false) async throws {
-        let urlString: String
-        if backendMode {
-            // ChatGPT backend — free with subscription
-            urlString = "wss://chatgpt.com/backend-api/realtime?model=\(model)"
-        } else {
-            // Developer API — pay-per-use
-            urlString = "wss://api.openai.com/v1/realtime?model=\(model)"
-        }
+        // Always use api.openai.com — the ChatGPT subscription token has
+        // aud=https://api.openai.com/v1 and scope=model.request which works here.
+        // chatgpt.com/backend-api/realtime does NOT support WebSocket.
+        let urlString = "wss://api.openai.com/v1/realtime?model=\(model)"
 
         guard let url = URL(string: urlString) else {
             throw RealtimeError.invalidURL
@@ -56,9 +52,7 @@ final class RealtimeClient {
 
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        if !backendMode {
-            request.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
-        }
+        request.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
         let session = URLSession(configuration: .ephemeral)
         let ws = session.webSocketTask(with: request)

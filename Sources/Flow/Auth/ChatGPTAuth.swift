@@ -18,8 +18,9 @@ final class ChatGPTAuth: NSObject, ObservableObject {
 
     // Codex CLI public client ID
     private static let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"
-    private static let authorizeURL = "https://auth.openai.com/oauth/authorize"
-    private static let tokenURL = "https://auth.openai.com/oauth/token"
+    // Discovered from https://auth.openai.com/v2.0/.well-known/openid-configuration
+    private static let authorizeURL = "https://auth.openai.com/api/accounts/authorize"
+    private static let tokenURL = "https://auth.openai.com/api/accounts/oauth/token"
     private static let callbackPath = "/auth/callback"
     private static let callbackPort: UInt16 = 1455
 
@@ -81,7 +82,7 @@ final class ChatGPTAuth: NSObject, ObservableObject {
                     URLQueryItem(name: "code_challenge", value: challenge),
                     URLQueryItem(name: "code_challenge_method", value: "S256"),
                     URLQueryItem(name: "state", value: state),
-                    URLQueryItem(name: "scope", value: "openid email profile"),
+                    URLQueryItem(name: "scope", value: "openid profile email offline_access"),
                 ]
 
                 guard let authURL = components.url else {
@@ -221,24 +222,35 @@ final class ChatGPTAuth: NSObject, ObservableObject {
         redirectURI: String?,
         refreshToken: String?
     ) async throws -> TokenResponse {
-        var body: [String: String] = [
-            "grant_type": grantType,
-            "client_id": Self.clientID,
-        ]
-
-        if let code { body["code"] = code }
-        if let verifier { body["code_verifier"] = verifier }
-        if let redirectURI { body["redirect_uri"] = redirectURI }
-        if let refreshToken { body["refresh_token"] = refreshToken }
-
         let url = URL(string: Self.tokenURL)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = body
-            .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
-            .joined(separator: "&")
-            .data(using: .utf8)
+
+        // Codex uses JSON for refresh, form-urlencoded for code exchange
+        if grantType == "refresh_token" {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            var body: [String: String] = [
+                "client_id": Self.clientID,
+                "grant_type": grantType,
+            ]
+            if let refreshToken { body["refresh_token"] = refreshToken }
+            body["scope"] = "openid profile email"
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        } else {
+            // authorization_code exchange — form-urlencoded
+            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            var body: [String: String] = [
+                "grant_type": grantType,
+                "client_id": Self.clientID,
+            ]
+            if let code { body["code"] = code }
+            if let verifier { body["code_verifier"] = verifier }
+            if let redirectURI { body["redirect_uri"] = redirectURI }
+            request.httpBody = body
+                .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+                .joined(separator: "&")
+                .data(using: .utf8)
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -268,15 +280,11 @@ final class ChatGPTAuth: NSObject, ObservableObject {
 
     // MARK: - PKCE Helpers
 
-    /// Generate a cryptographically random code verifier (43-128 chars, URL-safe)
+    /// Generate a cryptographically random code verifier (128 hex chars, matching Codex CLI)
     private static func generateCodeVerifier() -> String {
-        var buffer = [UInt8](repeating: 0, count: 32)
+        var buffer = [UInt8](repeating: 0, count: 64)
         _ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, &buffer)
-        return Data(buffer)
-            .base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
+        return buffer.map { String(format: "%02x", $0) }.joined()
     }
 
     /// Generate S256 code challenge from verifier

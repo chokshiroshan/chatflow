@@ -3,25 +3,36 @@ import Foundation
 /// A minimal HTTP server that runs on localhost to catch OAuth callbacks.
 ///
 /// Flow:
-/// 1. Start server on a random port
-/// 2. Open browser → ChatGPT login
-/// 3. Browser redirects to http://localhost:PORT/callback?code=xxx
-/// 4. Server captures the auth code
-/// 5. Exchanges code for tokens
-/// 6. Shuts down
+/// 1. Start server on port 1455 (Codex CLI standard)
+/// 2. Open browser → auth.openai.com login
+/// 3. Browser redirects to http://127.0.0.1:1455/auth/callback?code=xxx&state=yyy
+/// 4. Server captures the auth code + state
+/// 5. Shuts down
 final class OAuthCallbackServer {
     private var serverSocket: Int32 = -1
     private var port: UInt16 = 0
-    private var continuation: CheckedContinuation<String, Error>?
+    private var continuation: CheckedContinuation<CallbackResult, Error>?
+
+    /// The callback path (default: /auth/callback matching Codex CLI)
+    var path: String = "/auth/callback"
+
+    /// If set, try to bind to this specific port (default: random)
+    var fixedPort: UInt16? = nil
 
     /// The redirect URI to use in the OAuth URL.
     var redirectURI: String {
-        "http://localhost:\(port)/callback"
+        "http://127.0.0.1:\(port)\(path)"
     }
 
-    /// Start the server and return the auth code received.
-    func waitForCallback() async throws -> String {
+    struct CallbackResult {
+        let code: String
+        let state: String?
+    }
+
+    /// Start the server and return the auth code + state from the callback.
+    func waitForCallback() async throws -> CallbackResult {
         try startServer()
+        print("📡 OAuth callback server listening on http://127.0.0.1:\(port)\(path)")
         return try await withCheckedThrowingContinuation { cont in
             self.continuation = cont
             self.acceptConnection()
@@ -51,12 +62,12 @@ final class OAuthCallbackServer {
         var reuse: Int32 = 1
         setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout.size(ofValue: reuse)))
 
-        // Bind to localhost on random port
+        // Bind to 127.0.0.1 on specified or random port
         var addr = sockaddr_in()
         addr.sin_len = UInt8(MemoryLayout.size(ofValue: addr))
         addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_addr.s_addr = INADDR_ANY // 0.0.0.0 — only accessible locally
-        addr.sin_port = 0 // OS picks a port
+        addr.sin_addr.s_addr = UInt32(inet_addr("127.0.0.1"))
+        addr.sin_port = fixedPort.map { UInt16(bigEndian: $0) } ?? 0
 
         let bindResult = withUnsafePointer(to: addr) { ptr in
             bind(serverSocket, UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
@@ -99,7 +110,7 @@ final class OAuthCallbackServer {
             defer { close(clientSocket) }
 
             // Read the HTTP request
-            var buffer = [UInt8](repeating: 0, count: 4096)
+            var buffer = [UInt8](repeating: 0, count: 8192)
             let bytesRead = recv(clientSocket, &buffer, buffer.count, 0)
             guard bytesRead > 0 else {
                 self.continuation?.resume(throwing: OAuthError.noData)
@@ -108,10 +119,18 @@ final class OAuthCallbackServer {
 
             let request = String(bytes: buffer.prefix(bytesRead), encoding: .utf8) ?? ""
 
-            // Parse the authorization code from the URL
-            // GET /callback?code=xxx&state=yyy HTTP/1.1
-            guard let code = self.extractCode(from: request) else {
-                // Send error response
+            // Parse code + state from the URL
+            // GET /auth/callback?code=xxx&state=yyy HTTP/1.1
+            if let result = self.extractCallback(from: request) {
+                self.sendResponse(clientSocket, html: """
+                <html><body style="font-family:system-ui;text-align:center;padding-top:15%">
+                <h2>✅ Authenticated!</h2>
+                <p>You can close this tab and go back to Flow.</p>
+                <script>setTimeout(() => window.close(), 1500)</script>
+                </body></html>
+                """)
+                self.continuation?.resume(returning: result)
+            } else {
                 self.sendResponse(clientSocket, html: """
                 <html><body>
                 <h2>❌ Authentication Failed</h2>
@@ -120,36 +139,31 @@ final class OAuthCallbackServer {
                 </body></html>
                 """)
                 self.continuation?.resume(throwing: OAuthError.noCode)
-                return
             }
-
-            // Send success response
-            self.sendResponse(clientSocket, html: """
-            <html><body style="font-family:system-ui;text-align:center;padding-top:15%">
-            <h2>✅ Authenticated!</h2>
-            <p>You can close this tab and go back to Flow.</p>
-            <script>setTimeout(() => window.close(), 1500)</script>
-            </body></html>
-            """)
-
-            self.continuation?.resume(returning: code)
         }
     }
 
-    private func extractCode(from request: String) -> String? {
-        // Parse "GET /callback?code=XXX HTTP/1.1"
-        guard let range = request.range(of: "GET /callback?") else { return nil }
-        let path = String(request[range.upperBound...])
-        guard let space = path.firstIndex(of: " ") else { return nil }
-        let queryString = String(path[..<space])
+    private func extractCallback(from request: String) -> CallbackResult? {
+        // Find the request line: "GET /auth/callback?code=XXX&state=YYY HTTP/1.1"
+        guard let pathPrefix = request.range(of: "GET \(path)?") else { return nil }
+        let afterPath = String(request[pathPrefix.upperBound...])
+        guard let spaceIdx = afterPath.firstIndex(of: " ") else { return nil }
+        let queryString = String(afterPath[..<spaceIdx])
+
+        var code: String?
+        var state: String?
 
         for param in queryString.split(separator: "&") {
             let parts = param.split(separator: "=", maxSplits: 1)
-            if parts.count == 2 && parts[0] == "code" {
-                return String(parts[1]).removingPercentEncoding
-            }
+            guard parts.count == 2 else { continue }
+            let key = String(parts[0])
+            let value = String(parts[1]).removingPercentEncoding ?? String(parts[1])
+            if key == "code" { code = value }
+            if key == "state" { state = value }
         }
-        return nil
+
+        guard let code else { return nil }
+        return CallbackResult(code: code, state: state)
     }
 
     private func sendResponse(_ socket: Int32, html: String) {

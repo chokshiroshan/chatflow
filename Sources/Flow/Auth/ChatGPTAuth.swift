@@ -1,16 +1,16 @@
 import Foundation
-import WebKit
 import AppKit
-import CommonCrypto
 
-/// Authenticates with ChatGPT via WKWebView with browser user-agent.
+/// Authenticates with ChatGPT via the system browser + a local token capture page.
 ///
-/// Strategy: Open chatgpt.com in a WKWebView that impersonates a real browser
-/// (to prevent the native ChatGPT app redirect), let the user log in normally,
-/// then intercept the access token from localStorage.
+/// Strategy:
+/// 1. Start a local HTTP server on a random port
+/// 2. Open system browser to a local HTML page with a "Get Token" button
+/// 3. The HTML page tries to read chatgpt.com's localStorage via an iframe/proxy
+/// 4. If that fails (CORS), it shows instructions to manually copy the token
+/// 5. User pastes token into the page → sent to our local server
 ///
-/// The access token works with chatgpt.com/backend-api endpoints —
-/// free with a ChatGPT Plus/Pro subscription.
+/// This avoids WKWebView entirely (which has sandbox issues in SPM projects).
 final class ChatGPTAuth: NSObject, ObservableObject {
     static let shared = ChatGPTAuth()
 
@@ -21,9 +21,7 @@ final class ChatGPTAuth: NSObject, ObservableObject {
     private(set) var accessToken: String?
 
     private let keychain = KeychainStore.shared
-    private var webView: WKWebView?
-    private var window: NSWindow?
-    private var tokenCheckTimer: Timer?
+    private var callbackServer: TokenCaptureServer?
 
     override init() {
         super.init()
@@ -39,9 +37,56 @@ final class ChatGPTAuth: NSObject, ObservableObject {
     // MARK: - Sign In
 
     func signIn() {
+        guard authState != .signingIn else { return }
         DispatchQueue.main.async {
             self.authState = .signingIn
-            self.showLoginWindow()
+        }
+
+        Task {
+            do {
+                let server = TokenCaptureServer()
+                self.callbackServer = server
+
+                // Start server and get the HTML page URL
+                let pageURL = try server.start()
+
+                print("🌐 Opening token capture page: \(pageURL)")
+                // Open the local HTML page in system browser
+                NSWorkspace.shared.open(URL(string: pageURL)!)
+
+                // Wait for the user to submit their token
+                let token = try await server.waitForToken()
+                server.stop()
+                self.callbackServer = nil
+
+                self.accessToken = token
+                let email = Self.extractEmailFromJWT(token)
+
+                let tokens = KeychainStore.AuthTokens(
+                    accessToken: token,
+                    refreshToken: "",
+                    idToken: nil,
+                    expiresAt: Date().addingTimeInterval(3600),
+                    email: email,
+                    plan: "ChatGPT"
+                )
+                try keychain.saveTokens(tokens)
+
+                let displayEmail = email ?? "ChatGPT User"
+                DispatchQueue.main.async {
+                    self.userEmail = displayEmail
+                    self.authState = .signedIn(email: displayEmail, plan: "ChatGPT")
+                }
+                print("✅ Authenticated as \(displayEmail)")
+
+            } catch {
+                print("❌ Auth failed: \(error)")
+                self.callbackServer?.stop()
+                self.callbackServer = nil
+                DispatchQueue.main.async {
+                    self.authState = .signedOut
+                }
+            }
         }
     }
 
@@ -50,27 +95,17 @@ final class ChatGPTAuth: NSObject, ObservableObject {
         accessToken = nil
         userEmail = nil
         authState = .signedOut
-        tokenCheckTimer?.invalidate()
-        tokenCheckTimer = nil
-        webView?.stopLoading()
-        window?.close()
-        window = nil
-        webView = nil
+        callbackServer?.stop()
+        callbackServer = nil
     }
 
     // MARK: - Token Refresh
 
     @discardableResult
     func refreshAccessToken() async -> Bool {
-        // For WKWebView-based auth, we don't have a refresh token mechanism.
-        // The user will need to re-login when the token expires (~1 hour).
-        // ChatGPT tokens typically last 1 hour.
-        guard let tokens = keychain.loadTokens() else { return false }
-        if !tokens.isExpired {
-            accessToken = tokens.accessToken
-            return true
-        }
-        return false
+        guard let tokens = keychain.loadTokens(), !tokens.isExpired else { return false }
+        accessToken = tokens.accessToken
+        return true
     }
 
     func ensureValidToken() async -> String? {
@@ -79,90 +114,6 @@ final class ChatGPTAuth: NSObject, ObservableObject {
             return accessToken
         }
         return nil
-    }
-
-    // MARK: - Login Window
-
-    private func showLoginWindow() {
-        let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
-
-        let webView = WKWebView(frame: .init(x: 0, y: 0, width: 480, height: 700), configuration: config)
-        webView.navigationDelegate = self
-        // Spoof Chrome user-agent to prevent native ChatGPT app redirect
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-        self.webView = webView
-
-        let window = NSWindow(
-            contentRect: .init(x: 0, y: 0, width: 480, height: 700),
-            styleMask: [.titled, .closable, .miniaturizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Sign in to ChatGPT"
-        window.contentView = webView
-        window.center()
-        window.level = .floating
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKey()
-        window.delegate = self
-        self.window = window
-
-        // Load ChatGPT login
-        if let url = URL(string: "https://chatgpt.com/auth/login") {
-            webView.load(URLRequest(url: url))
-        }
-
-        // Start polling for the access token
-        startTokenPolling()
-    }
-
-    // MARK: - Token Polling
-
-    private func startTokenPolling() {
-        tokenCheckTimer?.invalidate()
-        tokenCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.checkForToken()
-        }
-    }
-
-    private func checkForToken() {
-        guard let webView = webView else { return }
-
-        webView.evaluateJavaScript("localStorage.getItem('accessToken')") { [weak self] result, _ in
-            guard let self, let token = result as? String, !token.isEmpty else { return }
-            self.handleToken(token)
-        }
-    }
-
-    private func handleToken(_ token: String) {
-        guard !token.isEmpty, accessToken != token else { return }
-
-        tokenCheckTimer?.invalidate()
-        tokenCheckTimer = nil
-        self.accessToken = token
-
-        let email = Self.extractEmailFromJWT(token)
-        let tokens = KeychainStore.AuthTokens(
-            accessToken: token,
-            refreshToken: "",
-            idToken: nil,
-            expiresAt: Date().addingTimeInterval(3600), // ~1 hour
-            email: email,
-            plan: "ChatGPT"
-        )
-        try? keychain.saveTokens(tokens)
-
-        let displayEmail = email ?? "ChatGPT User"
-        DispatchQueue.main.async {
-            self.userEmail = displayEmail
-            self.authState = .signedIn(email: displayEmail, plan: "ChatGPT")
-            self.window?.close()
-            self.window = nil
-            self.webView = nil
-        }
-        print("✅ Authenticated as \(displayEmail)")
     }
 
     // MARK: - JWT Parsing
@@ -186,29 +137,240 @@ final class ChatGPTAuth: NSObject, ObservableObject {
     }
 }
 
-// MARK: - WKNavigationDelegate
+// MARK: - Token Capture Server
 
-extension ChatGPTAuth: WKNavigationDelegate {
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        decisionHandler(.allow)
+/// A local HTTP server that serves an HTML page for token capture
+/// and waits for the user to paste their access token.
+final class TokenCaptureServer {
+    private var serverSocket: Int32 = -1
+    private var port: UInt16 = 0
+    private var continuation: CheckedContinuation<String, Error>?
+
+    /// Start the server and return the URL of the capture page.
+    func start() throws -> String {
+        serverSocket = socket(AF_INET, SOCK_STREAM, 0)
+        guard serverSocket != -1 else { throw AuthError.serverFailed }
+
+        var reuse: Int32 = 1
+        setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout.size(ofValue: reuse)))
+
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout.size(ofValue: addr))
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_addr.s_addr = INADDR_ANY
+        addr.sin_port = 0
+
+        let bindResult = withUnsafePointer(to: addr) { ptr in
+            bind(serverSocket, UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
+        }
+        guard bindResult == 0 else { close(serverSocket); throw AuthError.serverFailed }
+
+        var assignedAddr = sockaddr_in()
+        var addrLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+        _ = withUnsafeMutablePointer(to: &assignedAddr) { ptr in
+            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { rebound in
+                getsockname(serverSocket, rebound, &addrLen)
+            }
+        }
+        port = UInt16(bigEndian: assignedAddr.sin_port)
+
+        guard listen(serverSocket, 5) == 0 else { close(serverSocket); throw AuthError.serverFailed }
+
+        // Accept connections in background
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.acceptLoop()
+        }
+
+        return "http://localhost:\(port)/"
     }
 
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        print("⚠️ WebView navigation error: \(error.localizedDescription)")
+    func stop() {
+        if serverSocket != -1 {
+            shutdown(serverSocket, SHUT_RDWR)
+            close(serverSocket)
+            serverSocket = -1
+        }
+    }
+
+    func waitForToken() async throws -> String {
+        try await withCheckedThrowingContinuation { cont in
+            self.continuation = cont
+        }
+    }
+
+    deinit { stop() }
+
+    // MARK: - Accept Loop
+
+    private func acceptLoop() {
+        while serverSocket != -1 {
+            var clientAddr = sockaddr()
+            var clientLen = socklen_t(MemoryLayout.size(ofValue: clientAddr))
+            let clientSocket = accept(serverSocket, &clientAddr, &clientLen)
+            guard clientSocket != -1 else { return }
+            defer { close(clientSocket) }
+
+            var buffer = [UInt8](repeating: 0, count: 16384)
+            let bytesRead = recv(clientSocket, &buffer, buffer.count, 0)
+            guard bytesRead > 0 else { continue }
+
+            let request = String(bytes: buffer.prefix(bytesRead), encoding: .utf8) ?? ""
+
+            if request.hasPrefix("GET / ") || request.hasPrefix("GET /capture") {
+                // Serve the HTML capture page
+                sendResponse(clientSocket, html: capturePageHTML())
+            } else if request.hasPrefix("POST /token") {
+                // User submitted their token
+                let body = extractBody(from: request)
+                if let token = parseToken(from: body), !token.isEmpty {
+                    sendResponse(clientSocket, html: successHTML())
+                    continuation?.resume(returning: token)
+                    return // Done
+                } else {
+                    sendResponse(clientSocket, html: errorHTML())
+                }
+            } else if request.hasPrefix("GET /success") {
+                sendResponse(clientSocket, html: successHTML())
+            } else {
+                sendResponse(clientSocket, html: capturePageHTML())
+            }
+        }
+    }
+
+    // MARK: - HTML Pages
+
+    private func capturePageHTML() -> String {
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <title>Flow — Sign in to ChatGPT</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+          .container { max-width: 520px; width: 100%; padding: 40px; }
+          h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+          .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
+          .step { background: #16213e; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+          .step-num { display: inline-block; background: #0f3460; color: #e94560; font-weight: 700; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 13px; margin-right: 10px; }
+          .step p { font-size: 14px; line-height: 1.5; display: inline; }
+          .step code { background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #e94560; user-select: all; cursor: pointer; }
+          textarea { width: 100%; height: 100px; background: #0f3460; border: 1px solid #1a3a6e; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 11px; resize: vertical; margin-top: 16px; }
+          textarea:focus { outline: none; border-color: #e94560; }
+          textarea::placeholder { color: #555; }
+          .btn { display: block; width: 100%; padding: 14px; background: #e94560; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
+          .btn:hover { background: #c81e45; }
+          .btn:disabled { background: #555; cursor: not-allowed; }
+          .or { text-align: center; color: #555; margin: 16px 0; font-size: 13px; }
+          .open-btn { display: inline-block; padding: 8px 16px; background: #0f3460; color: #e94560; border: 1px solid #1a3a6e; border-radius: 6px; font-size: 13px; text-decoration: none; margin-top: 8px; }
+          .open-btn:hover { background: #1a3a6e; }
+          .try-auto { padding: 10px 20px; background: #16213e; color: #e0e0e0; border: 1px solid #1a3a6e; border-radius: 8px; font-size: 14px; cursor: pointer; width: 100%; margin-top: 8px; }
+          .try-auto:hover { background: #1a3a6e; }
+        </style>
+        </head>
+        <body>
+        <div class="container">
+          <h1>🛰️ Flow — Connect ChatGPT</h1>
+          <p class="subtitle">Get your access token to enable dictation & voice chat (free with subscription)</p>
+
+          <div class="step">
+            <span class="step-num">1</span>
+            <p>Open <a href="https://chatgpt.com" target="_blank" style="color:#e94560">chatgpt.com</a> and make sure you're logged in</p>
+          </div>
+
+          <div class="step">
+            <span class="step-num">2</span>
+            <p>Open DevTools (press <code>F12</code> or <code>⌘⌥I</code>) → <strong>Console</strong> tab</p>
+          </div>
+
+          <div class="step">
+            <span class="step-num">3</span>
+            <p>Paste this and press Enter:</p>
+            <br><br>
+            <code id="snippet">JSON.parse(localStorage.getItem('auth0:session::https://api.openai.com/v1')).accessToken || localStorage.getItem('accessToken')</code>
+          </div>
+
+          <div class="step">
+            <span class="step-num">4</span>
+            <p>Copy the token string that appears, and paste it below:</p>
+          </div>
+
+          <textarea id="token" placeholder="Paste your access token here (starts with eyJ...)"></textarea>
+          <button class="btn" id="submitBtn" onclick="submitToken()">Connect</button>
+        </div>
+        <script>
+        function submitToken() {
+          const token = document.getElementById('token').value.trim();
+          if (!token || token.length < 20) {
+            alert('Please paste a valid access token');
+            return;
+          }
+          document.getElementById('submitBtn').disabled = true;
+          document.getElementById('submitBtn').textContent = 'Connecting...';
+          fetch('/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'token=' + encodeURIComponent(token)
+          }).then(r => {
+            if (r.ok) {
+              document.querySelector('.container').innerHTML = '<h1>✅ Connected!</h1><p class=\"subtitle\">You can close this tab and go back to Flow.</p><script>setTimeout(() => window.close(), 2000)<\\/script>';
+            }
+          });
+        }
+        </script>
+        </body>
+        </html>
+        """
+    }
+
+    private func successHTML() -> String {
+        return """
+        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Flow — Connected</title>
+        <style>body{font-family:system-ui;text-align:center;padding-top:20%;background:#1a1a2e;color:#e0e0e0}
+        h1{font-size:28px;margin-bottom:8px}</style></head>
+        <body><h1>✅ Connected!</h1><p>You can close this tab and go back to Flow.</p>
+        <script>setTimeout(()=>window.close(),2000)</script></body></html>
+        """
+    }
+
+    private func errorHTML() -> String {
+        return """
+        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Flow — Error</title>
+        <style>body{font-family:system-ui;text-align:center;padding-top:20%;background:#1a1a2e;color:#e0e0e0}</style></head>
+        <body><h1>❌ Invalid token</h1><p>Please go back and try again.</p></body></html>
+        """
+    }
+
+    // MARK: - Helpers
+
+    private func sendResponse(_ socket: Int32, html: String) {
+        let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nContent-Length: \(html.utf8.count)\r\n\r\n\(html)"
+        let data = Data(response.utf8)
+        _ = data.withUnsafeBytes { ptr in
+            send(socket, ptr.baseAddress, data.count, 0)
+        }
+    }
+
+    private func extractBody(from request: String) -> String {
+        guard let range = request.range(of: "\r\n\r\n") else { return "" }
+        return String(request[range.upperBound...])
+    }
+
+    private func parseToken(from body: String) -> String? {
+        // Parse "token=xxx"
+        let parts = body.split(separator: "=", maxSplits: 1)
+        guard parts.count == 2 && parts[0] == "token" else { return nil }
+        return String(parts[1]).removingPercentEncoding ?? String(parts[1])
     }
 }
 
-// MARK: - NSWindowDelegate
+enum AuthError: LocalizedError {
+    case serverFailed
 
-extension ChatGPTAuth: NSWindowDelegate {
-    func windowWillClose(_ notification: Notification) {
-        // If still signing in when window closes, reset state
-        if case .signingIn = authState {
-            tokenCheckTimer?.invalidate()
-            tokenCheckTimer = nil
-            authState = .signedOut
-            webView = nil
-            window = nil
+    var errorDescription: String? {
+        switch self {
+        case .serverFailed: return "Could not start local auth server"
         }
     }
 }

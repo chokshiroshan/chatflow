@@ -1,11 +1,11 @@
 import Foundation
 
-/// A dual-path Realtime client that tries the ChatGPT backend first (free with sub),
-/// then falls back to the developer API (pay-per-use).
+/// A dual-path Realtime client that uses the ChatGPT backend (free with sub).
 ///
-/// This gives Flow the best of both worlds:
-/// - If you have a ChatGPT subscription → free (uses backend-api)
-/// - If backend fails → falls back to developer API key
+/// Connection priority:
+/// 1. chatgpt.com/backend-api/realtime — free with ChatGPT Plus/Pro subscription
+/// 2. api.openai.com Realtime API — requires OPENAI_API_KEY env var (pay-per-use)
+/// 3. Groq Whisper — free fallback for dictation only
 @MainActor
 final class DualPathRealtimeClient {
     var onConnected: (() -> Void)?
@@ -22,7 +22,6 @@ final class DualPathRealtimeClient {
     private var activeClient: RealtimeClient?
     private let auth: ChatGPTAuth
     private var config: FlowConfig
-    private var useBackend = true
 
     init(auth: ChatGPTAuth, config: FlowConfig) {
         self.auth = auth
@@ -31,57 +30,43 @@ final class DualPathRealtimeClient {
 
     // MARK: - Connection
 
-    /// Connect using the best available path.
-    /// Tries ChatGPT backend first, falls back to developer API.
     func connect(mode: RealtimeClient.ConnectionMode) async throws {
-        guard let token = auth.accessToken else {
-            throw DualPathError.noValidPath
-        }
-
-        // Try backend path first (free with subscription)
-        if useBackend {
+        // Path 1: ChatGPT backend (free with subscription)
+        if let token = auth.accessToken {
             do {
-                let subscription = try await ChatGPTBackendClient.fetchSubscriptionInfo(accessToken: token)
-                if subscription.hasRealtimeAccess {
-                    print("✅ ChatGPT \(subscription.displayName) — using backend path (free)")
-                    onBackendPathUsed?(true)
+                let client = RealtimeClient()
+                wireCallbacks(client)
 
-                    let client = RealtimeClient()
-                    wireCallbacks(client)
+                // Connect via ChatGPT backend WebSocket
+                // The access token from chatgpt.com localStorage works here
+                try await client.connect(
+                    accessToken: token,
+                    model: config.realtimeModel,
+                    mode: mode,
+                    backendMode: true
+                )
 
-                    // Try connecting via developer API with the ChatGPT access token
-                    // The access token from auth0.openai.com should work with api.openai.com
-                    // because we request audience: "https://api.openai.com/v1"
-                    try await client.connect(
-                        accessToken: token,
-                        model: config.realtimeModel,
-                        mode: mode
-                    )
-
-                    activeClient = client
-                    return
-                } else {
-                    print("ℹ️ Free plan — backend path unavailable, using developer API")
-                    useBackend = false
-                }
+                activeClient = client
+                onBackendPathUsed?(true)
+                print("✅ Connected via ChatGPT subscription (free)")
+                return
             } catch {
                 print("⚠️ Backend path failed: \(error.localizedDescription)")
-                print("   Falling back to developer API...")
-                useBackend = false
             }
         }
 
-        // Developer API fallback (requires OPENAI_API_KEY)
+        // Path 2: Developer API (requires OPENAI_API_KEY env var)
         if let apiKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] {
             let client = RealtimeClient()
             wireCallbacks(client)
             try await client.connect(accessToken: apiKey, model: config.realtimeModel, mode: mode)
             activeClient = client
             onBackendPathUsed?(false)
-            print("📡 Connected via developer API")
-        } else {
-            throw DualPathError.noValidPath
+            print("📡 Connected via developer API (pay-per-use)")
+            return
         }
+
+        throw DualPathError.noValidPath
     }
 
     func disconnect() {

@@ -58,17 +58,17 @@ struct FloatingPill: View {
 
     @ViewBuilder
     private var pillContent: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             // Animated waveform icon
             waveIcon
-                .frame(width: 32, height: 32)
+                .frame(width: 24, height: 24)
 
             // Status / transcript
             statusContent
-                .frame(maxWidth: 320, alignment: .leading)
+                .frame(maxWidth: 160, alignment: .leading)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(pillBackground)
         .clipShape(Capsule())
         .overlay(
@@ -102,14 +102,14 @@ struct FloatingPill: View {
             // Subtle glow ring
             Circle()
                 .fill(glowColor.opacity(glowOpacity * 0.15))
-                .frame(width: 32, height: 32)
+                .frame(width: 26, height: 26)
 
             // Animated dots (sine wave pattern)
-            HStack(spacing: 3) {
+            HStack(spacing: 2.5) {
                 ForEach(0..<5, id: \.self) { i in
                     Capsule()
                         .fill(iconColor)
-                        .frame(width: 3, height: 18 * dotScales[i])
+                        .frame(width: 2.5, height: 14 * dotScales[i])
                         .animation(.easeInOut(duration: 0.12), value: dotScales[i])
                 }
             }
@@ -326,12 +326,13 @@ final class FloatingPillWindowController {
     private func rebuildWindow() {
         guard let coordinator else { return }
 
-        // Use the screen that currently has the focused app
+        // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
-        let width: CGFloat = 400
-        let height: CGFloat = 56
+        let width: CGFloat = 240   // Compact — just icon + short text
+        let height: CGFloat = 44   // Taller than content for breathing room
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
-        let y = screen.frame.origin.y + 24  // Bottom center of active screen
+        // Position above the dock — use visibleFrame which excludes dock
+        let y = screen.visibleFrame.origin.y + 12
 
         let panel = NSPanel(
             contentRect: NSRect(x: x, y: y, width: width, height: height),
@@ -342,7 +343,7 @@ final class FloatingPillWindowController {
 
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = false  // We handle shadow in SwiftUI
+        panel.hasShadow = false
         panel.level = .statusBar + 1
         panel.ignoresMouseEvents = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]

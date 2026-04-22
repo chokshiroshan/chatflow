@@ -17,7 +17,9 @@ struct FlowApp: App {
         // Settings
         Settings {
             SettingsView(coordinator: coordinator)
+                .preferredColorScheme(.dark)
         }
+        .windowStyle(.hiddenTitleBar)
 
         // Onboarding (shown on first launch or missing permissions)
         Window("ChatFlow Setup", id: "onboarding") {

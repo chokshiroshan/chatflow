@@ -25,7 +25,7 @@ struct SettingsView: View {
             ("general", "General", "gearshape"),
             ("shortcut", "Shortcut", "keyboard"),
             ("mic", "Microphone", "mic.fill"),
-            ("privacy", "Privacy", "shield.checkmark"),
+            ("privacy", "Privacy", "shield.fill"),
             ("about", "About", "info.circle"),
         ]
     }
@@ -108,7 +108,7 @@ struct SettingsView: View {
             }
 
             settingsSection("Transcription") {
-                settingsPickerRow("Language", selection: $coordinator.config.language) {
+                settingsPickerRow("Language", selection: $coordinator.config.language, isLast: true) {
                     Text("Auto-detect").tag("auto")
                     Text("English").tag("en")
                     Text("Spanish").tag("es")
@@ -118,9 +118,6 @@ struct SettingsView: View {
                     Text("Chinese").tag("zh")
                 }
                 .onChange(of: coordinator.config.language) { _, _ in coordinator.config.save() }
-                settingsPickerRow("Model", selection: .constant("Whisper-1"), isLast: true) {
-                    Text("Whisper-1").tag("Whisper-1")
-                }
             }
 
             settingsSection("Appearance") {
@@ -233,14 +230,14 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 24) {
             // Privacy banner
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "shield.checkmark")
+                Image(systemName: "shield.fill")
                     .font(.system(size: 20))
                     .foregroundColor(FlowColors.accentGreen)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Your audio stays private")
                         .font(FlowTypography.bodyMedium)
                         .foregroundColor(FlowColors.textPrimary)
-                    Text("Audio is sent directly to OpenAI's Whisper API and deleted immediately after transcription. ChatFlow never stores, logs, or sees your recordings.")
+                    Text("Audio is streamed directly to OpenAI's Realtime API and transcribed in real-time. ChatFlow never stores or logs your recordings.")
                         .font(FlowTypography.caption)
                         .foregroundColor(FlowColors.textSecondary)
                         .lineSpacing(3)

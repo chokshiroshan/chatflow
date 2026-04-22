@@ -23,7 +23,7 @@
     <true/>
     <!-- Microphone -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>Flow needs microphone access for voice dictation and voice chat.</string>
+    <string>ChatFlow needs microphone access for voice dictation.</string>
     <!-- Required for global hotkey via CGEventTap -->
     <key>NSAppleEventsUsageDescription</key>
     <string>Flow needs accessibility access for global hotkey and text injection.</string>

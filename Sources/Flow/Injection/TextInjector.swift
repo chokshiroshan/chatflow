@@ -3,21 +3,17 @@ import AppKit
 import CoreGraphics
 import ApplicationServices
 
-/// Injects text into the currently focused text field.
+/// Injects text into the currently focused text field via clipboard paste.
 ///
-/// Three-tier fallback chain (same architecture as Wispr Flow):
-/// 1. Accessibility API (AXUIElement) — fast but doesn't work everywhere
-/// 2. CGEvent keystroke simulation — universal but slow for long text
-/// 3. Clipboard paste (NSPasteboard + Cmd+V) — most reliable, default choice
+/// Uses clipboard paste (Cmd+V) as the primary method — most reliable
+/// across all apps. Saves and restores the user's clipboard contents.
 ///
 /// Requires: Accessibility permission (System Settings → Privacy → Accessibility)
 struct TextInjector {
 
-    /// Inject text using the most reliable method.
+    /// Inject text via clipboard paste.
     static func inject(_ text: String) -> Bool {
         guard !text.isEmpty else { return true }
-
-        // Try clipboard paste first (most reliable across all apps)
         return clipboardPaste(text)
     }
 

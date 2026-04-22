@@ -19,17 +19,15 @@ final class AppCoordinator: ObservableObject {
     private let permissions = PermissionsManager.shared
     private var cancellables = Set<AnyCancellable>()
     private var sessionStartTime: Date?
+    private var previousState: FlowState = .idle
 
     init() {
+        // Single consolidated auth subscription
         auth.$authState
             .receive(on: DispatchQueue.main)
-            .assign(to: &$authState)
-
-        auth.$userEmail
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] email in
-                if let email = email {
-                    self?.authState = .signedIn(email: email, plan: "ChatGPT")
+            .sink { [weak self] authState in
+                self?.authState = authState
+                if case .signedIn = authState {
                     self?.activateDictation()
                 }
             }
@@ -78,11 +76,15 @@ final class AppCoordinator: ObservableObject {
 
     private func activateDictation() {
         guard case .signedIn = authState else { return }
+        // Deactivate any existing engine before creating a new one
+        if dictationEngine != nil {
+            deactivateAll()
+        }
         let engine = DictationEngine(auth: auth, config: config)
         engine.onStateChanged = { [weak self] newState in
             Task { @MainActor in
-                self?.state = newState
                 self?.handleStateChange(newState)
+                self?.state = newState
                 // Reposition pill to active screen when recording starts
                 if newState == .recording {
                     self?.floatingPill.reposition()
@@ -112,7 +114,8 @@ final class AppCoordinator: ObservableObject {
             }
             if config.soundEffectsEnabled { sounds.play(.stopRecording) }
         case .idle:
-            if state == .injecting {
+            // Play success sound when transitioning from injecting → idle
+            if previousState == .injecting {
                 if config.soundEffectsEnabled { sounds.play(.success) }
             }
         case .error:
@@ -120,6 +123,7 @@ final class AppCoordinator: ObservableObject {
             if config.soundEffectsEnabled { sounds.play(.error) }
         default: break
         }
+        previousState = newState
     }
 
     // MARK: - Config Updates
@@ -128,7 +132,6 @@ final class AppCoordinator: ObservableObject {
     func updateHotkey(_ newHotkey: String) {
         config.hotkey = newHotkey
         config.save()
-        // Reactivate the engine to pick up new hotkey
         if dictationEngine != nil {
             deactivateAll()
             activateDictation()

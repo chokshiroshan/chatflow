@@ -57,15 +57,3 @@ final class KeychainStore {
         try? FileManager.default.removeItem(at: storageURL)
     }
 }
-
-enum KeychainError: LocalizedError {
-    case saveFailed(OSStatus)
-    case loadFailed(OSStatus)
-
-    var errorDescription: String? {
-        switch self {
-        case .saveFailed(let s): return "Save failed (status: \(s))"
-        case .loadFailed(let s): return "Load failed (status: \(s))"
-        }
-    }
-}

@@ -1,0 +1,21 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+*.dSYM
+*.dSYM.zip
+
+# Build output
+build/
+
+# Secrets (never commit)
+*.enc
+.secrets/
+
+# IDE
+*.xcuserstate
+IDEWorkspaceChecks.plist

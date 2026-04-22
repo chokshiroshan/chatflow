@@ -1,12 +1,5 @@
 import Foundation
 
-// MARK: - App Mode
-
-/// The app mode (dictation only for now).
-enum AppMode: String, CaseIterable, Codable {
-    case dictation = "Dictation"
-}
-
 // MARK: - App State
 
 /// The current operational state of the app.
@@ -22,18 +15,6 @@ enum FlowState: Equatable {
     var isRecording: Bool { self == .recording }
     var isActive: Bool { self != .idle && !isError }
     var isError: Bool { if case .error = self { return true }; return false }
-
-    var icon: String {
-        switch self {
-        case .idle: return "🎤"
-        case .connecting: return "🔄"
-        case .recording: return "🔴"
-        case .processing: return "⏳"
-        case .injecting: return "📝"
-        case .speaking: return "🔊"
-        case .error: return "❌"
-        }
-    }
 }
 
 // MARK: - Auth State
@@ -124,12 +105,6 @@ struct FlowConfig: Codable {
         case clipboard
         case accessibility
         case keystrokes
-    }
-
-    enum Appearance: String, CaseIterable {
-        case system = "system"
-        case light = "light"
-        case dark = "dark"
     }
 
     static let configDir = FileManager.default.homeDirectoryForCurrentUser

@@ -6,7 +6,6 @@ struct SettingsView: View {
     @ObservedObject var coordinator: AppCoordinator
     @State private var autoStartEnabled = AutoStartManager.shared.isEnabled
     @State private var selectedTab = "general"
-    @State private var inputDevices: [AudioCapture.InputDevice] = AudioCapture.listInputDevices()
 
     var body: some View {
         HStack(spacing: 0) {
@@ -20,21 +19,18 @@ struct SettingsView: View {
 
     // MARK: - Sidebar
 
-    private var settingsItems: [(String, String, String)] {
-        [
-            ("general", "General", "gearshape"),
-            ("shortcut", "Shortcut", "keyboard"),
-            ("mic", "Microphone", "mic.fill"),
-            ("privacy", "Privacy", "shield.fill"),
-            ("about", "About", "info.circle"),
-        ]
-    }
+    private let settingsItems: [(String, String, String)] = [
+        ("general", "General", "gearshape"),
+        ("shortcut", "Shortcut", "keyboard"),
+        ("mic", "Microphone", "mic.fill"),
+        ("privacy", "Privacy", "shield.fill"),
+        ("about", "About", "info.circle"),
+    ]
 
     private var settingsSidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: 16)
 
-            // Nav items
             VStack(spacing: 2) {
                 ForEach(settingsItems, id: \.0) { item in
                     Button(action: { withAnimation(.easeInOut(duration: 0.15)) { selectedTab = item.0 } }) {
@@ -169,7 +165,27 @@ struct SettingsView: View {
             }
 
             settingsSection("Behavior") {
-                settingsToggleRow("Release to transcribe (hold mode)", isOn: .constant(true), isLast: true)
+                HStack {
+                    Text("Mode")
+                        .font(FlowTypography.bodyMedium)
+                        .foregroundColor(FlowColors.textPrimary)
+                    Spacer()
+                    Text("Hold to record")
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textSecondary)
+                }
+                .padding(.vertical, 13)
+                .overlay(alignment: .bottom) {
+                    Divider().overlay(FlowColors.border)
+                }
+
+                HStack {
+                    Text("Works system-wide in any app")
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textTertiary)
+                    Spacer()
+                }
+                .padding(.vertical, 13)
             }
         }
     }
@@ -179,47 +195,37 @@ struct SettingsView: View {
     private var settingsMic: some View {
         VStack(alignment: .leading, spacing: 24) {
             settingsSection("Input Device") {
-                settingsPickerRow("Microphone", selection: Binding(
-                    get: { coordinator.config.selectedMicDeviceUID ?? "default" },
-                    set: { newValue in
-                        coordinator.config.selectedMicDeviceUID = newValue == "default" ? nil : newValue
-                        coordinator.config.save()
-                    }
-                ), isLast: true) {
-                    Text("System Default").tag("default")
-                    ForEach(inputDevices) { device in
-                        Text(device.name).tag(device.uid)
-                    }
+                HStack {
+                    Text("Microphone")
+                        .font(FlowTypography.bodyMedium)
+                        .foregroundColor(FlowColors.textPrimary)
+                    Spacer()
+                    Text("System Default")
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textSecondary)
                 }
+                .padding(.vertical, 13)
+                .overlay(alignment: .bottom) {
+                    Divider().overlay(FlowColors.border)
+                }
+
+                Text("Change your microphone in System Settings → Sound → Input")
+                    .font(FlowTypography.caption)
+                    .foregroundColor(FlowColors.textTertiary)
+                    .padding(.vertical, 8)
             }
 
-            settingsSection("Input Level") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Live level (hold shortcut to test)")
+            settingsSection("Usage") {
+                HStack {
+                    Text("This month")
+                        .font(FlowTypography.bodyMedium)
+                        .foregroundColor(FlowColors.textPrimary)
+                    Spacer()
+                    Text(coordinator.usageDisplay)
                         .font(FlowTypography.caption)
-                        .foregroundColor(FlowColors.textTertiary)
-
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(FlowColors.card)
-                                .frame(height: 6)
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(LinearGradient(colors: [FlowColors.accent, FlowColors.accentPurple], startPoint: .leading, endPoint: .trailing))
-                                .frame(width: geo.size.width * 0.65, height: 6)
-                        }
-                    }
-                    .frame(height: 6)
-
-                    HStack(spacing: 2) {
-                        ForEach(0..<40, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(FlowColors.accent.opacity(0.25))
-                                .frame(height: 20 + sin(Double(i) * 0.8) * 12)
-                        }
-                    }
-                    .frame(height: 36)
+                        .foregroundColor(FlowColors.textSecondary)
                 }
+                .padding(.vertical, 13)
             }
         }
     }
@@ -254,14 +260,12 @@ struct SettingsView: View {
                     .stroke(FlowColors.accentGreen.opacity(0.15), lineWidth: 0.5)
             )
 
-            settingsSection("Data") {
-                settingsToggleRow("Share anonymous analytics", isOn: .constant(false))
-                settingsToggleRow("Send crash reports", isOn: .constant(true), isLast: true)
-            }
-
             settingsSection("Permissions") {
                 permissionRow(label: "Microphone access", granted: coordinator.permissionsStatus.microphone) {
-                    PermissionsManager.shared.requestAccessibility()
+                    // Open System Settings directly to microphone privacy
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                        NSWorkspace.shared.open(url)
+                    }
                     coordinator.refreshPermissions()
                 }
                 permissionRow(label: "Accessibility (auto-paste)", granted: coordinator.permissionsStatus.accessibility) {
@@ -291,7 +295,7 @@ struct SettingsView: View {
                         RoundedRectangle(cornerRadius: FlowRadii.lg)
                             .stroke(FlowColors.accent.opacity(0.3), lineWidth: 1)
                     )
-                Image(systemName: "mic.fill")
+                Image(systemName: "waveform")
                     .font(.system(size: 32))
                     .foregroundColor(FlowColors.accent)
             }
@@ -301,7 +305,7 @@ struct SettingsView: View {
             Text("ChatFlow")
                 .font(FlowTypography.title)
                 .foregroundColor(FlowColors.textPrimary)
-            Text("Version 1.0.0 (Build 100)")
+            Text("Version 1.0.0")
                 .font(FlowTypography.caption)
                 .foregroundColor(FlowColors.textTertiary)
 
@@ -331,11 +335,10 @@ struct SettingsView: View {
 
             Spacer().frame(height: 24)
 
-            settingsSection("Links") {
-                settingsLinkRow("Release Notes")
-                settingsLinkRow("Support")
-                settingsLinkRow("Check for Updates", isLast: true)
-            }
+            Text("Voice-to-text for macOS, powered by your ChatGPT plan.")
+                .font(FlowTypography.caption)
+                .foregroundColor(FlowColors.textTertiary)
+                .multilineTextAlignment(.center)
         }
     }
 
@@ -391,24 +394,6 @@ struct SettingsView: View {
             .pickerStyle(.menu)
             .tint(FlowColors.accent)
             .labelsHidden()
-        }
-        .padding(.vertical, 13)
-        .overlay(alignment: .bottom) {
-            if !isLast {
-                Divider().overlay(FlowColors.border)
-            }
-        }
-    }
-
-    private func settingsLinkRow(_ label: String, isLast: Bool = false) -> some View {
-        HStack {
-            Text(label)
-                .font(FlowTypography.bodyMedium)
-                .foregroundColor(FlowColors.textPrimary)
-            Spacer()
-            Text("View →")
-                .font(FlowTypography.caption)
-                .foregroundColor(FlowColors.accent)
         }
         .padding(.vertical, 13)
         .overlay(alignment: .bottom) {

@@ -197,9 +197,8 @@ final class RealtimeClient {
         case "session.updated":
             print("  ✅ Session configured")
 
-        // Input audio transcription (Whisper/gpt-4o-mini-transcribe — ACCURATE)
+        // Input audio transcription (gpt-4o-mini-transcribe — primary STT)
         // This is the server-side transcription of what was actually spoken.
-        // Prefer this over the model's text output.
         case "conversation.item.input_audio_transcription.delta":
             if let delta = obj["delta"] as? String {
                 partialText += delta
@@ -212,8 +211,7 @@ final class RealtimeClient {
                 onFinalTranscript?(t)
             }
 
-        // Response text (model output — LESS accurate for dictation, but acts as fallback)
-        // Only use this if no Whisper transcript came through
+        // Response text (model output — fallback if no transcription event)
         case "response.text.delta":
             if let delta = obj["delta"] as? String, partialText.isEmpty {
                 partialText += delta
@@ -226,7 +224,7 @@ final class RealtimeClient {
                 onFinalTranscript?(t)
             }
 
-        // Response audio (voice chat mode)
+        // Response audio (future voice chat mode)
         case "response.audio.delta":
             if let b64 = obj["delta"] as? String,
                let audioData = Data(base64Encoded: b64) {

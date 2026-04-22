@@ -102,20 +102,6 @@ struct FloatingPill: View {
         }
     }
 
-    // MARK: - Loading Dots
-
-    @ViewBuilder
-    private var loadingDots: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(.white.opacity(0.4))
-                    .frame(width: 4, height: 4)
-                    .scaleEffect(dotScales[i % 5])
-            }
-        }
-    }
-
     // MARK: - Background
 
     @ViewBuilder

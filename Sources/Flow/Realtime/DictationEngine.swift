@@ -1,14 +1,13 @@
 import Foundation
 
-/// Dictation engine using Realtime API with Whisper transcription.
+/// Dictation engine using OpenAI's Realtime API for streaming transcription.
 ///
-/// Strategy: Connect to gpt-realtime WebSocket, stream audio in real-time,
-/// but use the server-side Whisper transcription (`input_audio_transcription`)
-/// instead of the model's own text generation. This gives Whisper accuracy
-/// with the Realtime API's streaming capability.
+/// Strategy: Connect to gpt-realtime WebSocket, stream audio in real-time.
+/// Uses server-side transcription via `input_audio_transcription` with
+/// the gpt-4o-mini-transcribe model for accurate STT.
 ///
 /// Auth: ChatGPT subscription token via Codex OAuth
-/// STT: Server-side whisper-1 via Realtime API's input_audio_transcription
+/// STT: gpt-4o-mini-transcribe via Realtime API's input_audio_transcription
 @MainActor
 final class DictationEngine {
     var onStateChanged: ((FlowState) -> Void)?
@@ -260,7 +259,7 @@ final class DictationEngine {
     // MARK: - Callbacks
 
     private func wireCallbacks(_ client: RealtimeClient) {
-        // Whisper transcription events — this is the accurate STT
+        // Transcription events — this is the accurate STT
         client.onFinalTranscript = { [weak self] text in
             Task { @MainActor in self?.handleTranscript(text) }
         }

@@ -191,12 +191,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         return nil
     }
 
-    /// Check if the current token is still valid
-    var isTokenValid: Bool {
-        guard let tokens = keychain.loadTokens() else { return false }
-        return !tokens.isExpired
-    }
-
     // MARK: - OAuth Token Exchange (matching Codex's exchange_code_for_tokens)
 
     private func exchangeCode(_ code: String, verifier: String, redirectURI: String) async throws -> KeychainStore.AuthTokens {
@@ -204,7 +198,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        // Codex uses form-urlencoded, matching the spec
         let params: [(String, String)] = [
             ("grant_type", "authorization_code"),
             ("code", code),
@@ -237,7 +230,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         let refreshToken = json["refresh_token"] as? String ?? ""
         let expiresIn = json["expires_in"] as? TimeInterval ?? 3600
         let idToken = json["id_token"] as? String
-
         let email = Self.extractEmailFromJWT(accessToken)
 
         print("📋 Token response scopes: \(json["scope"] ?? "none")")
@@ -259,7 +251,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        // Codex refresh: form-urlencoded, NOT JSON
         let params: [(String, String)] = [
             ("grant_type", "refresh_token"),
             ("refresh_token", refreshToken),
@@ -301,7 +292,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     // MARK: - PKCE Helpers (matching Codex's pkce.rs exactly)
 
     /// Generate PKCE code verifier: URL-safe base64 no-pad of 64 random bytes
-    /// (matching Codex: base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes))
     private static func generateCodeVerifier() -> String {
         var buffer = [UInt8](repeating: 0, count: 64)
         _ = SecRandomCopyBytes(kSecRandomDefault, 64, &buffer)
@@ -312,7 +302,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     }
 
     /// Generate PKCE code challenge: URL-safe base64 no-pad of SHA256(verifier)
-    /// (matching Codex: BASE64URL-ENCODE(SHA256(verifier)) without padding)
     private static func generateCodeChallenge(from verifier: String) -> String {
         let data = verifier.data(using: .utf8)!
         let hashed = SHA256.hash(data: data)
@@ -323,7 +312,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     }
 
     /// Generate random state: URL-safe base64 no-pad of 32 random bytes
-    /// (matching Codex: generate_state() in server.rs)
     private static func randomState() -> String {
         var bytes = [UInt8](repeating: 0, count: 32)
         _ = SecRandomCopyBytes(kSecRandomDefault, 32, &bytes)
@@ -351,25 +339,6 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         }
 
         return json["email"] as? String ?? json["name"] as? String
-    }
-
-    static func extractExpiryFromJWT(_ jwt: String) -> Date? {
-        let parts = jwt.split(separator: ".")
-        guard parts.count >= 2 else { return nil }
-
-        var payload = String(parts[1])
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-
-        while payload.count % 4 != 0 { payload += "=" }
-
-        guard let data = Data(base64Encoded: payload),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let exp = json["exp"] as? TimeInterval else {
-            return nil
-        }
-
-        return Date(timeIntervalSince1970: exp)
     }
 }
 

@@ -187,7 +187,7 @@ final class OAuthCallbackServer {
                 self.sendResponse(clientSocket, html: """
                 <html><body style="font-family:system-ui;text-align:center;padding-top:15%">
                 <h2>✅ Authenticated!</h2>
-                <p>You can close this tab and go back to Flow.</p>
+                <p>You can close this tab and go back to ChatFlow.</p>
                 <script>setTimeout(() => window.close(), 1500)</script>
                 </body></html>
                 """)

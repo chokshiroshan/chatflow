@@ -226,9 +226,9 @@ struct MenuView: View {
                 openWindow(id: "onboarding")
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "waveform.badge.magnifyingglass")
+                    Image(systemName: "questionmark.circle")
                         .font(.system(size: 10))
-                    Text("Onboarding")
+                    Text("Help")
                         .font(.system(size: 11))
                 }
                 .foregroundColor(FlowColors.textSecondary)

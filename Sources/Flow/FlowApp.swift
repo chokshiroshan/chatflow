@@ -18,14 +18,14 @@ struct FlowApp: App {
             SettingsView(coordinator: coordinator)
         }
 
-        // Onboarding (shown on first launch or missing permissions)
-        Window("Welcome to Flow", id: "onboarding") {
-            OnboardingView(onComplete: { coordinator.completeOnboarding() })
+        // ChatFlow landing (matches web design)
+        Window("ChatFlow", id: "chatflow") {
+            ChatFlowLandingView(onStart: { coordinator.completeOnboarding() })
         }
         .windowStyle(.titleBar)
         .windowResizability(.contentSize)
         .defaultPosition(.center)
-        .defaultSize(width: 420, height: 440)
+        .defaultSize(width: 520, height: 480)
     }
 }
 

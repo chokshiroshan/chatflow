@@ -2,17 +2,12 @@ import Foundation
 
 /// WebSocket client for OpenAI's Realtime API.
 ///
-/// Two paths depending on auth mode:
-/// - **ChatGPT subscription** → wss://chatgpt.com/backend-api/codex/realtime
-///   (matching Codex CLI: base_url = chatgpt.com/backend-api/codex for ChatGPT auth)
-/// - **API key** → wss://api.openai.com/v1/realtime
+/// Matches Codex CLI v2 protocol:
+/// - Transcription mode: dedicated STT with gpt-4o-mini-transcribe
+/// - Voice chat mode: conversational with server VAD
+/// - Audio: PCM16 24kHz mono
 ///
-/// Handles the full lifecycle:
-/// 1. Connect with Bearer token
-/// 2. Configure session (text-only for dictation, text+audio for voice chat)
-/// 3. Stream audio via input_audio_buffer.append
-/// 4. Receive transcripts and/or audio responses
-/// 5. Handle turn detection and session management
+/// Auth: Bearer token from ChatGPT OAuth (subscription) or API key.
 final class RealtimeClient {
     // MARK: - Callbacks
 
@@ -31,21 +26,15 @@ final class RealtimeClient {
     private var webSocket: URLSessionWebSocketTask?
     private(set) var isConnected = false
     private var partialText = ""
-    private var receivingQueue = DispatchQueue(label: "ai.flow.realtime.recv", qos: .userInteractive)
 
     // MARK: - Connection
 
-    /// Connect to the Realtime API.
-    /// - Parameters:
-    ///   - accessToken: Bearer token (from ChatGPT OAuth or API key)
-    ///   - model: Realtime model name (default: gpt-realtime matching Codex)
-    ///   - mode: Dictation (text-only) or VoiceChat (audio+text)
-    ///   - backendMode: If true, use chatgpt.com backend (subscription-billed)
+    enum ConnectionMode {
+        case dictation(language: String)
+        case voiceChat(voice: String)
+    }
+
     func connect(accessToken: String, model: String = "gpt-realtime", mode: ConnectionMode, backendMode: Bool = false) async throws {
-        // Use api.openai.com for both subscription tokens and API keys.
-        // chatgpt.com/backend-api/codex requires Cloudflare cookie handling
-        // (Codex CLI uses reqwest with cookie stores — not available in URLSession).
-        // The subscription access token works on api.openai.com too.
         let urlString = "wss://api.openai.com/v1/realtime?model=\(model)"
 
         guard let url = URL(string: urlString) else {
@@ -63,13 +52,12 @@ final class RealtimeClient {
         self.webSocket = ws
         ws.resume()
 
-        // Wait briefly for the handshake
         try await Task.sleep(for: .milliseconds(300))
 
         isConnected = true
         print("🔌 Connected to Realtime API (\(model))")
 
-        // Configure session based on mode
+        // Configure session
         try await configureSession(mode: mode)
 
         // Start receiving
@@ -78,7 +66,6 @@ final class RealtimeClient {
         onConnected?()
     }
 
-    /// Disconnect from the API.
     func disconnect() {
         isConnected = false
         webSocket?.cancel(with: .normalClosure, reason: nil)
@@ -89,14 +76,6 @@ final class RealtimeClient {
     }
 
     // MARK: - Session Configuration
-
-    enum ConnectionMode {
-        case dictation(language: String)
-        case voiceChat(voice: String)
-    }
-
-    private func configureSession(mode: ConnectionMode) async throws {
-        let sessionConfig: String
 
     private func configureSession(mode: ConnectionMode) async throws {
         let sessionConfig: String
@@ -139,7 +118,7 @@ final class RealtimeClient {
                 "type": "session.update",
                 "session": {
                     "modalities": ["text", "audio"],
-                    "instructions": "You are a helpful, conversational AI assistant. Be concise and natural. You're having a voice conversation — keep responses short and spoken-style, like talking to a friend. Don't use markdown or bullet points.",
+                    "instructions": "You are a helpful, conversational AI assistant. Be concise and natural.",
                     "voice": "\(voice)",
                     "input_audio_format": "pcm16",
                     "output_audio_format": "pcm16",
@@ -163,7 +142,6 @@ final class RealtimeClient {
 
     // MARK: - Audio Input
 
-    /// Send a chunk of PCM16 audio data.
     func sendAudio(_ pcm16Data: Data) {
         guard isConnected else { return }
         let base64 = pcm16Data.base64EncodedString()
@@ -177,7 +155,6 @@ final class RealtimeClient {
         }
     }
 
-    /// Signal end of speech — commit buffer and request response.
     func commitAndRespond() {
         guard isConnected else { return }
         try? send("""
@@ -188,7 +165,6 @@ final class RealtimeClient {
         """)
     }
 
-    /// Cancel any in-progress response (for interruptions in voice chat).
     func cancelResponse() {
         guard isConnected else { return }
         try? send("""
@@ -246,7 +222,7 @@ final class RealtimeClient {
         case "session.updated":
             print("  ✅ Session configured")
 
-        // Input audio transcription (from Whisper server-side)
+        // Input audio transcription (Whisper/gpt-4o-mini-transcribe server-side)
         case "conversation.item.input_audio_transcription.delta":
             if let delta = obj["delta"] as? String {
                 partialText += delta
@@ -259,7 +235,7 @@ final class RealtimeClient {
                 onFinalTranscript?(t)
             }
 
-        // Response text (model output)
+        // Response text (model output — fallback)
         case "response.text.delta":
             if let delta = obj["delta"] as? String {
                 partialText += delta
@@ -280,9 +256,9 @@ final class RealtimeClient {
             }
 
         case "response.audio.done":
-            break // Audio stream complete
+            break
 
-        // Rate limits — useful for debugging subscription limits
+        // Rate limits
         case "rate_limits.updated":
             print("  📊 Rate limits raw: \(json)")
 
@@ -291,7 +267,7 @@ final class RealtimeClient {
             onResponseComplete?()
             partialText = ""
 
-        // Speech detection (voice chat mode)
+        // Speech detection
         case "input_audio_buffer.speech_started":
             onSpeechStarted?()
 
@@ -314,7 +290,7 @@ final class RealtimeClient {
 
         default:
             if !type.hasPrefix("session.") && !type.hasPrefix("input_audio_buffer.speech") {
-                print("  📨 Unhandled event: \(type)")
+                print("  📨 Event: \(type)")
             }
         }
     }

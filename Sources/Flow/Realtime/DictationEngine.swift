@@ -86,9 +86,17 @@ final class DictationEngine {
     // MARK: - Dictation Lifecycle
 
     private func startDictation() async {
-        guard !isConnected || !audioCapture.isRunning else { return }
+        guard !audioCapture.isRunning else {
+            print("⚠️ Already recording — ignoring double-start")
+            return
+        }
         onPartialTranscript?("")
         chunkCount = 0
+
+        // If stuck in connected state from a missed key-up, clean up first
+        if isConnected && !isPreConnected {
+            cleanup()
+        }
 
         // If not pre-connected, connect now (shows "connecting" state)
         if !isPreConnected {

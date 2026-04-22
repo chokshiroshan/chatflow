@@ -231,11 +231,15 @@ final class HotkeyManager {
         case .hold:
             if down && !keyIsDown {
                 keyIsDown = true
-                if !isRecording {
-                    isRecording = true
-                    print("⌨️ Hotkey DOWN — starting dictation")
-                    onStart?()
+                if isRecording {
+                    // Stuck state — previous key-up was missed, stop first
+                    print("⌨️ Hotkey DOWN while still recording — forcing stop first")
+                    isRecording = false
+                    onStop?()
                 }
+                isRecording = true
+                print("⌨️ Hotkey DOWN — starting dictation")
+                onStart?()
             } else if !down && keyIsDown {
                 keyIsDown = false
                 if isRecording {

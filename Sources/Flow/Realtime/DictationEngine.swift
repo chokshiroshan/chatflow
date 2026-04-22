@@ -3,12 +3,12 @@ import Foundation
 /// Dictation mode engine using dual-path Realtime API.
 ///
 /// Flow:
-/// 1. Hotkey pressed → connect to Realtime API + start audio capture
-/// 2. Audio chunks streamed to API in real-time
-/// 3. Partial transcripts shown as visual feedback
+/// 1. On activate: pre-connect WebSocket + warm up audio
+/// 2. Hotkey pressed → start audio capture (instant, WebSocket already connected)
+/// 3. Audio chunks streamed to API in real-time
 /// 4. Hotkey released → commit audio → get final transcript
 /// 5. Inject final text into focused text field
-/// 6. Disconnect
+/// 6. Keep WebSocket alive for next session
 ///
 /// Connection path: ChatGPT backend (free with sub) → Developer API (fallback) → Groq (last resort)
 @MainActor
@@ -24,6 +24,8 @@ final class DictationEngine {
     private var groqClient: GroqWhisperClient?
     private var isConnected = false
     private var fallbackMode = false
+    private var isPreConnected = false
+    private var chunkCount = 0
 
     init(auth: ChatGPTAuth, config: FlowConfig) {
         self.auth = auth
@@ -38,6 +40,11 @@ final class DictationEngine {
         hotkey.start()
         onStateChanged?(.idle)
         print("🎤 Dictation active. Press \(config.hotkey) to start.")
+
+        // Pre-connect WebSocket in background so first dictation is instant
+        Task {
+            await preConnect()
+        }
     }
 
     func deactivate() {
@@ -48,67 +55,89 @@ final class DictationEngine {
         groqClient?.reset()
         groqClient = nil
         isConnected = false
+        isPreConnected = false
+    }
+
+    // MARK: - Pre-connection
+
+    private func preConnect() async {
+        guard !isPreConnected else { return }
+
+        do {
+            guard let token = await auth.ensureValidToken() else {
+                print("⚠️ No valid token for pre-connect")
+                return
+            }
+            _ = token
+
+            let dualClient = DualPathRealtimeClient(auth: auth, config: config)
+            wireClientCallbacks(dualClient)
+
+            try await dualClient.connect(mode: .dictation(language: config.language))
+            self.client = dualClient
+            isPreConnected = true
+            isConnected = true
+            print("⚡️ Pre-connected to Realtime API — ready for instant dictation")
+        } catch {
+            print("⚠️ Pre-connect failed: \(error) — will connect on first hotkey press")
+        }
     }
 
     // MARK: - Dictation Lifecycle
 
     private func startDictation() async {
-        guard !isConnected else { return }
-        onStateChanged?(.connecting)
+        guard !isConnected || !audioCapture.isRunning else { return }
         onPartialTranscript?("")
+        chunkCount = 0
 
-        print("🎤 Starting dictation...")
+        // If not pre-connected, connect now (shows "connecting" state)
+        if !isPreConnected {
+            onStateChanged?(.connecting)
+            print("🎤 Starting dictation (connecting...)")
 
-        do {
-            // Ensure we have a valid token (auto-refreshes if expired)
-            guard let token = await auth.ensureValidToken() else {
-                print("⚠️ No valid token — please sign in again")
-                onStateChanged?(.error("Session expired. Please sign in again."))
+            do {
+                guard let token = await auth.ensureValidToken() else {
+                    print("⚠️ No valid token — please sign in again")
+                    onStateChanged?(.error("Session expired. Please sign in again."))
+                    return
+                }
+                _ = token
+
+                let dualClient = DualPathRealtimeClient(auth: auth, config: config)
+                wireClientCallbacks(dualClient)
+
+                try await dualClient.connect(mode: .dictation(language: config.language))
+                self.client = dualClient
+                isConnected = true
+                isPreConnected = true
+            } catch {
+                print("⚠️ Connect failed: \(error)")
+                await tryGroqFallback()
                 return
             }
-            _ = token // Token is now set on auth.accessToken
+        } else {
+            print("🎤 Starting dictation (instant — already connected)")
+        }
 
-            let dualClient = DualPathRealtimeClient(auth: auth, config: config)
-            self.client = dualClient
+        // Start audio capture
+        audioCapture.onAudioData = { [weak self] data in
+            guard let self, !self.fallbackMode else { return }
+            self.chunkCount += 1
+            if let groq = self.groqClient {
+                groq.appendAudio(data)
+            } else {
+                self.client?.sendAudio(data)
+            }
+        }
 
-            // Wire callbacks
-            dualClient.onPartialTranscript = { [weak self] text in
-                Task { @MainActor in self?.onPartialTranscript?(text) }
-            }
-            dualClient.onFinalTranscript = { [weak self] text in
-                Task { @MainActor in self?.handleFinalTranscript(text) }
-            }
-            dualClient.onBackendPathUsed = { backend in
-                print(backend ? "💰 Free path (ChatGPT sub)" : "💳 Developer API path")
-            }
-            dualClient.onError = { [weak self] err in
-                Task { @MainActor in
-                    print("⚠️ Realtime error: \(err)")
-                    // Try Groq fallback
-                    Task { await self?.tryGroqFallback() }
-                }
-            }
-
-            // Connect
-            try await dualClient.connect(mode: .dictation(language: config.language))
-            isConnected = true
-
-            // Start audio capture
-            audioCapture.onAudioData = { [weak self] data in
-                guard let self, !self.fallbackMode else { return }
-                if let groq = self.groqClient {
-                    groq.appendAudio(data)
-                } else {
-                    dualClient.sendAudio(data)
-                }
-            }
-            try await audioCapture.start()
+        do {
+            try audioCapture.start()
             onStateChanged?(.recording)
-            print("🎙️ Audio capture started — streaming to Realtime API")
-
+            print("🎙️ Recording started (\(chunkCount) chunks will stream)")
         } catch {
-            print("⚠️ Connect failed: \(error)")
-            await tryGroqFallback()
+            print("⚠️ Audio capture failed: \(error)")
+            onStateChanged?(.error("Audio capture failed: \(error.localizedDescription)"))
+            cleanup()
         }
     }
 
@@ -116,33 +145,52 @@ final class DictationEngine {
 
     private func finishDictation() async {
         guard isConnected || fallbackMode else { return }
-        onStateChanged?(.processing)
 
+        // Stop audio capture first
         audioCapture.stop()
-        print("🛑 Audio capture stopped")
+        let chunksSent = chunkCount
+        print("🛑 Audio stopped (\(chunksSent) chunks sent)")
+
+        // Guard: if we sent very few chunks, the buffer might be too small
+        if chunksSent == 0 {
+            print("⚠️ No audio chunks sent — skipping commit")
+            cleanup()
+            onStateChanged?(.idle)
+            // Re-connect for next session since we can't reuse after skipping
+            isPreConnected = false
+            Task { await preConnect() }
+            return
+        }
+
+        onStateChanged?(.processing)
 
         if fallbackMode, let groq = groqClient {
             await groq.transcribe(language: config.language)
             return
         }
 
-        // Realtime path: commit buffer and request response
+        // Give WebSocket a moment to flush pending audio chunks
+        try? await Task.sleep(for: .milliseconds(200))
+
+        // Commit buffer and request response
         print("📤 Committing audio buffer and requesting transcript...")
         client?.commitAndRespond()
 
         // Wait for final transcript (max 10s)
-        // handleFinalTranscript will set transcriptReceived = true and call cleanup()
         transcriptReceived = false
-        for i in 1...100 {
+        for _ in 1...100 {
             if transcriptReceived { return }
             try? await Task.sleep(for: .milliseconds(100))
         }
 
-        // Timed out — no transcript
+        // Timed out
         print("⏰ Timed out waiting for transcript (10s)")
         if isConnected || fallbackMode {
             cleanup()
             onStateChanged?(.idle)
+            // Re-connect for next session
+            isPreConnected = false
+            Task { await preConnect() }
         }
     }
 
@@ -156,6 +204,10 @@ final class DictationEngine {
         print(success ? "✅ Text injected" : "❌ Text injection failed")
         onStateChanged?(success ? .idle : .error("Text injection failed"))
         cleanup()
+
+        // Re-connect for next session
+        isPreConnected = false
+        Task { await preConnect() }
     }
 
     // MARK: - Groq Fallback
@@ -184,7 +236,6 @@ final class DictationEngine {
         }
         self.groqClient = groq
 
-        // Start capturing again if needed
         if !audioCapture.isRunning {
             audioCapture.onAudioData = { [weak self] data in
                 self?.groqClient?.appendAudio(data)
@@ -201,6 +252,26 @@ final class DictationEngine {
         }
     }
 
+    // MARK: - Wiring
+
+    private func wireClientCallbacks(_ dualClient: DualPathRealtimeClient) {
+        dualClient.onPartialTranscript = { [weak self] text in
+            Task { @MainActor in self?.onPartialTranscript?(text) }
+        }
+        dualClient.onFinalTranscript = { [weak self] text in
+            Task { @MainActor in self?.handleFinalTranscript(text) }
+        }
+        dualClient.onBackendPathUsed = { backend in
+            print(backend ? "💰 Free path (ChatGPT sub)" : "💳 Developer API path")
+        }
+        dualClient.onError = { [weak self] err in
+            Task { @MainActor in
+                print("⚠️ Realtime error: \(err)")
+                Task { await self?.tryGroqFallback() }
+            }
+        }
+    }
+
     private func cleanup() {
         client?.disconnect()
         client = nil
@@ -208,5 +279,6 @@ final class DictationEngine {
         groqClient = nil
         isConnected = false
         fallbackMode = false
+        chunkCount = 0
     }
 }

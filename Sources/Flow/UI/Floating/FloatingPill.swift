@@ -25,7 +25,6 @@ struct FloatingPill: View {
     @State private var opacity: Double = 0
     @State private var scale: CGFloat = 0.8
     @State private var waveOffset: CGFloat = 0
-    @State private var glowOpacity: Double = 0
     @State private var dotScales: [CGFloat] = Array(repeating: 0.6, count: 5)
     @State private var timer = Timer.publish(every: 0.08, on: .main, in: .common).autoconnect()
 
@@ -69,21 +68,8 @@ struct FloatingPill: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)  // Fill panel, center content
         .background(pillBackground)
         .clipShape(Capsule())
-        .overlay(
-            Capsule()
-                .strokeBorder(
-                    LinearGradient(
-                        colors: borderColor,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.5
-                )
-        )
-        .shadow(color: Color.black.opacity(0.25), radius: 12, y: 4)
         .gesture(
             DragGesture()
                 .onChanged { value in
@@ -120,16 +106,6 @@ struct FloatingPill: View {
         case .speaking: return Color(red: 0.35, green: 0.85, blue: 0.65)
         case .error: return Color(red: 1.0, green: 0.35, blue: 0.35)
         default: return .gray
-        }
-    }
-
-    private var glowColor: Color {
-        switch coordinator.state {
-        case .recording: return Color(red: 1.0, green: 0.3, blue: 0.3)
-        case .connecting: return Color(red: 1.0, green: 0.7, blue: 0.2)
-        case .processing: return Color(red: 0.3, green: 0.6, blue: 1.0)
-        case .injecting: return Color(red: 0.2, green: 0.8, blue: 0.4)
-        default: return .clear
         }
     }
 
@@ -216,47 +192,13 @@ struct FloatingPill: View {
 
     @ViewBuilder
     private var pillBackground: some View {
-        ZStack {
-            // Dark base
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.black.opacity(0.75))
-
-            // Frosted glass layer
-            RoundedRectangle(cornerRadius: 24)
-                .fill(.ultraThinMaterial)
-                .opacity(0.4)
-
-            // Subtle inner light
-            RoundedRectangle(cornerRadius: 24)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            .white.opacity(0.08),
-                            .white.opacity(0.02),
-                            .clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-        }
-    }
-
-    private var borderColor: [Color] {
-        switch coordinator.state {
-        case .recording: return [.red.opacity(0.3), .red.opacity(0.1)]
-        case .connecting: return [.orange.opacity(0.2), .orange.opacity(0.05)]
-        case .processing: return [.blue.opacity(0.2), .blue.opacity(0.05)]
-        case .injecting: return [.green.opacity(0.3), .green.opacity(0.1)]
-        case .error: return [.red.opacity(0.2), .red.opacity(0.05)]
-        default: return [.white.opacity(0.1), .white.opacity(0.03)]
-        }
+        Capsule()
+            .fill(.ultraThinMaterial)
     }
 
     // MARK: - Animations
 
     private func appearAnimation() {
-        glowOpacity = 1
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             opacity = 1
             scale = 1.0
@@ -264,7 +206,6 @@ struct FloatingPill: View {
     }
 
     private func disappearAnimation() {
-        glowOpacity = 0
         withAnimation(.easeOut(duration: 0.2)) {
             opacity = 0
             scale = 0.9
@@ -323,8 +264,8 @@ final class FloatingPillWindowController {
 
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
-        let width: CGFloat = 240   // Compact — just icon + short text
-        let height: CGFloat = 48   // Enough room for waveform + text without clipping
+        let width: CGFloat = 240
+        let height: CGFloat = 56   // Extra padding so capsule never clips
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12

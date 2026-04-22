@@ -42,17 +42,11 @@ final class RealtimeClient {
     ///   - mode: Dictation (text-only) or VoiceChat (audio+text)
     ///   - backendMode: If true, use chatgpt.com backend (subscription-billed)
     func connect(accessToken: String, model: String = "gpt-realtime", mode: ConnectionMode, backendMode: Bool = false) async throws {
-        // Choose endpoint based on auth mode:
-        // - ChatGPT subscription auth → chatgpt.com/backend-api/codex (matching Codex CLI)
-        // - API key auth → api.openai.com/v1
-        let baseURL: String
-        if backendMode {
-            baseURL = "wss://chatgpt.com/backend-api/codex"
-        } else {
-            baseURL = "wss://api.openai.com/v1"
-        }
-
-        let urlString = "\(baseURL)/realtime?model=\(model)"
+        // Use api.openai.com for both subscription tokens and API keys.
+        // chatgpt.com/backend-api/codex requires Cloudflare cookie handling
+        // (Codex CLI uses reqwest with cookie stores — not available in URLSession).
+        // The subscription access token works on api.openai.com too.
+        let urlString = "wss://api.openai.com/v1/realtime?model=\(model)"
 
         guard let url = URL(string: urlString) else {
             throw RealtimeError.invalidURL
@@ -60,10 +54,7 @@ final class RealtimeClient {
 
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        if !backendMode {
-            // OpenAI-Beta header needed for api.openai.com path
-            request.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
-        }
+        request.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
         print("🔌 Connecting to Realtime API: \(urlString) (backend: \(backendMode))")
 

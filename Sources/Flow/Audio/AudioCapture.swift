@@ -3,8 +3,8 @@ import AVFoundation
 
 /// Captures microphone audio via AVAudioEngine, outputs 24kHz mono PCM16.
 ///
-/// Uses the mainMixerNode tap instead of inputNode tap — more reliable on macOS.
-/// The mixer receives data from the input node via the engine's graph.
+/// Uses the inputNode tap (direct capture) for maximum compatibility on macOS.
+/// Resamples from hardware rate (typically 48kHz) to 24kHz PCM16 for Realtime API.
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var converter: AVAudioConverter?
@@ -44,46 +44,38 @@ final class AudioCapture {
         self.engine = engine
 
         let inputNode = engine.inputNode
-        let mixer = engine.mainMixerNode
         let hardwareFormat = inputNode.outputFormat(forBus: 0)
-        
+
         print("🎤 Input format: \(hardwareFormat.sampleRate)Hz, \(hardwareFormat.channelCount) channels, \(hardwareFormat.commonFormat)")
-        
+
         if hardwareFormat.sampleRate == 0 {
             print("❌ No audio input device detected!")
             throw AudioError.noInputDevice
         }
 
-        // Mute the mixer so mic audio doesn't play through speakers
-        mixer.outputVolume = 0
-
         let targetFormat = Self.targetFormat
 
-        // Create converter from mixer format (same as hardware) to target format
-        let mixerFormat = mixer.outputFormat(forBus: 0)
-        guard let newConverter = AVAudioConverter(from: mixerFormat, to: targetFormat) else {
+        // Create converter from hardware format to target format
+        guard let newConverter = AVAudioConverter(from: hardwareFormat, to: targetFormat) else {
             throw AudioError.unsupportedFormat
         }
         self.converter = newConverter
 
-        // Start engine first
-        try engine.start()
-        print("🎙️ Engine started, input running: \(inputNode.inputFormat(forBus: 0).sampleRate)Hz")
-
-        // Install tap on mainMixerNode (not inputNode) — this is more reliable on macOS
-        // The mixer receives the input audio through the engine's internal graph
-        mixer.installTap(onBus: 0, bufferSize: 4096, format: mixerFormat) { [weak self] buffer, _ in
-            self?.processBuffer(buffer, sourceFormat: mixerFormat)
+        // Install tap directly on inputNode using its OWN output format (no format mismatch)
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: hardwareFormat) { [weak self] buffer, _ in
+            self?.processBuffer(buffer, sourceFormat: hardwareFormat)
         }
-        
-        print("🎙️ Tap installed on mainMixerNode (\(Int(mixerFormat.sampleRate))Hz, \(mixerFormat.channelCount)ch)")
+
+        // Start engine
+        try engine.start()
+        print("🎙️ Engine started, capturing at \(Int(hardwareFormat.sampleRate))Hz → converting to 24kHz PCM16")
     }
 
     /// Stop capturing audio.
     func stop() {
         print("🛑 Audio capture stopped. Sent \(chunkCount) chunks total.")
         chunkCount = 0
-        engine?.mainMixerNode.removeTap(onBus: 0)
+        engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()
         engine = nil
         converter = nil

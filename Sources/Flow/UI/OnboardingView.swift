@@ -141,36 +141,35 @@ private struct OnboardChatGPTStep: View {
 
             // Green hero banner
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: 16) {
-                    // ChatGPT icon
+                HStack(alignment: .top, spacing: 18) {
+                    // OpenAI logo
                     ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: 54, height: 54)
-                            .background(.ultraThinMaterial)
-                        Image(systemName: "bubble.left.and.bubble.right.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.white)
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.white.opacity(0.18))
+                            .frame(width: 56, height: 56)
+                        OpenAILogo(color: .white, lineWidth: 2.2)
+                            .frame(width: 30, height: 30)
                     }
 
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Use your ChatGPT plan")
                             .font(.system(size: 20, weight: .heavy))
                             .foregroundColor(.white)
                         Text("ChatFlow uses the Realtime API from your existing OpenAI account — **even the free tier**. No separate subscription, ever.")
-                            .font(.system(size: 15))
-                            .foregroundColor(.white.opacity(0.88))
-                            .lineSpacing(2)
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.9))
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
-                Spacer().frame(height: 18)
+                Spacer().frame(height: 20)
 
                 // Free badge
                 HStack(spacing: 7) {
                     Circle().fill(Color(red: 0.64, green: 1.0, blue: 0.87)).frame(width: 8, height: 8)
                     Text("Free ChatGPT account works · No credit card needed")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.white)
                 }
                 .padding(.horizontal, 14)
@@ -178,7 +177,7 @@ private struct OnboardChatGPTStep: View {
                 .background(Color.white.opacity(0.18))
                 .cornerRadius(12)
             }
-            .padding(28)
+            .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 LinearGradient(
@@ -204,50 +203,27 @@ private struct OnboardChatGPTStep: View {
 
             Spacer()
 
-            // Buttons
-            HStack {
-                Button("Back", action: onBack)
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.black.opacity(0.6))
-
-                Spacer()
-
+            OnboardingNavBar(onBack: onBack) {
                 if connected {
-                    Button(action: onNext) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark")
-                            Text("Connected — Continue")
-                        }
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 22)
-                        .padding(.vertical, 9)
-                        .background(Color(red: 0.05, green: 0.62, blue: 0.44))
-                        .cornerRadius(10)
-                        .shadow(color: Color(red: 0.05, green: 0.62, blue: 0.44).opacity(0.4), radius: 8, x: 0, y: 2)
-                    }
-                    .buttonStyle(.plain)
+                    PrimaryActionButton(
+                        title: "Connected — Continue",
+                        icon: "checkmark",
+                        color: Color(red: 0.05, green: 0.62, blue: 0.44),
+                        action: onNext
+                    )
                 } else {
-                    Button(action: handleConnect) {
-                        HStack(spacing: 6) {
-                            if loading { ProgressControl() }
-                            Text(loading ? "Connecting…" : "Sign in with ChatGPT")
-                        }
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 22)
-                        .padding(.vertical, 9)
-                        .background(loading ? Color.gray : Color(red: 0.05, green: 0.62, blue: 0.44))
-                        .cornerRadius(10)
-                        .shadow(color: Color(red: 0.05, green: 0.62, blue: 0.44).opacity(0.4), radius: 8, x: 0, y: 2)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(loading)
+                    PrimaryActionButton(
+                        title: loading ? "Connecting…" : "Sign in with ChatGPT",
+                        showsProgress: loading,
+                        color: Color(red: 0.05, green: 0.62, blue: 0.44),
+                        disabled: loading,
+                        action: handleConnect
+                    )
                 }
             }
         }
-        .padding(.horizontal, 56)
-        .padding(.bottom, 10)
+        .padding(.horizontal, 40)
+        .padding(.bottom, 8)
         .onAppear {
             if case .signedIn = coordinator.authState { connected = true }
         }
@@ -362,24 +338,25 @@ private struct OnboardMicStep: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
 
-            Spacer().frame(height: 36)
+            Spacer()
 
-            // Buttons
-            HStack(spacing: 10) {
-                Button("Back", action: onBack)
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.black.opacity(0.6))
-
+            OnboardingNavBar(onBack: onBack) {
                 if granted {
-                    OnboardingButton(title: "Continue", action: onNext)
+                    PrimaryActionButton(title: "Continue", action: onNext)
                 } else {
-                    OnboardingButton(title: requesting ? "Requesting…" : "Allow Microphone", action: requestMic)
-                        .disabled(requesting)
+                    PrimaryActionButton(
+                        title: requesting ? "Requesting…" : "Allow Microphone",
+                        showsProgress: requesting,
+                        disabled: requesting,
+                        action: requestMic
+                    )
                 }
             }
 
             Spacer()
         }
+        .padding(.horizontal, 40)
+        .padding(.bottom, 8)
     }
 
     private func requestMic() {
@@ -466,22 +443,21 @@ private struct OnboardShortcutStep: View {
 
             Spacer().frame(height: 32)
 
-            HStack(spacing: 10) {
-                Button("Back", action: onBack)
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.black.opacity(0.6))
-                OnboardingButton(title: "Set Shortcut", action: {
+            OnboardingNavBar(onBack: onBack) {
+                PrimaryActionButton(title: "Set Shortcut") {
                     let hotkeyString = selectedShortcut.lowercased()
                         .replacingOccurrences(of: " ", with: "+")
                         .replacingOccurrences(of: "⌥+", with: "option+")
                         .replacingOccurrences(of: "⌘", with: "cmd")
                     coordinator.updateHotkey(hotkeyString)
                     onNext()
-                })
+                }
             }
 
             Spacer()
         }
+        .padding(.horizontal, 40)
+        .padding(.bottom, 8)
     }
 }
 
@@ -492,13 +468,19 @@ private struct OnboardDoneStep: View {
     let onFinish: () -> Void
 
     private var hotkeyDisplay: String {
-        let h = coordinator.config.hotkey
-        return h
-            .replacingOccurrences(of: "ctrl", with: "Ctrl")
-            .replacingOccurrences(of: "option", with: "⌥")
-            .replacingOccurrences(of: "cmd", with: "⌘")
-            .replacingOccurrences(of: "shift", with: "⇧")
-            .replacingOccurrences(of: "+", with: " ")
+        coordinator.config.hotkey
+            .split(separator: "+")
+            .map { part -> String in
+                switch part.lowercased() {
+                case "ctrl": return "Ctrl"
+                case "option", "alt": return "⌥"
+                case "cmd", "command": return "⌘"
+                case "shift": return "⇧"
+                case "space": return "Space"
+                default: return part.prefix(1).uppercased() + part.dropFirst()
+                }
+            }
+            .joined(separator: "+")
     }
 
     private let tips: [(String, String, String)] = [
@@ -594,24 +576,133 @@ private struct OnboardDoneStep: View {
 
 // MARK: - Shared Components
 
-struct OnboardingButton: View {
+// MARK: Consistent Navigation Bar
+
+/// Standardized back/forward nav bar for onboarding steps.
+/// Back button on the left, primary action on the right.
+struct OnboardingNavBar<Primary: View>: View {
+    let onBack: () -> Void
+    @ViewBuilder let primary: Primary
+
+    var body: some View {
+        HStack {
+            Button(action: onBack) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Back")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundColor(.black.opacity(0.5))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.black.opacity(0.04))
+                )
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            primary
+        }
+    }
+}
+
+// MARK: Primary Action Button
+
+/// Consistent primary action button used across onboarding.
+struct PrimaryActionButton: View {
     let title: String
+    var icon: String? = nil
+    var color: Color = Color(red: 0.0, green: 0.48, blue: 1.0)
+    var showsProgress: Bool = false
+    var disabled: Bool = false
     let action: () -> Void
-    var disabled = false
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 22)
-                .padding(.vertical, 9)
-                .background(disabled ? Color.gray : Color(red: 0.0, green: 0.48, blue: 1.0))
-                .cornerRadius(10)
-                .shadow(color: Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.35), radius: 8, x: 0, y: 2)
+            HStack(spacing: 6) {
+                if showsProgress {
+                    ProgressView()
+                        .controlSize(.small)
+                } else if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 9)
+            .background(disabled ? Color.gray.opacity(0.6) : color)
+            .cornerRadius(10)
+            .shadow(color: (disabled ? Color.gray : color).opacity(0.35), radius: 8, x: 0, y: 2)
         }
         .buttonStyle(.plain)
         .disabled(disabled)
+    }
+}
+
+// MARK: OpenAI Logo (SVG-style Shape)
+
+/// Draws the OpenAI logo as a SwiftUI Shape.
+/// The classic hexagonal knot / flower pattern.
+struct OpenAILogo: View {
+    var color: Color = .black
+    var lineWidth: CGFloat = 1.8
+
+    var body: some View {
+        Canvas { context, size in
+            let cx = size.width / 2
+            let cy = size.height / 2
+            let r = min(size.width, size.height) * 0.38
+
+            // Draw 6 interlocking loops of the OpenAI knot
+            let angles: [Angle] = [
+                .degrees(0), .degrees(60), .degrees(120),
+                .degrees(180), .degrees(240), .degrees(300)
+            ]
+
+            var path = Path()
+            for angle in angles {
+                let rad = angle.radians
+                // Each loop is a rounded arc from center outward
+                let ax = cx + r * cos(rad)
+                let ay = cy + r * sin(rad)
+
+                // Draw a small circle at each vertex
+                let loopR = r * 0.42
+                path.addEllipse(in: CGRect(
+                    x: ax - loopR,
+                    y: ay - loopR,
+                    width: loopR * 2,
+                    height: loopR * 2
+                ))
+            }
+
+            // Outer ring
+            path.addEllipse(in: CGRect(
+                x: cx - r * 0.68,
+                y: cy - r * 0.68,
+                width: r * 1.36,
+                height: r * 1.36
+            ))
+
+            context.stroke(path, with: .color(color), lineWidth: lineWidth)
+
+            // Center hub
+            var hub = Path()
+            hub.addEllipse(in: CGRect(
+                x: cx - r * 0.15,
+                y: cy - r * 0.15,
+                width: r * 0.3,
+                height: r * 0.3
+            ))
+            context.fill(hub, with: .color(color))
+        }
     }
 }
 

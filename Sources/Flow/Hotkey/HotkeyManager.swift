@@ -153,7 +153,7 @@ final class HotkeyManager {
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
-            options: .listenOnly,
+            options: .defaultTap, // NOT listenOnly — we need to suppress the hotkey event
             eventsOfInterest: eventMask,
             callback: { _, type, event, refcon in
                 guard let refcon else { return Unmanaged.passUnretained(event) }
@@ -259,6 +259,8 @@ final class HotkeyManager {
             }
         }
 
-        return Unmanaged.passUnretained(event)
+        // Swallow the hotkey event so it doesn't pass through to the focused app
+        // (prevents the "toot" system beep in apps like Notes)
+        return nil
     }
 }

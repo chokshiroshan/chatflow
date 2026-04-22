@@ -540,8 +540,8 @@ private struct OnboardDoneStep: View {
 
     private let tips: [(String, String, String)] = [
         ("Hold to record", "Keep the key held while you speak.", "mic.fill"),
+        ("+ Shift = enhanced", "Adds screen context for better accuracy.", "display"),
         ("Works everywhere", "Any text field in any app.", "laptopcomputer.and.iphone"),
-        ("Powered by OpenAI", "Transcribed by GPT-4o-mini in real-time.", "bolt.horizontal.fill"),
     ]
 
     var body: some View {
@@ -569,7 +569,7 @@ private struct OnboardDoneStep: View {
 
             Spacer().frame(height: 10)
 
-            Text("ChatFlow lives in your menu bar.\nHold **\(hotkeyDisplay)** anywhere to start dictating.")
+            Text("ChatFlow lives in your menu bar.\nHold **\(hotkeyDisplay)** anywhere to start dictating.\nAdd **Shift** for screen-aware transcription.")
                 .font(FlowTypography.body)
                 .foregroundColor(FlowColors.textSecondary)
                 .multilineTextAlignment(.center)

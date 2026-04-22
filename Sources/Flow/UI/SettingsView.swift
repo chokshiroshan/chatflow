@@ -187,6 +187,31 @@ struct SettingsView: View {
                 }
                 .padding(.vertical, 13)
             }
+
+            settingsSection("Enhanced Mode") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Add Shift to your shortcut")
+                            .font(FlowTypography.bodyMedium)
+                            .foregroundColor(FlowColors.textPrimary)
+                        Spacer()
+                        Text("Ctrl+Shift+Space")
+                            .font(FlowTypography.caption)
+                            .foregroundColor(FlowColors.accentOrange)
+                    }
+                    .padding(.vertical, 13)
+                    .overlay(alignment: .bottom) {
+                        Divider().overlay(FlowColors.border)
+                    }
+
+                    Text("Captures your screen and sends it to GPT-4o-mini for context. The transcription model then knows what app you're in, what terms are on screen, and can transcribe more accurately.")
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textSecondary)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.vertical, 8)
+                }
+            }
         }
     }
 
@@ -243,7 +268,7 @@ struct SettingsView: View {
                     Text("Your audio stays private")
                         .font(FlowTypography.bodyMedium)
                         .foregroundColor(FlowColors.textPrimary)
-                    Text("Audio is streamed directly to OpenAI's Realtime API and transcribed in real-time. ChatFlow never stores or logs your recordings.")
+                    Text("Audio is streamed directly to OpenAI's Realtime API and transcribed in real-time. ChatFlow never stores or logs your recordings.\n\nEnhanced mode (Shift+shortcut) sends a screenshot to OpenAI for context — this is optional and only activates when you hold Shift.")
                         .font(FlowTypography.caption)
                         .foregroundColor(FlowColors.textSecondary)
                         .lineSpacing(3)

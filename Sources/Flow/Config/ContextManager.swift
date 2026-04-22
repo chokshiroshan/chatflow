@@ -54,7 +54,7 @@ final class ContextManager {
     }
 
     /// Build the full instructions string with context injected.
-    func buildInstructions(basePrompt: String = "Transcribe exactly what was said.") -> String {
+    func buildInstructions(basePrompt: String = "Transcribe exactly what was said.", screenContext: String? = nil) -> String {
         load() // Always reload for latest
 
         var parts = ["\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything. If there is no clear speech, output nothing."]
@@ -68,6 +68,11 @@ final class ContextManager {
         if let app = Self.frontmostApp() {
             parts.append("The user is currently in \(app). Use this to interpret ambiguous words.")
             print("📋 Active app: \(app)")
+        }
+
+        // Add screen context from vision API (enhanced mode)
+        if let screenContext, !screenContext.isEmpty {
+            parts.append("Screen context (what the user sees right now — use this for domain-specific vocabulary and terms):\(screenContext)")
         }
 
         return parts.joined(separator: " ")

@@ -11,6 +11,7 @@ final class AppCoordinator: ObservableObject {
     @Published var showOnboarding: Bool = false
     @Published var permissionsStatus: PermissionsManager.PermissionStatus = PermissionsManager.shared.checkAll()
     @Published var usageDisplay: String = UsageTracker.shared.stats.monthMinutesDisplay
+    @Published var isEnhancedMode: Bool = false  // Screen context mode active
 
     private let auth = ChatGPTAuth.shared
     private var dictationEngine: DictationEngine?
@@ -93,6 +94,10 @@ final class AppCoordinator: ObservableObject {
                 self?.state = newState
                 if newState == .recording {
                     self?.floatingPill.reposition()
+                    self?.isEnhancedMode = engine.isEnhancedMode
+                }
+                if newState == .idle || newState.isError {
+                    self?.isEnhancedMode = false
                 }
             }
         }

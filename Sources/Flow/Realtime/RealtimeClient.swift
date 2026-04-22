@@ -149,7 +149,7 @@ final class RealtimeClient {
 
     // MARK: - Sending
 
-    private func send(_ message: String) throws {
+    func send(_ message: String) throws {
         guard let ws = webSocket else { throw RealtimeError.notConnected }
         ws.send(.string(message)) { error in
             if let error { print("⚠️ WebSocket send: \(error.localizedDescription)") }

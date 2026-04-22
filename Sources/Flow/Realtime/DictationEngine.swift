@@ -24,6 +24,8 @@ final class DictationEngine {
     private var transcriptReceived = false
     private var lastTranscript = ""
     private var isFinishing = false  // Guard against double-finish
+    private(set) var isEnhancedMode = false  // Screen context mode
+    private var screenContextInjected = false  // Whether vision context was applied
 
     init(auth: ChatGPTAuth, config: FlowConfig) {
         self.auth = auth
@@ -131,7 +133,21 @@ final class DictationEngine {
         chunkCount = 0
         transcriptReceived = false
         lastTranscript = ""
+        screenContextInjected = false
         onPartialTranscript?("")
+
+        // Check for enhanced mode (Shift held during hotkey press)
+        isEnhancedMode = hotkey.isEnhancedTrigger
+        if isEnhancedMode {
+            print("📸 Enhanced mode — capturing screen context...")
+            Task {
+                guard let token = await auth.ensureValidToken() else { return }
+                if let screenContext = await ScreenContextExtractor.shared.extractContext(token: token) {
+                    // Inject screen context into the live session
+                    await injectScreenContext(screenContext)
+                }
+            }
+        }
 
         // Wire audio callback — stream chunks to WebSocket
         audioCapture.onAudioData = { [weak self] data in
@@ -207,6 +223,25 @@ final class DictationEngine {
         isRecording = false
         isFinishing = false
         onStateChanged?(.idle)
+    }
+
+    /// Inject screen context into the live Realtime API session.
+    /// This updates instructions mid-recording so the transcription model
+    /// can use what's on screen for better accuracy.
+    @MainActor
+    private func injectScreenContext(_ context: String) {
+        guard isRecording, !screenContextInjected else { return }
+        screenContextInjected = true
+
+        let instructions = ContextManager.shared.buildInstructions(
+            screenContext: context
+        )
+
+        let event = """
+        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(config.language)"}}}
+        """
+        try? client?.send(event)
+        print("📸 Screen context injected into session")
     }
 
     private func handleTranscript(_ text: String) {

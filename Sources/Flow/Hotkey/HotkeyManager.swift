@@ -10,6 +10,9 @@ import CoreGraphics
 final class HotkeyManager {
     var onStart: (@Sendable () -> Void)?
     var onStop: (@Sendable () -> Void)?
+    /// Set to true when the enhanced modifier (Shift) was held alongside the hotkey.
+    /// Check this in your onStart handler to determine the mode.
+    private(set) var isEnhancedTrigger: Bool = false
 
     private let keyCombo: KeyCombo
     private let mode: FlowConfig.HotkeyMode
@@ -231,14 +234,15 @@ final class HotkeyManager {
         case .hold:
             if down && !keyIsDown {
                 keyIsDown = true
+                // Check if Shift is held (enhanced mode) — only if Shift is NOT part of the base combo
+                isEnhancedTrigger = !keyCombo.modifiers.contains(.shift) && event.flags.contains(.maskShift)
                 if isRecording {
-                    // Stuck state — previous key-up was missed, stop first
                     print("⌨️ Hotkey DOWN while still recording — forcing stop first")
                     isRecording = false
                     onStop?()
                 }
                 isRecording = true
-                print("⌨️ Hotkey DOWN — starting dictation")
+                print("⌨️ Hotkey DOWN — starting dictation\(isEnhancedTrigger ? " (ENHANCED — screen context)" : "")")
                 onStart?()
             } else if !down && keyIsDown {
                 keyIsDown = false

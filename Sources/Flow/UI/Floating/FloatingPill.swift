@@ -92,7 +92,7 @@ struct FloatingPill: View {
 
     private var iconColor: Color {
         switch coordinator.state {
-        case .recording: return FlowColors.accent
+        case .recording: return coordinator.isEnhancedMode ? FlowColors.accentOrange : FlowColors.accent
         case .connecting: return FlowColors.accentOrange
         case .processing: return FlowColors.accentPurple
         case .injecting: return FlowColors.accentGreen

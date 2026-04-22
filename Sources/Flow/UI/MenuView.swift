@@ -270,7 +270,7 @@ struct MenuView: View {
         switch coordinator.state {
         case .idle: return "Ready"
         case .connecting: return "Connecting..."
-        case .recording: return "Recording"
+        case .recording: return coordinator.isEnhancedMode ? "Recording (Enhanced)" : "Recording"
         case .processing: return "Transcribing..."
         case .injecting: return "Injecting text"
         case .error(let msg): return "Error: \(msg)"

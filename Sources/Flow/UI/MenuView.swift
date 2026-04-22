@@ -105,7 +105,7 @@ struct MenuView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(.quaternary.opacity(0.3))
+                            .fill(Color.gray.opacity(0.1))
                     )
             }
         }
@@ -121,7 +121,7 @@ struct MenuView: View {
                     .padding(.vertical, 2)
                     .background(
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(.quaternary)
+                            .fill(Color.gray.opacity(0.12))
                     )
             }
         }
@@ -197,11 +197,28 @@ struct MenuView: View {
             }
             .buttonStyle(.plain)
 
+            Button {
+                if let url = URL(string: "flow://onboarding") {
+                    NSWorkspace.shared.open(url)
+                }
+                // Also open the window directly
+                NSApp.windows.first(where: { $0.title == "ChatFlow Setup" })?.makeKeyAndOrderFront(nil)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "waveform.badge.magnifyingglass")
+                        .font(.system(size: 10))
+                    Text("Onboarding")
+                        .font(.system(size: 11))
+                }
+                .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+
             Spacer()
 
             Text("v1.0")
                 .font(.system(size: 10))
-                .foregroundStyle(.quaternary)
+                .foregroundStyle(.tertiary)
 
             Button {
                 NSApplication.shared.terminate(nil)

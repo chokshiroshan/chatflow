@@ -58,7 +58,7 @@ final class ScreenContextExtractor {
         guard let screen = NSScreen.screenWithMouse ?? NSScreen.main else { return nil }
 
         // Get the CGDirectDisplayID from the screen's device description
-        guard let displayID = screen.deviceDescription["NSScreenNumber"] as? UInt32 else {
+        guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32 else {
             return nil
         }
 

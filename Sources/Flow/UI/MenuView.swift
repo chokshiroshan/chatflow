@@ -5,16 +5,33 @@ struct MenuView: View {
     @ObservedObject var coordinator: AppCoordinator
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 0) {
             header
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+
             Divider()
+                .padding(.horizontal, 8)
+
             statusSection
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+
             Divider()
+                .padding(.horizontal, 8)
+
             authSection
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+
             Divider()
+                .padding(.horizontal, 8)
+
             footer
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
         }
-        .padding(10)
         .frame(width: 280)
     }
 
@@ -22,12 +39,41 @@ struct MenuView: View {
 
     @ViewBuilder
     private var header: some View {
-        HStack {
-            Text("Flow")
-                .font(.headline)
+        HStack(spacing: 10) {
+            // App icon
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.blue.opacity(0.6), .purple.opacity(0.4)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 28, height: 28)
+                Image(systemName: "waveform")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Flow")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("Voice Dictation")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+
             Spacer()
-            Text(coordinator.state.icon)
-                .font(.title3)
+
+            // Status dot
+            Circle()
+                .fill(statusColor)
+                .frame(width: 8, height: 8)
+                .overlay(
+                    Circle()
+                        .stroke(statusColor.opacity(0.3), lineWidth: 3)
+                )
         }
     }
 
@@ -35,27 +81,51 @@ struct MenuView: View {
 
     @ViewBuilder
     private var statusSection: some View {
-        HStack {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 8, height: 8)
-            Text(statusText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-            Spacer()
-        }
+        VStack(alignment: .leading, spacing: 6) {
+            // Hotkey hint
+            HStack(spacing: 6) {
+                Text(statusLabel)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
 
-        if !coordinator.partialTranscript.isEmpty {
-            Text(coordinator.partialTranscript)
-                .font(.caption)
-                .lineLimit(3)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
+                Spacer()
+
+                if coordinator.state == .idle {
+                    hotkeyBadge
+                }
+            }
+
+            // Partial transcript (live preview)
+            if !coordinator.partialTranscript.isEmpty {
+                Text(coordinator.partialTranscript)
+                    .font(.system(size: 11, design: .monospaced))
+                    .lineLimit(2)
+                    .foregroundStyle(.secondary)
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(.quaternary.opacity(0.3))
+                    )
+            }
         }
     }
 
-    // MARK: - Voice Chat Controls
+    @ViewBuilder
+    private var hotkeyBadge: some View {
+        HStack(spacing: 2) {
+            ForEach(parseHotkey(coordinator.config.hotkey), id: \.self) { key in
+                Text(key)
+                    .font(.system(size: 9, weight: .medium))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(.quaternary)
+                    )
+            }
+        }
+    }
 
     // MARK: - Auth
 
@@ -63,44 +133,51 @@ struct MenuView: View {
     private var authSection: some View {
         switch coordinator.authState {
         case .signedOut, .error:
-            Button("Sign in with ChatGPT") { Task { coordinator.signIn() } }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+            Button {
+                coordinator.signIn()
+            } label: {
+                HStack {
+                    Image(systemName: "person.badge.key")
+                    Text("Sign in with ChatGPT")
+                }
+                .font(.system(size: 12))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
 
             if case .error(let msg) = coordinator.authState {
                 Text(msg)
-                    .font(.caption2)
-                    .foregroundStyle(.red)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.red.opacity(0.7))
                     .lineLimit(2)
             }
 
         case .signingIn:
-            HStack {
+            HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
                 Text("Signing in...")
-                    .font(.caption)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
             }
 
-        case .signedIn(let email, let plan):
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(email)
-                        .font(.caption)
-                        .lineLimit(1)
-                    Spacer()
-                    Text("✓")
-                        .font(.caption)
-                        .foregroundStyle(.green)
+        case .signedIn(let email, _):
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .font(.system(size: 10))
+                Text(email)
+                    .font(.system(size: 11))
+                    .lineLimit(1)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Sign Out") {
+                    coordinator.signOut()
                 }
-                Text(plan)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                .font(.system(size: 10))
+                .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
             }
-            Spacer()
-            Button("Sign Out") { coordinator.signOut() }
-                .buttonStyle(.bordered)
-                .controlSize(.mini)
         }
     }
 
@@ -109,14 +186,38 @@ struct MenuView: View {
     @ViewBuilder
     private var footer: some View {
         HStack {
-            Text("v1.0 · Free with ChatGPT sub")
-                .font(.caption2)
-                .foregroundStyle(.quaternary)
-            Spacer()
-            Button("Quit") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(.plain)
-                .font(.caption)
+            Button {
+                // Open settings
+                if #available(macOS 14, *) {
+                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                } else {
+                    NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 10))
+                    Text("Settings")
+                        .font(.system(size: 11))
+                }
                 .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            Text("v1.0")
+                .font(.system(size: 10))
+                .foregroundStyle(.quaternary)
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -124,25 +225,29 @@ struct MenuView: View {
 
     private var statusColor: Color {
         switch coordinator.state {
-        case .idle: return .gray
+        case .idle: return .green
         case .connecting: return .yellow
         case .recording: return .red
         case .processing: return .yellow
         case .injecting: return .blue
-        case .speaking: return .green
         case .error: return .red
+        default: return .gray
         }
     }
 
-    private var statusText: String {
+    private var statusLabel: String {
         switch coordinator.state {
-        case .idle: return "Ready — press \(coordinator.config.hotkey) to dictate"
+        case .idle: return "Ready"
         case .connecting: return "Connecting..."
-        case .recording: return "🔴 Recording — speak now"
+        case .recording: return "Recording"
         case .processing: return "Transcribing..."
-        case .injecting: return "Injecting text..."
-        case .speaking: return "🔊 ChatGPT speaking"
+        case .injecting: return "Injecting text"
         case .error(let msg): return "Error: \(msg)"
+        default: return ""
         }
+    }
+
+    private func parseHotkey(_ hotkey: String) -> [String] {
+        hotkey.split(separator: "+").map(String.init)
     }
 }

@@ -1,16 +1,14 @@
 import Foundation
 
-/// Dictation engine — buffers audio and transcribes via Whisper API.
+/// Dictation engine using Realtime API with Whisper transcription.
 ///
-/// Flow:
-/// 1. On activate: pre-connect to ensure token is valid
-/// 2. Hotkey pressed → start audio capture (instant)
-/// 3. Audio chunks buffered in memory
-/// 4. Hotkey released → send buffered audio to Whisper API
-/// 5. Inject transcript into focused text field
+/// Strategy: Connect to gpt-realtime WebSocket, stream audio in real-time,
+/// but use the server-side Whisper transcription (`input_audio_transcription`)
+/// instead of the model's own text generation. This gives Whisper accuracy
+/// with the Realtime API's streaming capability.
 ///
-/// Auth: ChatGPT subscription token (same OAuth flow as before)
-/// STT: whisper-1 via /v1/audio/transcriptions (dedicated STT, not gpt-realtime)
+/// Auth: ChatGPT subscription token via Codex OAuth
+/// STT: Server-side whisper-1 via Realtime API's input_audio_transcription
 @MainActor
 final class DictationEngine {
     var onStateChanged: ((FlowState) -> Void)?
@@ -20,8 +18,12 @@ final class DictationEngine {
     private let config: FlowConfig
     private let audioCapture = AudioCapture()
     private let hotkey: HotkeyManager
-    private var audioBuffer = Data()
+    private var client: RealtimeClient?
     private var isRecording = false
+    private var isConnected = false
+    private var chunkCount = 0
+    private var transcriptReceived = false
+    private var lastTranscript = ""
 
     init(auth: ChatGPTAuth, config: FlowConfig) {
         self.auth = auth
@@ -37,19 +39,40 @@ final class DictationEngine {
         onStateChanged?(.idle)
         print("🎤 Dictation active. Press \(config.hotkey) to start.")
 
-        // Validate token on startup
-        Task {
-            if let token = await auth.ensureValidToken() {
-                _ = token
-                print("✅ Token valid — ready to dictate")
-            }
-        }
+        // Pre-connect in background for instant first use
+        Task { await preConnect() }
     }
 
     func deactivate() {
         hotkey.stop()
         audioCapture.stop()
+        client?.disconnect()
+        client = nil
         isRecording = false
+        isConnected = false
+    }
+
+    // MARK: - Pre-connection
+
+    private func preConnect() async {
+        guard !isConnected else { return }
+
+        do {
+            guard let token = await auth.ensureValidToken() else {
+                print("⚠️ No valid token for pre-connect")
+                return
+            }
+
+            let client = RealtimeClient()
+            wireCallbacks(client)
+
+            try await client.connect(accessToken: token, model: config.realtimeModel, mode: .dictation(language: config.language))
+            self.client = client
+            isConnected = true
+            print("⚡️ Pre-connected — ready for instant dictation")
+        } catch {
+            print("⚠️ Pre-connect failed: \(error) — will connect on first hotkey press")
+        }
     }
 
     // MARK: - Dictation Lifecycle
@@ -61,21 +84,38 @@ final class DictationEngine {
             return
         }
 
-        // Ensure we have a valid token
-        guard let token = await auth.ensureValidToken() else {
-            print("⚠️ No valid token — please sign in again")
-            onStateChanged?(.error("Session expired. Please sign in again."))
-            return
-        }
-        _ = token
+        // Connect if not pre-connected
+        if !isConnected {
+            onStateChanged?(.connecting)
+            do {
+                guard let token = await auth.ensureValidToken() else {
+                    onStateChanged?(.error("Session expired. Please sign in again."))
+                    return
+                }
 
-        audioBuffer = Data()
+                let client = RealtimeClient()
+                wireCallbacks(client)
+                try await client.connect(accessToken: token, model: config.realtimeModel, mode: .dictation(language: config.language))
+                self.client = client
+                isConnected = true
+            } catch {
+                print("⚠️ Connect failed: \(error)")
+                onStateChanged?(.error("Connection failed: \(error.localizedDescription)"))
+                return
+            }
+        }
+
         isRecording = true
+        chunkCount = 0
+        transcriptReceived = false
+        lastTranscript = ""
         onPartialTranscript?("")
 
-        // Wire audio callback — just buffer the PCM16 data
+        // Wire audio callback — stream chunks to WebSocket
         audioCapture.onAudioData = { [weak self] data in
-            self?.audioBuffer.append(data)
+            guard let self else { return }
+            self.chunkCount += 1
+            self.client?.sendAudio(data)
         }
 
         do {
@@ -94,52 +134,87 @@ final class DictationEngine {
         isRecording = false
 
         audioCapture.stop()
-        let audioData = audioBuffer
-        audioBuffer = Data()
+        let chunks = chunkCount
+        print("🛑 Recording stopped (\(chunks) chunks)")
 
-        let chunkSize = 4800 // ~100ms at 24kHz PCM16 = 4800 bytes
-        let chunkCount = audioData.count / chunkSize
-        print("🛑 Recording stopped (\(audioData.count) bytes, ~\(chunkCount) chunks)")
-
-        // Need at least 100ms of audio
-        guard audioData.count >= chunkSize else {
-            print("⚠️ Audio too short (<100ms) — skipping")
+        // Need at least a few chunks
+        guard chunks > 2 else {
+            print("⚠️ Too few chunks — skipping")
             onStateChanged?(.idle)
+            // Reconnect for next session
+            reconnect()
             return
         }
 
         onStateChanged?(.processing)
 
-        // Transcribe via Whisper API
-        guard let token = auth.accessToken else {
-            onStateChanged?(.error("No access token"))
+        // Flush remaining audio
+        try? await Task.sleep(for: .milliseconds(200))
+
+        // Commit buffer and request response
+        client?.commitAndRespond()
+
+        // Wait for Whisper transcript (max 10s)
+        transcriptReceived = false
+        for _ in 1...100 {
+            if transcriptReceived { return }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        // Timed out
+        print("⏰ Timed out waiting for transcript (10s)")
+        onStateChanged?(.idle)
+        reconnect()
+    }
+
+    private func handleTranscript(_ text: String) {
+        guard isConnected else { return }
+        transcriptReceived = true
+        lastTranscript = text
+
+        // Skip empty transcripts
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else {
+            print("⚠️ Empty transcript")
+            onStateChanged?(.idle)
+            reconnect()
             return
         }
 
-        do {
-            let whisper = WhisperClient(
-                accessToken: token,
-                model: "whisper-1",
-                language: config.language
-            )
+        print("📝 Transcript: \"\(cleaned)\"")
+        onStateChanged?(.injecting)
 
-            let text = try await whisper.transcribe(pcm16Data: audioData, sampleRate: 24000)
+        let success = TextInjector.inject(cleaned)
+        print(success ? "✅ Text injected" : "❌ Text injection failed")
+        onStateChanged?(success ? .idle : .error("Text injection failed"))
 
-            if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                print("⚠️ Empty transcript — no speech detected")
-                onStateChanged?(.idle)
-                return
+        // Reconnect for next session
+        reconnect()
+    }
+
+    private func reconnect() {
+        client?.disconnect()
+        client = nil
+        isConnected = false
+        Task { await preConnect() }
+    }
+
+    // MARK: - Callbacks
+
+    private func wireCallbacks(_ client: RealtimeClient) {
+        // Whisper transcription events — this is the accurate STT
+        client.onFinalTranscript = { [weak self] text in
+            Task { @MainActor in self?.handleTranscript(text) }
+        }
+        client.onPartialTranscript = { [weak self] text in
+            Task { @MainActor in self?.onPartialTranscript?(text) }
+        }
+        client.onError = { [weak self] err in
+            Task { @MainActor in
+                print("⚠️ Realtime error: \(err)")
+                self?.onStateChanged?(.error(err))
+                self?.reconnect()
             }
-
-            // Inject text
-            onStateChanged?(.injecting)
-            let success = TextInjector.inject(text)
-            print(success ? "✅ Text injected" : "❌ Text injection failed")
-            onStateChanged?(success ? .idle : .error("Text injection failed"))
-
-        } catch {
-            print("❌ Transcription failed: \(error)")
-            onStateChanged?(.error("Transcription failed: \(error.localizedDescription)"))
         }
     }
 }

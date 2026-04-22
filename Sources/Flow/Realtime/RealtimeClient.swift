@@ -105,8 +105,7 @@ final class RealtimeClient {
                 "type": "session.update",
                 "session": {
                     "modalities": ["text"],
-                    "instructions": "You are a transcription engine. Output ONLY the exact transcription of the user's speech. No commentary, no formatting, no corrections beyond obvious speech-to-text fixes. Preserve the speaker's intent.",
-                    "voice": "alloy",
+                    "instructions": "You are a transcription engine. Output ONLY the exact words spoken. No corrections, no commentary, no formatting.",
                     "input_audio_format": "pcm16",
                     "output_audio_format": "pcm16",
                     "input_audio_transcription": {

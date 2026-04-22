@@ -18,14 +18,14 @@ struct FlowApp: App {
             SettingsView(coordinator: coordinator)
         }
 
-        // ChatFlow landing (matches web design)
-        Window("ChatFlow", id: "chatflow") {
-            ChatFlowLandingView(onStart: { coordinator.completeOnboarding() })
+        // Onboarding window (matches web design)
+        Window("ChatFlow Setup", id: "chatflow") {
+            OnboardingFlowView(coordinator: coordinator)
         }
-        .windowStyle(.titleBar)
+        .windowStyle(.plain)
         .windowResizability(.contentSize)
         .defaultPosition(.center)
-        .defaultSize(width: 520, height: 480)
+        .defaultSize(width: 540, height: 500)
     }
 }
 

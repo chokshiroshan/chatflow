@@ -154,6 +154,17 @@ final class RealtimeClient {
         """)
     }
 
+    /// Update session instructions with current context (active app, etc.)
+    /// Call this right before recording starts so the app context is fresh.
+    func refreshInstructions(language: String) {
+        guard isConnected else { return }
+        let instructions = ContextManager.shared.buildInstructions()
+        let event = """
+        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(language)"}}}
+        """
+        try? send(event)
+    }
+
     func cancelResponse() {
         guard isConnected else { return }
         try? send("""

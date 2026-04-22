@@ -105,6 +105,9 @@ final class DictationEngine {
             }
         }
 
+        // Refresh instructions with current active app (may have changed since pre-connect)
+        client?.refreshInstructions(language: config.language)
+
         isRecording = true
         chunkCount = 0
         transcriptReceived = false

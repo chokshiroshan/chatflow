@@ -64,7 +64,7 @@ struct FloatingPill: View {
 
             // Status / transcript
             statusContent
-                .frame(maxWidth: 160, alignment: .leading)
+                .frame(maxWidth: 120, alignment: .leading)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -264,8 +264,8 @@ final class FloatingPillWindowController {
 
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
-        let width: CGFloat = 240
-        let height: CGFloat = 56   // Extra padding so capsule never clips
+        let width: CGFloat = 200
+        let height: CGFloat = 60
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12

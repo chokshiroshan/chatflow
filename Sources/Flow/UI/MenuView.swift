@@ -3,6 +3,7 @@ import SwiftUI
 /// The menu bar dropdown view.
 struct MenuView: View {
     @ObservedObject var coordinator: AppCoordinator
+    @Environment(\.openWindow) var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -198,11 +199,7 @@ struct MenuView: View {
             .buttonStyle(.plain)
 
             Button {
-                if let url = URL(string: "flow://onboarding") {
-                    NSWorkspace.shared.open(url)
-                }
-                // Also open the window directly
-                NSApp.windows.first(where: { $0.title == "ChatFlow Setup" })?.makeKeyAndOrderFront(nil)
+                openWindow(id: "onboarding")
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "waveform.badge.magnifyingglass")

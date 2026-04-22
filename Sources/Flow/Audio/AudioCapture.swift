@@ -3,8 +3,9 @@ import AVFoundation
 
 /// Captures microphone audio via AVAudioEngine, outputs 24kHz mono PCM16.
 ///
-/// Uses the inputNode's own output format for the tap but wraps in try-catch
-/// with fallback to standard format. Manual float32→int16 + downsampling.
+/// Uses AVAudioFormat(standardFormatWithSampleRate:) for the tap — this is the
+/// non-interleaved float32 format that AVAudioEngine internally uses, which avoids
+/// the "format mismatch" crash that happens with outputFormat on some devices.
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var chunkCount = 0
@@ -37,65 +38,20 @@ final class AudioCapture {
         guard hwFormat.sampleRate > 0 else { throw AudioError.noInputDevice }
         print("🎤 Hardware: \(hwFormat.sampleRate)Hz, \(hwFormat.channelCount)ch")
 
-        // Try installing tap — wrap in ObjC catch for NSException from AVAudioEngine
-        let tapFormat = hwFormat
-        let tapBufferSize: AVAudioFrameCount = 1024
+        // Use standard format (non-interleaved float32) at hardware sample rate.
+        // This is what AVAudioEngine uses internally — avoids format mismatch crashes.
+        let tapFormat = AVAudioFormat(
+            standardFormatWithSampleRate: hwFormat.sampleRate,
+            channels: hwFormat.channelCount
+        )!
 
-        var tapInstalled = false
-
-        // Attempt 1: Use hardware format directly
-        do {
-            try ObjC.catchException {
-                inputNode.installTap(onBus: 0, bufferSize: tapBufferSize, format: tapFormat) { [weak self] buffer, _ in
-                    self?.handleBuffer(buffer)
-                }
-            }
-            tapInstalled = true
-            print("🎙️ Tap installed with hwFormat (\(Int(tapFormat.sampleRate))Hz)")
-        } catch {
-            print("⚠️ hwFormat tap failed: \(error.localizedDescription)")
-        }
-
-        // Attempt 2: Use standard non-interleaved float32 format at hardware rate
-        if !tapInstalled {
-            let stdFormat = AVAudioFormat(standardFormatWithSampleRate: hwFormat.sampleRate, channels: hwFormat.channelCount)!
-            do {
-                try ObjC.catchException {
-                    inputNode.installTap(onBus: 0, bufferSize: tapBufferSize, format: stdFormat) { [weak self] buffer, _ in
-                        self?.handleBuffer(buffer)
-                    }
-                }
-                tapInstalled = true
-                print("🎙️ Tap installed with standardFormat (\(Int(stdFormat.sampleRate))Hz)")
-            } catch {
-                print("⚠️ standardFormat tap failed: \(error.localizedDescription)")
-            }
-        }
-
-        // Attempt 3: nil format (uses whatever the node has internally)
-        if !tapInstalled {
-            inputNode.removeTap(onBus: 0)
-            do {
-                try ObjC.catchException {
-                    inputNode.installTap(onBus: 0, bufferSize: tapBufferSize, format: nil) { [weak self] buffer, _ in
-                        self?.handleBuffer(buffer)
-                    }
-                }
-                tapInstalled = true
-                print("🎙️ Tap installed with nil format")
-            } catch {
-                print("⚠️ nil format tap failed: \(error.localizedDescription)")
-            }
-        }
-
-        guard tapInstalled else {
-            engine.stop()
-            self.engine = nil
-            throw AudioError.noInputDevice
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: tapFormat) { [weak self] buffer, _ in
+            self?.handleBuffer(buffer)
         }
 
         chunkCount = 0
         tapFired = false
+        print("🎙️ Tap installed (standardFormat \(Int(hwFormat.sampleRate))Hz, \(hwFormat.channelCount)ch)")
 
         // Verify tap fires
         try await Task.sleep(for: .milliseconds(500))
@@ -103,7 +59,7 @@ final class AudioCapture {
             print("⚠️ Tap hasn't fired after 500ms...")
             try await Task.sleep(for: .milliseconds(1500))
             if !tapFired {
-                print("❌ Tap never fired — removing and failing")
+                print("❌ Tap never fired")
                 inputNode.removeTap(onBus: 0)
                 engine.stop()
                 self.engine = nil
@@ -153,22 +109,6 @@ final class AudioCapture {
     }
 }
 
-// MARK: - NSException catcher (AVAudioEngine throws ObjC exceptions)
-
-private class ObjC {
-    @objc static func catchException(_ block: () -> Void) throws {
-        var exception: NSException?
-        let handler: @convention(block) (NSException) -> Void = { e in exception = e }
-        let oldHandler = NSGetUncaughtExceptionHandler()
-        NSSetUncaughtExceptionHandler(handler)
-        block()
-        NSSetUncaughtExceptionHandler(oldHandler)
-        if let e = exception {
-            throw AudioError.unsupportedFormat
-        }
-    }
-}
-
 enum AudioError: LocalizedError {
     case unsupportedFormat
     case permissionDenied
@@ -177,7 +117,7 @@ enum AudioError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedFormat: return "Cannot create audio tap — format mismatch"
+        case .unsupportedFormat: return "Cannot create audio tap"
         case .permissionDenied: return "Microphone permission denied"
         case .notRunning: return "Audio capture not running"
         case .noInputDevice: return "No microphone detected"

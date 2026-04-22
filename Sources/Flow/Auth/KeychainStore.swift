@@ -54,7 +54,7 @@ final class KeychainStore {
     }
 
     func deleteTokens() {
-        try? FileManager.default.removeItem(at: storageURL.path)
+        try? FileManager.default.removeItem(at: storageURL)
     }
 }
 

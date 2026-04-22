@@ -8,6 +8,7 @@ struct FlowApp: App {
         // Menu bar presence — stateful compact label, no dock icon
         MenuBarExtra {
             MenuView(coordinator: coordinator)
+                .preferredColorScheme(.dark)
         } label: {
             MenuBarLabel(coordinator: coordinator)
         }
@@ -25,7 +26,7 @@ struct FlowApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultPosition(.center)
-        .defaultSize(width: 540, height: 500)
+        .defaultSize(width: 640, height: 600)
     }
 }
 

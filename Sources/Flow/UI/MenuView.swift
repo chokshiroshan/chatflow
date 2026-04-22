@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The menu bar dropdown view.
+/// The menu bar dropdown view — dark spacey theme with explicit light text.
 struct MenuView: View {
     @ObservedObject var coordinator: AppCoordinator
     @Environment(\.openWindow) var openWindow
@@ -8,33 +8,38 @@ struct MenuView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
 
-            Divider()
-                .padding(.horizontal, 8)
+            menuDivider
 
             statusSection
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
 
-            Divider()
-                .padding(.horizontal, 8)
+            menuDivider
 
             authSection
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
 
-            Divider()
-                .padding(.horizontal, 8)
+            menuDivider
 
             footer
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
         }
         .frame(width: 280)
-        .background(FlowColors.surface)
+        .background(FlowColors.background)
+    }
+
+    // MARK: - Divider
+
+    private var menuDivider: some View {
+        Divider()
+            .overlay(FlowColors.border)
+            .padding(.horizontal, 8)
     }
 
     // MARK: - Header
@@ -55,15 +60,16 @@ struct MenuView: View {
                     .frame(width: 28, height: 28)
                 Image(systemName: "waveform")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundColor(.white)
             }
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Flow")
+                Text("ChatFlow")
                     .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(FlowColors.textPrimary)
                 Text("Voice Dictation")
                     .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
+                    .foregroundColor(FlowColors.textTertiary)
             }
 
             Spacer()
@@ -72,6 +78,7 @@ struct MenuView: View {
             Circle()
                 .fill(statusColor)
                 .frame(width: 8, height: 8)
+                .flowGlow(statusColor, radius: 6)
                 .overlay(
                     Circle()
                         .stroke(statusColor.opacity(0.3), lineWidth: 3)
@@ -88,7 +95,7 @@ struct MenuView: View {
             HStack(spacing: 6) {
                 Text(statusLabel)
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(FlowColors.textSecondary)
 
                 Spacer()
 
@@ -102,12 +109,12 @@ struct MenuView: View {
                 Text(coordinator.partialTranscript)
                     .font(.system(size: 11, design: .monospaced))
                     .lineLimit(2)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(FlowColors.textSecondary)
                     .padding(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.gray.opacity(0.1))
+                            .fill(FlowColors.card)
                     )
             }
         }
@@ -119,11 +126,16 @@ struct MenuView: View {
             ForEach(parseHotkey(coordinator.config.hotkey), id: \.self) { key in
                 Text(key)
                     .font(.system(size: 9, weight: .medium))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
+                    .foregroundColor(FlowColors.accent)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 3)
                     .background(
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.gray.opacity(0.12))
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(FlowColors.accent.opacity(0.12))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(FlowColors.accent.opacity(0.25), lineWidth: 0.5)
                     )
             }
         }
@@ -140,17 +152,28 @@ struct MenuView: View {
             } label: {
                 HStack {
                     Image(systemName: "person.badge.key")
+                        .font(.system(size: 11))
                     Text("Sign in with ChatGPT")
+                        .font(.system(size: 12))
                 }
-                .font(.system(size: 12))
+                .foregroundColor(FlowColors.accent)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.plain)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .background(
+                RoundedRectangle(cornerRadius: FlowRadii.sm)
+                    .fill(FlowColors.accent.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: FlowRadii.sm)
+                    .stroke(FlowColors.accent.opacity(0.25), lineWidth: 0.5)
+            )
 
             if case .error(let msg) = coordinator.authState {
                 Text(msg)
                     .font(.system(size: 10))
-                    .foregroundStyle(.red.opacity(0.7))
+                    .foregroundColor(Color(red: 1.0, green: 0.45, blue: 0.4))
                     .lineLimit(2)
             }
 
@@ -160,25 +183,25 @@ struct MenuView: View {
                     .controlSize(.small)
                 Text("Signing in...")
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(FlowColors.textSecondary)
             }
 
         case .signedIn(let email, _):
             HStack {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundColor(FlowColors.accentGreen)
                     .font(.system(size: 10))
                 Text(email)
                     .font(.system(size: 11))
                     .lineLimit(1)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(FlowColors.textSecondary)
                 Spacer()
                 Button("Sign Out") {
                     coordinator.signOut()
                 }
                 .font(.system(size: 10))
                 .buttonStyle(.plain)
-                .foregroundStyle(.tertiary)
+                .foregroundColor(FlowColors.textTertiary)
             }
         }
     }
@@ -195,7 +218,7 @@ struct MenuView: View {
                     Text("Settings")
                         .font(.system(size: 11))
                 }
-                .foregroundStyle(.secondary)
+                .foregroundColor(FlowColors.textSecondary)
             }
             .buttonStyle(.plain)
 
@@ -208,7 +231,7 @@ struct MenuView: View {
                     Text("Onboarding")
                         .font(.system(size: 11))
                 }
-                .foregroundStyle(.secondary)
+                .foregroundColor(FlowColors.textSecondary)
             }
             .buttonStyle(.plain)
 
@@ -216,16 +239,16 @@ struct MenuView: View {
 
             Text("v1.0")
                 .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+                .foregroundColor(FlowColors.textTertiary)
 
             Button {
                 NSApplication.shared.terminate(nil)
             } label: {
                 Text("Quit")
                     .font(.system(size: 11))
+                    .foregroundColor(FlowColors.textTertiary)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
         }
     }
 
@@ -233,13 +256,13 @@ struct MenuView: View {
 
     private var statusColor: Color {
         switch coordinator.state {
-        case .idle: return .green
-        case .connecting: return .yellow
-        case .recording: return .red
-        case .processing: return .yellow
-        case .injecting: return .blue
-        case .error: return .red
-        default: return .gray
+        case .idle: return FlowColors.accentGreen
+        case .connecting: return FlowColors.accentOrange
+        case .recording: return FlowColors.accent
+        case .processing: return FlowColors.accentPurple
+        case .injecting: return FlowColors.accent
+        case .error: return Color(red: 1.0, green: 0.35, blue: 0.35)
+        default: return FlowColors.textTertiary
         }
     }
 

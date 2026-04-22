@@ -3,8 +3,8 @@ import AVFoundation
 
 /// Captures microphone audio via AVAudioEngine, outputs 24kHz mono PCM16.
 ///
-/// Strategy: Tap inputNode with nil format (uses its native format),
-/// then manually convert float32 → int16 and downsample 48kHz → 24kHz.
+/// Uses explicit hardware format for the tap (nil format is unreliable on some devices).
+/// Manual float32→int16 conversion + downsampling (no AVAudioConverter).
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var chunkCount = 0
@@ -42,15 +42,14 @@ final class AudioCapture {
         }
 
         print("🎤 Hardware format: \(hwFormat.sampleRate)Hz, \(hwFormat.channelCount)ch, \(hwFormat.commonFormat)")
-        print("🎤 Is interleaved: \(hwFormat.isInterleaved)")
 
-        // Tap with nil format = use the node's own format (no format conversion at tap level)
-        inputNode.installTap(onBus: 0, bufferSize: 2048, format: nil) { [weak self] buffer, time in
+        // MUST use explicit hardware format for the tap — nil format fails on 48kHz devices
+        inputNode.installTap(onBus: 0, bufferSize: 2048, format: hwFormat) { [weak self] buffer, time in
             self?.handleBuffer(buffer)
         }
 
         try engine.start()
-        print("🎙️ Engine started. Waiting for audio...")
+        print("🎙️ Engine started with tap on inputNode (format: \(Int(hwFormat.sampleRate))Hz)")
     }
 
     /// Stop capturing audio.
@@ -68,47 +67,43 @@ final class AudioCapture {
     private func handleBuffer(_ buffer: AVAudioPCMBuffer) {
         if !tapFired {
             tapFired = true
-            print("🎙️ TAP FIRED! frames=\(buffer.frameLength), channels=\(buffer.format.channelCount), format=\(buffer.format.commonFormat)")
+            print("🎙️ TAP FIRED! frames=\(buffer.frameLength), format=\(buffer.format.sampleRate)Hz")
         }
 
         let frameLength = Int(buffer.frameLength)
         guard frameLength > 0 else { return }
 
-        // Get float32 channel data (non-interleaved: each channel is a separate array)
+        // Get float32 channel data
         guard let floatData = buffer.floatChannelData else {
-            print("⚠️ No float channel data")
+            print("⚠️ No float channel data in buffer")
             return
         }
 
-        // Channel 0 (mono)
         let samples = floatData[0]
-        let sampleCount = frameLength
-
-        // Downsample 48kHz → 24kHz by dropping every other sample
         let srcRate = buffer.format.sampleRate
-        let ratio = Self.targetSampleRate / srcRate  // 0.5 for 48→24
-        let outputCount = Int(Double(sampleCount) * ratio)
+        let srcCount = frameLength
+
+        // Downsample to 24kHz
+        let ratio = Self.targetSampleRate / srcRate
+        let outputCount = Int(Double(srcCount) * ratio)
         guard outputCount > 0 else { return }
 
-        var pcm16Data = Data(capacity: outputCount * 2)
-
+        var pcm16 = Data(capacity: outputCount * 2)
         for i in 0..<outputCount {
-            let srcIdx = Int(Double(i) / ratio)
-            guard srcIdx < sampleCount else { break }
+            let srcIdx = min(Int(Double(i) / ratio), srcCount - 1)
             let sample = samples[srcIdx]
-            // Clamp to [-1.0, 1.0] then convert to Int16
             let clamped = max(-1.0, min(1.0, sample))
             let intSample = Int16(clamped * 32767.0)
-            pcm16Data.append(contentsOf: withUnsafeBytes(of: intSample.littleEndian) { Array($0) })
+            pcm16.append(contentsOf: withUnsafeBytes(of: intSample.littleEndian) { Array($0) })
         }
 
-        guard !pcm16Data.isEmpty else { return }
+        guard !pcm16.isEmpty else { return }
 
         chunkCount += 1
         if chunkCount == 1 {
-            print("🎙️ First audio chunk! \(pcm16Data.count) bytes (\(outputCount) samples)")
+            print("🎙️ First chunk: \(pcm16.count) bytes (\(outputCount) samples from \(srcCount) input)")
         }
-        onAudioData?(pcm16Data)
+        onAudioData?(pcm16)
     }
 }
 

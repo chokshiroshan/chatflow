@@ -295,7 +295,9 @@ final class RealtimeClient {
             onError?(msg)
 
         default:
-            break
+            if !type.hasPrefix("session.") && !type.hasPrefix("input_audio_buffer.speech") {
+                print("  📨 Unhandled event: \(type)")
+            }
         }
     }
 }

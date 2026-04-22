@@ -112,6 +112,8 @@ final class DictationEngine {
         }
     }
 
+    private var transcriptReceived = false
+
     private func finishDictation() async {
         guard isConnected || fallbackMode else { return }
         onStateChanged?(.processing)
@@ -119,20 +121,25 @@ final class DictationEngine {
         audioCapture.stop()
         print("🛑 Audio capture stopped")
 
-        // Give the WebSocket a moment to flush remaining audio chunks
-        try? await Task.sleep(for: .milliseconds(300))
-
         if fallbackMode, let groq = groqClient {
-            // Groq path: send buffered audio for transcription
             await groq.transcribe(language: config.language)
-        } else {
-            // Realtime path: commit buffer and request response
-            print("📤 Committing audio buffer and requesting transcript...")
-            client?.commitAndRespond()
-            // Wait for final transcript (max 8s)
-            try? await Task.sleep(for: .seconds(8))
+            return
         }
 
+        // Realtime path: commit buffer and request response
+        print("📤 Committing audio buffer and requesting transcript...")
+        client?.commitAndRespond()
+
+        // Wait for final transcript (max 10s)
+        // handleFinalTranscript will set transcriptReceived = true and call cleanup()
+        transcriptReceived = false
+        for i in 1...100 {
+            if transcriptReceived { return }
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        // Timed out — no transcript
+        print("⏰ Timed out waiting for transcript (10s)")
         if isConnected || fallbackMode {
             cleanup()
             onStateChanged?(.idle)
@@ -141,9 +148,12 @@ final class DictationEngine {
 
     private func handleFinalTranscript(_ text: String) {
         guard isConnected else { return }
+        transcriptReceived = true
+        print("📝 Final transcript: \"\(text)\"")
         onStateChanged?(.injecting)
 
         let success = TextInjector.inject(text)
+        print(success ? "✅ Text injected" : "❌ Text injection failed")
         onStateChanged?(success ? .idle : .error("Text injection failed"))
         cleanup()
     }

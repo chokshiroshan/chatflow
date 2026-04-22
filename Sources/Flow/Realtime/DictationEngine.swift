@@ -24,6 +24,7 @@ final class DictationEngine {
     private var chunkCount = 0
     private var transcriptReceived = false
     private var lastTranscript = ""
+    private var isFinishing = false  // Guard against double-finish
 
     init(auth: ChatGPTAuth, config: FlowConfig) {
         self.auth = auth
@@ -38,8 +39,6 @@ final class DictationEngine {
         hotkey.start()
         onStateChanged?(.idle)
         print("🎤 Dictation active. Press \(config.hotkey) to start.")
-
-        // Pre-connect in background for instant first use
         Task { await preConnect() }
     }
 
@@ -52,7 +51,7 @@ final class DictationEngine {
         isConnected = false
     }
 
-    // MARK: - Pre-connection
+    // MARK: - Pre-connect
 
     private func preConnect() async {
         guard !isConnected else { return }
@@ -68,6 +67,7 @@ final class DictationEngine {
 
             try await client.connect(accessToken: token, model: config.realtimeModel, mode: .dictation(language: config.language))
             self.client = client
+
             isConnected = true
             print("⚡️ Pre-connected — ready for instant dictation")
         } catch {
@@ -78,6 +78,12 @@ final class DictationEngine {
     // MARK: - Dictation Lifecycle
 
     private func startDictation() async {
+        // If still finishing previous session, force-complete it
+        if isFinishing {
+            print("⚠️ Still finishing previous — force completing")
+            forceCompletePrevious()
+        }
+
         guard !isRecording else {
             print("⚠️ Already recording — forcing stop first")
             await finishDictation()
@@ -105,10 +111,11 @@ final class DictationEngine {
             }
         }
 
-        // Refresh instructions with current active app (may have changed since pre-connect)
+        // Refresh instructions with current active app
         client?.refreshInstructions(language: config.language)
 
         isRecording = true
+        isFinishing = false
         chunkCount = 0
         transcriptReceived = false
         lastTranscript = ""
@@ -134,7 +141,9 @@ final class DictationEngine {
 
     private func finishDictation() async {
         guard isRecording else { return }
+        guard !isFinishing else { return }  // Prevent double-finish
         isRecording = false
+        isFinishing = true
 
         audioCapture.stop()
         let chunks = chunkCount
@@ -144,7 +153,7 @@ final class DictationEngine {
         guard chunks > 2 else {
             print("⚠️ Too few chunks — skipping")
             onStateChanged?(.idle)
-            // Reconnect for next session
+            isFinishing = false
             reconnect()
             return
         }
@@ -155,6 +164,8 @@ final class DictationEngine {
         // Make sure we're connected before committing
         guard let client, isConnected else {
             print("⚠️ Not connected — reconnecting")
+            onStateChanged?(.idle)
+            isFinishing = false
             reconnect()
             return
         }
@@ -163,7 +174,7 @@ final class DictationEngine {
         client.commitAndRespond()
         print("📤 Committed buffer, waiting for transcript...")
 
-        // Wait for transcript (max 5s — should be fast since audio was streamed)
+        // Wait for transcript (max 5s)
         transcriptReceived = false
         for _ in 1...50 {
             if transcriptReceived { return }
@@ -171,15 +182,24 @@ final class DictationEngine {
         }
 
         // Timed out
-        print("⏰ Timed out waiting for transcript (10s)")
+        print("⏰ Timed out waiting for transcript (5s)")
         onStateChanged?(.idle)
+        isFinishing = false
         reconnect()
     }
 
+    /// Force-complete if stuck in finishing state
+    private func forceCompletePrevious() {
+        audioCapture.stop()
+        isRecording = false
+        isFinishing = false
+        onStateChanged?(.idle)
+    }
+
     private func handleTranscript(_ text: String) {
-        guard isConnected else { return }
         transcriptReceived = true
         lastTranscript = text
+        isFinishing = false
 
         // Skip empty transcripts
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -209,7 +229,7 @@ final class DictationEngine {
         isConnected = false
         reconnectAttempts += 1
 
-        // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 5s
         let delay = min(Double(reconnectAttempts), 5) * 1.0
         print("🔄 Reconnecting in \(delay)s (attempt \(reconnectAttempts))...")
 
@@ -233,9 +253,11 @@ final class DictationEngine {
         client.onError = { [weak self] err in
             Task { @MainActor in
                 print("⚠️ Realtime error: \(err)")
-                // Only reconnect if we were actually recording (not during pre-connect)
-                if self?.isRecording == true {
+                // Only show error if we were actually recording
+                if self?.isRecording == true || self?.isFinishing == true {
                     self?.onStateChanged?(.error(err))
+                    self?.isRecording = false
+                    self?.isFinishing = false
                 }
                 self?.reconnect()
             }

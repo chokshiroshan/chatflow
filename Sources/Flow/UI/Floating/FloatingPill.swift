@@ -257,8 +257,8 @@ final class FloatingPillWindowController {
 
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
-        let width: CGFloat = 60
-        let height: CGFloat = 52
+        let width: CGFloat = 64
+        let height: CGFloat = 48
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12
@@ -281,11 +281,18 @@ final class FloatingPillWindowController {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
 
-        let hostingView = NSHostingView(rootView: FloatingPill(coordinator: coordinator))
-        hostingView.frame = NSRect(origin: .zero, size: NSSize(width: width, height: height))
-        hostingView.autoresizingMask = [.width, .height]
-        panel.contentView?.addSubview(hostingView)
+        // Use a wrapper view that doesn't clip to bounds
+        let wrapper = NSView(frame: NSRect(origin: .zero, size: NSSize(width: width, height: height)))
+        wrapper.wantsLayer = true
+        wrapper.layer?.backgroundColor = .clear
+        wrapper.layer?.masksToBounds = false  // Don't clip!
 
+        let hostingView = NSHostingView(rootView: FloatingPill(coordinator: coordinator))
+        hostingView.frame = NSRect(x: 0, y: 0, width: width, height: height)
+        hostingView.autoresizingMask = [.width, .height]
+        wrapper.addSubview(hostingView)
+
+        panel.contentView?.addSubview(wrapper)
         panel.orderFrontRegardless()
         self.window = panel
     }

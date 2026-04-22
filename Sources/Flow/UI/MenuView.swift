@@ -186,14 +186,7 @@ struct MenuView: View {
     @ViewBuilder
     private var footer: some View {
         HStack {
-            Button {
-                // Open settings
-                if #available(macOS 14, *) {
-                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                } else {
-                    NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-                }
-            } label: {
+            SettingsLink {
                 HStack(spacing: 4) {
                     Image(systemName: "gearshape")
                         .font(.system(size: 10))

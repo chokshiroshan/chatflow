@@ -8,16 +8,8 @@ struct MenuView: View {
         VStack(alignment: .leading, spacing: 8) {
             header
             Divider()
-            modePicker
-            Divider()
             statusSection
             Divider()
-
-            if coordinator.config.preferredMode == .voiceChat {
-                voiceChatControls
-                Divider()
-            }
-
             authSection
             Divider()
             footer
@@ -31,26 +23,11 @@ struct MenuView: View {
     @ViewBuilder
     private var header: some View {
         HStack {
-            Text("🎤 Flow")
+            Text("Flow")
                 .font(.headline)
             Spacer()
             Text(coordinator.state.icon)
                 .font(.title3)
-        }
-    }
-
-    // MARK: - Mode Picker
-
-    @ViewBuilder
-    private var modePicker: some View {
-        Picker("Mode", selection: $coordinator.config.preferredMode) {
-            ForEach(AppMode.allCases, id: \.self) { mode in
-                Text(mode.rawValue).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-        .onChange(of: coordinator.config.preferredMode) { _, newMode in
-            coordinator.switchMode(to: newMode)
         }
     }
 
@@ -79,25 +56,6 @@ struct MenuView: View {
     }
 
     // MARK: - Voice Chat Controls
-
-    @ViewBuilder
-    private var voiceChatControls: some View {
-        HStack {
-            if coordinator.voiceChatActive {
-                Button("Stop Chat") { coordinator.stopVoiceChat() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
-                    .controlSize(.small)
-                Button("Interrupt") { coordinator.interruptVoiceChat() }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-            } else {
-                Button("🎙️ Start Voice Chat") { Task { await coordinator.startVoiceChat() } }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-            }
-        }
-    }
 
     // MARK: - Auth
 

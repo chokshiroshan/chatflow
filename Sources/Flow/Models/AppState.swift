@@ -2,10 +2,9 @@ import Foundation
 
 // MARK: - App Mode
 
-/// The two main modes of Flow.
+/// The app mode (dictation only for now).
 enum AppMode: String, CaseIterable, Codable {
     case dictation = "Dictation"
-    case voiceChat = "Voice Chat"
 }
 
 // MARK: - App State
@@ -53,9 +52,7 @@ struct FlowConfig: Codable {
     var hotkeyMode: HotkeyMode = .hold
     var language: String = "en"
     var realtimeModel: String = "gpt-realtime"
-    var preferredMode: AppMode = .dictation
     var injectMethod: InjectMethod = .clipboard
-    var voiceChatVoice: String = "alloy"
 
     enum HotkeyMode: String, Codable, CaseIterable {
         case hold

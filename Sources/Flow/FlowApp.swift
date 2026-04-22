@@ -11,14 +11,6 @@ struct FlowApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        // Voice chat window
-        Window("Voice Chat", id: "voice-chat") {
-            VoiceChatView(coordinator: coordinator)
-        }
-        .windowStyle(.titleBar)
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
-
         // Settings
         Settings {
             SettingsView(coordinator: coordinator)

@@ -23,20 +23,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var generalView: some View {
         Form {
-            Picker("Default Mode", selection: $coordinator.config.preferredMode) {
-                ForEach(AppMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-
-            Picker("Voice (Voice Chat)", selection: $coordinator.config.voiceChatVoice) {
-                Text("Alloy").tag("alloy")
-                Text("Echo").tag("echo")
-                Text("Fable").tag("fable")
-                Text("Onyx").tag("onyx")
-                Text("Nova").tag("nova")
-                Text("Shimmer").tag("shimmer")
-            }
-
-            Picker("Language (Dictation)", selection: $coordinator.config.language) {
+            Picker("Language", selection: $coordinator.config.language) {
                 Text("English").tag("en")
                 Text("Spanish").tag("es")
                 Text("French").tag("fr")

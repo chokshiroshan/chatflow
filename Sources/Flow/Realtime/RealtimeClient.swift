@@ -31,7 +31,6 @@ final class RealtimeClient {
 
     enum ConnectionMode {
         case dictation(language: String)
-        case voiceChat(voice: String)
     }
 
     func connect(accessToken: String, model: String = "gpt-realtime", mode: ConnectionMode, backendMode: Bool = false) async throws {
@@ -97,30 +96,6 @@ final class RealtimeClient {
                     },
                     "turn_detection": null,
                     "max_response_output_tokens": 1024
-                }
-            }
-            """
-
-        case .voiceChat(let voice):
-            sessionConfig = """
-            {
-                "type": "session.update",
-                "session": {
-                    "modalities": ["text", "audio"],
-                    "instructions": "You are a helpful, conversational AI assistant. Be concise and natural.",
-                    "voice": "\(voice)",
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
-                    "input_audio_transcription": {
-                        "model": "whisper-1"
-                    },
-                    "turn_detection": {
-                        "type": "server_vad",
-                        "threshold": 0.5,
-                        "prefix_padding_ms": 300,
-                        "silence_duration_ms": 500
-                    },
-                    "max_response_output_tokens": 4096
                 }
             }
             """

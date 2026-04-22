@@ -7,16 +7,11 @@ final class AppCoordinator: ObservableObject {
     @Published var state: FlowState = .idle
     @Published var authState: AuthState = .signedOut
     @Published var partialTranscript: String = ""
-    @Published var userTranscript: String = ""
-    @Published var assistantTranscript: String = ""
     @Published var config: FlowConfig = .load()
     @Published var showOnboarding: Bool = false
 
-    private(set) var voiceChatActive = false
-
     private let auth = ChatGPTAuth.shared
     private var dictationEngine: DictationEngine?
-    private var voiceChatEngine: VoiceChatEngine?
     private let floatingPill = FloatingPillWindowController()
     private let sounds = SoundManager.shared
     private let permissions = PermissionsManager.shared
@@ -76,18 +71,6 @@ final class AppCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Mode Switching
-
-    func switchMode(to mode: AppMode) {
-        config.preferredMode = mode
-        config.save()
-        deactivateAll()
-        switch mode {
-        case .dictation: activateDictation()
-        case .voiceChat: break
-        }
-    }
-
     // MARK: - Dictation
 
     private func activateDictation() {
@@ -111,41 +94,6 @@ final class AppCoordinator: ObservableObject {
         floatingPill.show(coordinator: self)
     }
 
-    // MARK: - Voice Chat
-
-    func startVoiceChat() async {
-        guard case .signedIn = authState else { return }
-        let engine = VoiceChatEngine(auth: auth, config: config)
-        engine.onStateChanged = { [weak self] newState in
-            Task { @MainActor in self?.state = newState; self?.handleStateChange(newState) }
-        }
-        engine.onUserTranscript = { [weak self] text in
-            Task { @MainActor in self?.userTranscript = text }
-        }
-        engine.onAssistantTranscript = { [weak self] text in
-            Task { @MainActor in self?.assistantTranscript = text }
-        }
-        engine.onError = { [weak self] err in
-            Task { @MainActor in self?.state = .error(err) }
-        }
-        self.voiceChatEngine = engine
-        voiceChatActive = true
-        await engine.start()
-    }
-
-    func stopVoiceChat() {
-        voiceChatEngine?.stop()
-        voiceChatEngine = nil
-        voiceChatActive = false
-        userTranscript = ""
-        assistantTranscript = ""
-        state = .idle
-    }
-
-    func interruptVoiceChat() {
-        voiceChatEngine?.interrupt()
-    }
-
     // MARK: - State Changes + Sound Effects
 
     private func handleStateChange(_ newState: FlowState) {
@@ -164,9 +112,6 @@ final class AppCoordinator: ObservableObject {
     private func deactivateAll() {
         dictationEngine?.deactivate()
         dictationEngine = nil
-        voiceChatEngine?.stop()
-        voiceChatEngine = nil
-        voiceChatActive = false
         floatingPill.hide()
         state = .idle
     }

@@ -3,8 +3,8 @@ import AVFoundation
 
 /// Captures microphone audio via AVAudioEngine, outputs 24kHz mono PCM16.
 ///
-/// Uses explicit hardware format for the tap (nil format is unreliable on some devices).
-/// Manual float32→int16 conversion + downsampling (no AVAudioConverter).
+/// Strategy: Start engine first, wait for hardware to settle, then install tap.
+/// Manual float32→int16 + downsampling (no AVAudioConverter — it silently drops frames).
 final class AudioCapture {
     private var engine: AVAudioEngine?
     private var chunkCount = 0
@@ -35,21 +35,44 @@ final class AudioCapture {
         self.engine = engine
 
         let inputNode = engine.inputNode
-        let hwFormat = inputNode.outputFormat(forBus: 0)
 
+        // Start the engine FIRST so hardware is active and format is stable
+        try engine.start()
+        print("🎙️ Engine started")
+
+        // Wait for hardware to settle (avoids 0-chunk issue on 48kHz devices)
+        try await Task.sleep(for: .milliseconds(200))
+
+        // NOW read the actual active format
+        let hwFormat = inputNode.outputFormat(forBus: 0)
         guard hwFormat.sampleRate > 0 else {
             throw AudioError.noInputDevice
         }
 
         print("🎤 Hardware format: \(hwFormat.sampleRate)Hz, \(hwFormat.channelCount)ch, \(hwFormat.commonFormat)")
 
-        // MUST use explicit hardware format for the tap — nil format fails on 48kHz devices
-        inputNode.installTap(onBus: 0, bufferSize: 2048, format: hwFormat) { [weak self] buffer, time in
+        // Install tap with the hardware's actual active format
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { [weak self] buffer, time in
             self?.handleBuffer(buffer)
         }
 
-        try engine.start()
-        print("🎙️ Engine started with tap on inputNode (format: \(Int(hwFormat.sampleRate))Hz)")
+        chunkCount = 0
+        tapFired = false
+        print("🎙️ Tap installed on inputNode (\(Int(hwFormat.sampleRate))Hz, bufferSize: 1024)")
+
+        // Verify tap fires within 2 seconds
+        try await Task.sleep(for: .milliseconds(500))
+        if !tapFired {
+            print("⚠️ Tap hasn't fired yet after 500ms — waiting longer...")
+            try await Task.sleep(for: .milliseconds(1500))
+            if !tapFired {
+                print("❌ Tap never fired after 2s — audio device may be unavailable")
+                engine.inputNode.removeTap(onBus: 0)
+                engine.stop()
+                self.engine = nil
+                throw AudioError.noInputDevice
+            }
+        }
     }
 
     /// Stop capturing audio.
@@ -67,23 +90,18 @@ final class AudioCapture {
     private func handleBuffer(_ buffer: AVAudioPCMBuffer) {
         if !tapFired {
             tapFired = true
-            print("🎙️ TAP FIRED! frames=\(buffer.frameLength), format=\(buffer.format.sampleRate)Hz")
+            print("🎙️ TAP FIRED! frames=\(buffer.frameLength), rate=\(buffer.format.sampleRate)Hz")
         }
 
         let frameLength = Int(buffer.frameLength)
         guard frameLength > 0 else { return }
 
-        // Get float32 channel data
-        guard let floatData = buffer.floatChannelData else {
-            print("⚠️ No float channel data in buffer")
-            return
-        }
-
+        guard let floatData = buffer.floatChannelData else { return }
         let samples = floatData[0]
         let srcRate = buffer.format.sampleRate
         let srcCount = frameLength
 
-        // Downsample to 24kHz
+        // Downsample to 24kHz by dropping samples
         let ratio = Self.targetSampleRate / srcRate
         let outputCount = Int(Double(srcCount) * ratio)
         guard outputCount > 0 else { return }
@@ -101,7 +119,7 @@ final class AudioCapture {
 
         chunkCount += 1
         if chunkCount == 1 {
-            print("🎙️ First chunk: \(pcm16.count) bytes (\(outputCount) samples from \(srcCount) input)")
+            print("🎙️ First chunk: \(pcm16.count) bytes (\(outputCount) samples from \(srcCount) @ \(Int(srcRate))Hz)")
         }
         onAudioData?(pcm16)
     }

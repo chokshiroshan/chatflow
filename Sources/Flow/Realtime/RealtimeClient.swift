@@ -268,6 +268,10 @@ final class RealtimeClient {
         case "response.audio.done":
             break // Audio stream complete
 
+        // Rate limits — useful for debugging subscription limits
+        case "rate_limits.updated":
+            print("  📊 Rate limits raw: \(json)")
+
         // Response lifecycle
         case "response.done":
             onResponseComplete?()

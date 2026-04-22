@@ -148,15 +148,14 @@ final class DictationEngine {
 
         onStateChanged?(.processing)
 
-        // Flush remaining audio
-        try? await Task.sleep(for: .milliseconds(200))
-
-        // Commit buffer and request response
+        // Commit immediately — audio was already streamed in real-time
+        // No need to flush, the server already has everything
         client?.commitAndRespond()
+        print("📤 Committed buffer, waiting for transcript...")
 
-        // Wait for Whisper transcript (max 10s)
+        // Wait for transcript (max 5s — should be fast since audio was streamed)
         transcriptReceived = false
-        for _ in 1...100 {
+        for _ in 1...50 {
             if transcriptReceived { return }
             try? await Task.sleep(for: .milliseconds(100))
         }

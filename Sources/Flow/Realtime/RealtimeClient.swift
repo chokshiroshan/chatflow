@@ -92,7 +92,7 @@ final class RealtimeClient {
                 "type": "session.update",
                 "session": {
                     "modalities": ["text"],
-                    "instructions": "Transcribe the user's speech exactly as spoken. Output only the transcription.",
+                    "instructions": "Transcribe exactly what was said. Output only the spoken words, preserving proper nouns, brand names, technical terms, and abbreviations as-is. Do not correct, interpret, or rephrase anything.",
                     "input_audio_format": "pcm16",
                     "output_audio_format": "pcm16",
                     "input_audio_transcription": {
@@ -215,7 +215,9 @@ final class RealtimeClient {
         case "session.updated":
             print("  ✅ Session configured")
 
-        // Input audio transcription (Whisper/gpt-4o-mini-transcribe server-side)
+        // Input audio transcription (Whisper/gpt-4o-mini-transcribe — ACCURATE)
+        // This is the server-side transcription of what was actually spoken.
+        // Prefer this over the model's text output.
         case "conversation.item.input_audio_transcription.delta":
             if let delta = obj["delta"] as? String {
                 partialText += delta
@@ -228,15 +230,16 @@ final class RealtimeClient {
                 onFinalTranscript?(t)
             }
 
-        // Response text (model output — fallback)
+        // Response text (model output — LESS accurate for dictation, but acts as fallback)
+        // Only use this if no Whisper transcript came through
         case "response.text.delta":
-            if let delta = obj["delta"] as? String {
+            if let delta = obj["delta"] as? String, partialText.isEmpty {
                 partialText += delta
                 onPartialTranscript?(partialText)
             }
 
         case "response.text.done":
-            if let t = obj["text"] as? String {
+            if let t = obj["text"] as? String, partialText.isEmpty {
                 partialText = t
                 onFinalTranscript?(t)
             }

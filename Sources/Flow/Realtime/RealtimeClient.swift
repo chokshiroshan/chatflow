@@ -98,22 +98,37 @@ final class RealtimeClient {
     private func configureSession(mode: ConnectionMode) async throws {
         let sessionConfig: String
 
+    private func configureSession(mode: ConnectionMode) async throws {
+        let sessionConfig: String
+
         switch mode {
         case .dictation(let lang):
+            // Match Codex CLI v2 transcription session exactly:
+            // - type: "transcription" (dedicated STT mode, not conversational)
+            // - model: "gpt-4o-mini-transcribe" (better than whisper-1)
+            // - audio format: audio/pcm @ 24000Hz
+            // - noise_reduction: near_field
+            // - no turn detection, no output
             sessionConfig = """
             {
                 "type": "session.update",
                 "session": {
-                    "modalities": ["text"],
-                    "instructions": "You are a transcription engine. Output ONLY the exact words spoken. No corrections, no commentary, no formatting.",
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
-                    "input_audio_transcription": {
-                        "model": "whisper-1",
-                        "language": "\(lang)"
-                    },
-                    "turn_detection": null,
-                    "max_response_output_tokens": 1024
+                    "type": "transcription",
+                    "audio": {
+                        "input": {
+                            "format": {
+                                "type": "audio/pcm",
+                                "rate": 24000
+                            },
+                            "noise_reduction": {
+                                "type": "near_field"
+                            },
+                            "transcription": {
+                                "model": "gpt-4o-mini-transcribe",
+                                "language": "\(lang)"
+                            }
+                        }
+                    }
                 }
             }
             """

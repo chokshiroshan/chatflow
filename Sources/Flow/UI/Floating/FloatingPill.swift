@@ -69,6 +69,7 @@ struct FloatingPill: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)  // Fill panel, center content
         .background(pillBackground)
         .clipShape(Capsule())
         .overlay(
@@ -82,8 +83,7 @@ struct FloatingPill: View {
                     lineWidth: 0.5
                 )
         )
-        .shadow(color: Color.black.opacity(0.3), radius: 20, y: 8)
-        .shadow(color: glowColor.opacity(0.3), radius: 16, y: 4)
+        .shadow(color: Color.black.opacity(0.25), radius: 12, y: 4)
         .gesture(
             DragGesture()
                 .onChanged { value in
@@ -99,11 +99,6 @@ struct FloatingPill: View {
     @ViewBuilder
     private var waveIcon: some View {
         ZStack {
-            // Subtle glow ring
-            Circle()
-                .fill(glowColor.opacity(glowOpacity * 0.15))
-                .frame(width: 26, height: 26)
-
             // Animated dots (sine wave pattern)
             HStack(spacing: 2.5) {
                 ForEach(0..<5, id: \.self) { i in
@@ -329,7 +324,7 @@ final class FloatingPillWindowController {
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
         let width: CGFloat = 240   // Compact — just icon + short text
-        let height: CGFloat = 44   // Taller than content for breathing room
+        let height: CGFloat = 48   // Enough room for waveform + text without clipping
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12

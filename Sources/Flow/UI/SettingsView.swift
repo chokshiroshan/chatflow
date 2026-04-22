@@ -2,8 +2,6 @@ import SwiftUI
 
 // MARK: - Settings Window
 
-/// Settings window with sidebar navigation matching the web design.
-/// Tabs: General, Shortcut, Microphone, Privacy, About
 struct SettingsView: View {
     @ObservedObject var coordinator: AppCoordinator
     @State private var autoStartEnabled = AutoStartManager.shared.isEnabled
@@ -12,22 +10,19 @@ struct SettingsView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Sidebar
             settingsSidebar
-
-            // Content
             settingsContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: 720, height: 560)
-        .background(Color(red: 0.949, green: 0.957, blue: 0.973).opacity(0.82))
+        .background(FlowColors.background)
     }
 
     // MARK: - Sidebar
 
     private var settingsItems: [(String, String, String)] {
         [
-            ("general", "General", "gear"),
+            ("general", "General", "gearshape"),
             ("shortcut", "Shortcut", "keyboard"),
             ("mic", "Microphone", "mic.fill"),
             ("privacy", "Privacy", "shield.checkmark"),
@@ -45,36 +40,34 @@ struct SettingsView: View {
                     Button(action: { withAnimation(.easeInOut(duration: 0.15)) { selectedTab = item.0 } }) {
                         HStack(spacing: 10) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(selectedTab == item.0 ? Color(red: 0.0, green: 0.48, blue: 1.0) : Color.black.opacity(0.12))
+                                RoundedRectangle(cornerRadius: FlowRadii.sm)
+                                    .fill(selectedTab == item.0 ? FlowColors.accent.opacity(0.2) : FlowColors.card)
                                     .frame(width: 28, height: 28)
                                 Image(systemName: item.2)
                                     .font(.system(size: 13))
-                                    .foregroundColor(selectedTab == item.0 ? .white : .black.opacity(0.5))
+                                    .foregroundColor(selectedTab == item.0 ? FlowColors.accent : FlowColors.textTertiary)
                             }
                             Text(item.1)
-                                .font(.system(size: 13, weight: selectedTab == item.0 ? .semibold : .medium))
-                                .foregroundColor(selectedTab == item.0 ? .black.opacity(0.9) : .black.opacity(0.65))
+                                .font(FlowTypography.bodyMedium)
+                                .foregroundColor(selectedTab == item.0 ? FlowColors.textPrimary : FlowColors.textSecondary)
                             Spacer()
                         }
                         .padding(.vertical, 9)
                         .padding(.horizontal, 12)
                         .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(selectedTab == item.0 ? Color.white.opacity(0.65) : .clear)
+                            RoundedRectangle(cornerRadius: FlowRadii.md)
+                                .fill(selectedTab == item.0 ? FlowColors.accent.opacity(0.06) : .clear)
                         )
-                        .shadow(color: selectedTab == item.0 ? .black.opacity(0.08) : .clear, radius: 4, x: 0, y: 1)
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 8)
-            .padding(.top, 10)
 
             Spacer()
         }
         .frame(width: 210)
-        .background(Color(red: 0.82, green: 0.86, blue: 0.93).opacity(0.55))
+        .background(FlowColors.surface)
     }
 
     // MARK: - Content
@@ -83,10 +76,9 @@ struct SettingsView: View {
     private var settingsContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Section title
                 Text(settingsItems.first(where: { $0.0 == selectedTab })?.1 ?? "General")
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundColor(.black.opacity(0.88))
+                    .font(FlowTypography.title)
+                    .foregroundColor(FlowColors.textPrimary)
                     .padding(.bottom, 20)
 
                 switch selectedTab {
@@ -106,7 +98,6 @@ struct SettingsView: View {
 
     private var settingsGeneral: some View {
         VStack(alignment: .leading, spacing: 24) {
-            // App section
             settingsSection("App") {
                 settingsToggleRow("Launch at login", isOn: $autoStartEnabled)
                     .onChange(of: autoStartEnabled) { _, _ in try? AutoStartManager.shared.toggle() }
@@ -116,7 +107,6 @@ struct SettingsView: View {
                     .onChange(of: coordinator.config.autoPasteEnabled) { _, _ in coordinator.config.save() }
             }
 
-            // Transcription section
             settingsSection("Transcription") {
                 settingsPickerRow("Language", selection: $coordinator.config.language) {
                     Text("Auto-detect").tag("auto")
@@ -133,19 +123,18 @@ struct SettingsView: View {
                 }
             }
 
-            // Appearance
             settingsSection("Appearance") {
-                settingsPickerRow("Appearance", selection: $coordinator.config.appearance, isLast: true) {
+                settingsPickerRow("Theme", selection: $coordinator.config.appearance, isLast: true) {
+                    Text("Dark").tag("dark")
                     Text("Match System").tag("system")
                     Text("Light").tag("light")
-                    Text("Dark").tag("dark")
                 }
                 .onChange(of: coordinator.config.appearance) { _, newValue in
                     coordinator.config.save()
                     switch newValue {
                     case "light": NSApp.appearance = NSAppearance(named: .aqua)
                     case "dark":  NSApp.appearance = NSAppearance(named: .darkAqua)
-                    default:      NSApp.appearance = nil  // System default
+                    default:      NSApp.appearance = nil
                     }
                 }
             }
@@ -158,23 +147,22 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 24) {
             settingsSection("Hold to Record") {
                 VStack(alignment: .leading, spacing: 16) {
-                    // Shortcut pills
                     let shortcutOptions = [("Ctrl+Space", "ctrl+space"), ("Cmd+Shift+Space", "cmd+shift+space"), ("⌥ Space", "option+space"), ("Right ⌘", "rcmd")]
                     HStack(spacing: 10) {
                         ForEach(shortcutOptions, id: \.1) { display, value in
                             Button(action: { coordinator.updateHotkey(value) }) {
                                 Text(display)
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(coordinator.config.hotkey == value ? Color(red: 0.0, green: 0.48, blue: 1.0) : .black.opacity(0.7))
-                                    .padding(.horizontal, 18)
+                                    .font(FlowTypography.bodyMedium)
+                                    .foregroundColor(coordinator.config.hotkey == value ? FlowColors.accent : FlowColors.textSecondary)
+                                    .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(coordinator.config.hotkey == value ? Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.07) : Color.white.opacity(0.6))
+                                        RoundedRectangle(cornerRadius: FlowRadii.md)
+                                            .fill(coordinator.config.hotkey == value ? FlowColors.accent.opacity(0.12) : FlowColors.card)
                                     )
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(coordinator.config.hotkey == value ? Color(red: 0.0, green: 0.48, blue: 1.0) : Color.black.opacity(0.12), lineWidth: coordinator.config.hotkey == value ? 2 : 1.5)
+                                        RoundedRectangle(cornerRadius: FlowRadii.md)
+                                            .stroke(coordinator.config.hotkey == value ? FlowColors.accent.opacity(0.4) : FlowColors.border, lineWidth: coordinator.config.hotkey == value ? 1.5 : 0.5)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -211,27 +199,25 @@ struct SettingsView: View {
             settingsSection("Input Level") {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Live level (hold shortcut to test)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.black.opacity(0.45))
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textTertiary)
 
-                    // Level bar
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.black.opacity(0.08))
-                                .frame(height: 8)
+                                .fill(FlowColors.card)
+                                .frame(height: 6)
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(LinearGradient(colors: [Color(red: 0.0, green: 0.48, blue: 1.0), Color(red: 0.35, green: 0.78, blue: 0.98)], startPoint: .leading, endPoint: .trailing))
-                                .frame(width: geo.size.width * 0.65, height: 8)
+                                .fill(LinearGradient(colors: [FlowColors.accent, FlowColors.accentPurple], startPoint: .leading, endPoint: .trailing))
+                                .frame(width: geo.size.width * 0.65, height: 6)
                         }
                     }
-                    .frame(height: 8)
+                    .frame(height: 6)
 
-                    // Wave bars
                     HStack(spacing: 2) {
                         ForEach(0..<40, id: \.self) { i in
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.3))
+                                .fill(FlowColors.accent.opacity(0.25))
                                 .frame(height: 20 + sin(Double(i) * 0.8) * 12)
                         }
                     }
@@ -248,27 +234,27 @@ struct SettingsView: View {
             // Privacy banner
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "shield.checkmark")
-                    .font(.system(size: 22))
-                    .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
+                    .font(.system(size: 20))
+                    .foregroundColor(FlowColors.accentGreen)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Your audio stays private")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black.opacity(0.85))
+                        .font(FlowTypography.bodyMedium)
+                        .foregroundColor(FlowColors.textPrimary)
                     Text("Audio is sent directly to OpenAI's Whisper API and deleted immediately after transcription. ChatFlow never stores, logs, or sees your recordings.")
-                        .font(.system(size: 13))
-                        .foregroundColor(.black.opacity(0.55))
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textSecondary)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(red: 0.20, green: 0.78, blue: 0.35).opacity(0.08))
+                RoundedRectangle(cornerRadius: FlowRadii.md)
+                    .fill(FlowColors.accentGreen.opacity(0.08))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color(red: 0.20, green: 0.78, blue: 0.35).opacity(0.25), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: FlowRadii.md)
+                    .stroke(FlowColors.accentGreen.opacity(0.15), lineWidth: 0.5)
             )
 
             settingsSection("Data") {
@@ -299,57 +285,51 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             // App icon
             ZStack {
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(LinearGradient(colors: [Color(red: 0.0, green: 0.48, blue: 1.0), Color(red: 0.35, green: 0.78, blue: 0.98)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                RoundedRectangle(cornerRadius: FlowRadii.lg)
+                    .fill(
+                        LinearGradient(colors: [FlowColors.accent.opacity(0.3), FlowColors.accentPurple.opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
                     .frame(width: 72, height: 72)
-                    .shadow(color: Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.35), radius: 20, x: 0, y: 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: FlowRadii.lg)
+                            .stroke(FlowColors.accent.opacity(0.3), lineWidth: 1)
+                    )
                 Image(systemName: "mic.fill")
                     .font(.system(size: 32))
-                    .foregroundColor(.white)
+                    .foregroundColor(FlowColors.accent)
             }
 
             Spacer().frame(height: 16)
 
             Text("ChatFlow")
-                .font(.system(size: 20, weight: .heavy))
-                .foregroundColor(.black.opacity(0.88))
+                .font(FlowTypography.title)
+                .foregroundColor(FlowColors.textPrimary)
             Text("Version 1.0.0 (Build 100)")
-                .font(.system(size: 13))
-                .foregroundColor(.black.opacity(0.4))
+                .font(FlowTypography.caption)
+                .foregroundColor(FlowColors.textTertiary)
 
             Spacer().frame(height: 24)
 
             settingsSection("Account") {
-                HStack {
-                    Text("ChatGPT account")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.78))
-                    Spacer()
+                settingsInfoRow("ChatGPT account") {
                     if case .signedIn(let email, _) = coordinator.authState {
                         HStack(spacing: 6) {
-                            Circle().fill(Color(red: 0.20, green: 0.78, blue: 0.35)).frame(width: 8, height: 8)
+                            Circle().fill(FlowColors.accentGreen).frame(width: 8, height: 8)
                             Text("Connected — \(email)")
-                                .font(.system(size: 13))
-                                .foregroundColor(.black.opacity(0.6))
+                                .font(FlowTypography.caption)
+                                .foregroundColor(FlowColors.textSecondary)
                         }
                     } else {
                         Text("Not connected")
-                            .font(.system(size: 13))
-                            .foregroundColor(.black.opacity(0.4))
+                            .font(FlowTypography.caption)
+                            .foregroundColor(FlowColors.textTertiary)
                     }
                 }
-                .padding(.vertical, 13)
-
-                HStack {
-                    Text("Usage this month")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.78))
-                    Spacer()
+                settingsInfoRow("Usage this month") {
                     Text(coordinator.usageDisplay)
-                        .font(.system(size: 13))
-                        .foregroundColor(.black.opacity(0.6))
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.textSecondary)
                 }
-                .padding(.vertical, 13)
             }
 
             Spacer().frame(height: 24)
@@ -366,42 +346,38 @@ struct SettingsView: View {
 
     private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title.uppercased())
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.black.opacity(0.38))
-                .tracking(0.6)
+            FlowSectionHeader(title: title)
 
             VStack(spacing: 0) {
                 content()
             }
             .padding(.horizontal, 16)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.white.opacity(0.7))
+                RoundedRectangle(cornerRadius: FlowRadii.lg)
+                    .fill(FlowColors.card)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.black.opacity(0.09), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: FlowRadii.lg)
+                    .stroke(FlowColors.border, lineWidth: 0.5)
             )
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 1)
         }
     }
 
     private func settingsToggleRow(_ label: String, isOn: Binding<Bool>, isLast: Bool = false) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black.opacity(0.78))
+                .font(FlowTypography.bodyMedium)
+                .foregroundColor(FlowColors.textPrimary)
             Spacer()
             Toggle("", isOn: isOn)
                 .toggleStyle(.switch)
                 .controlSize(.small)
+                .tint(FlowColors.accent)
         }
         .padding(.vertical, 13)
         .overlay(alignment: .bottom) {
             if !isLast {
-                Divider()
-                    .padding(.leading, 0)
+                Divider().overlay(FlowColors.border)
             }
         }
     }
@@ -409,19 +385,20 @@ struct SettingsView: View {
     private func settingsPickerRow<Selection: Hashable, Content: View>(_ label: String, selection: Binding<Selection>, isLast: Bool = false, @ViewBuilder content: () -> Content) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black.opacity(0.78))
+                .font(FlowTypography.bodyMedium)
+                .foregroundColor(FlowColors.textPrimary)
             Spacer()
             Picker("", selection: selection) {
                 content()
             }
             .pickerStyle(.menu)
+            .tint(FlowColors.accent)
             .labelsHidden()
         }
         .padding(.vertical, 13)
         .overlay(alignment: .bottom) {
             if !isLast {
-                Divider()
+                Divider().overlay(FlowColors.border)
             }
         }
     }
@@ -429,41 +406,55 @@ struct SettingsView: View {
     private func settingsLinkRow(_ label: String, isLast: Bool = false) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black.opacity(0.78))
+                .font(FlowTypography.bodyMedium)
+                .foregroundColor(FlowColors.textPrimary)
             Spacer()
             Text("View →")
-                .font(.system(size: 13))
-                .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
+                .font(FlowTypography.caption)
+                .foregroundColor(FlowColors.accent)
         }
         .padding(.vertical, 13)
         .overlay(alignment: .bottom) {
             if !isLast {
-                Divider()
+                Divider().overlay(FlowColors.border)
             }
+        }
+    }
+
+    private func settingsInfoRow(_ label: String, @ViewBuilder trailing: () -> some View) -> some View {
+        HStack {
+            Text(label)
+                .font(FlowTypography.bodyMedium)
+                .foregroundColor(FlowColors.textPrimary)
+            Spacer()
+            trailing()
+        }
+        .padding(.vertical, 13)
+        .overlay(alignment: .bottom) {
+            Divider().overlay(FlowColors.border)
         }
     }
 
     private func permissionRow(label: String, granted: Bool, isLast: Bool = false, onFix: @escaping () -> Void) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black.opacity(0.78))
+                .font(FlowTypography.bodyMedium)
+                .foregroundColor(FlowColors.textPrimary)
             Spacer()
             if granted {
                 HStack(spacing: 6) {
-                    Circle().fill(Color(red: 0.20, green: 0.78, blue: 0.35)).frame(width: 8, height: 8)
+                    Circle().fill(FlowColors.accentGreen).frame(width: 8, height: 8)
                     Text("Granted")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.accentGreen)
                 }
             } else {
                 Button(action: onFix) {
                     HStack(spacing: 6) {
-                        Circle().fill(Color(red: 0.95, green: 0.35, blue: 0.30)).frame(width: 8, height: 8)
+                        Circle().fill(FlowColors.accentOrange).frame(width: 8, height: 8)
                         Text("Grant")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
+                            .font(FlowTypography.caption)
+                            .foregroundColor(FlowColors.accent)
                     }
                 }
                 .buttonStyle(.plain)
@@ -472,7 +463,7 @@ struct SettingsView: View {
         .padding(.vertical, 13)
         .overlay(alignment: .bottom) {
             if !isLast {
-                Divider()
+                Divider().overlay(FlowColors.border)
             }
         }
     }

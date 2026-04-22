@@ -34,6 +34,7 @@ struct MenuView: View {
                 .padding(.vertical, 8)
         }
         .frame(width: 280)
+        .background(FlowColors.surface)
     }
 
     // MARK: - Header
@@ -46,7 +47,7 @@ struct MenuView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [.blue.opacity(0.6), .purple.opacity(0.4)],
+                            colors: [FlowColors.accent.opacity(0.6), FlowColors.accentPurple.opacity(0.4)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )

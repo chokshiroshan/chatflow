@@ -92,13 +92,13 @@ struct FloatingPill: View {
 
     private var iconColor: Color {
         switch coordinator.state {
-        case .recording: return Color(red: 1.0, green: 0.35, blue: 0.35)
-        case .connecting: return Color(red: 1.0, green: 0.75, blue: 0.3)
-        case .processing: return Color(red: 0.5, green: 0.75, blue: 1.0)
-        case .injecting: return Color(red: 0.35, green: 0.9, blue: 0.55)
-        case .speaking: return Color(red: 0.35, green: 0.85, blue: 0.65)
+        case .recording: return FlowColors.accent
+        case .connecting: return FlowColors.accentOrange
+        case .processing: return FlowColors.accentPurple
+        case .injecting: return FlowColors.accentGreen
+        case .speaking: return FlowColors.accentGreen
         case .error: return Color(red: 1.0, green: 0.35, blue: 0.35)
-        default: return .gray
+        default: return FlowColors.textTertiary
         }
     }
 

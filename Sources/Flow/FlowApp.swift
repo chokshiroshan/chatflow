@@ -22,7 +22,7 @@ struct FlowApp: App {
         Window("ChatFlow Setup", id: "onboarding") {
             OnboardingFlowView(coordinator: coordinator)
         }
-        .windowStyle(.plain)
+        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultPosition(.center)
         .defaultSize(width: 540, height: 500)

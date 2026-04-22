@@ -391,9 +391,9 @@ private struct OnboardMicStep: View {
                     .foregroundColor(.black.opacity(0.6))
 
                 if granted {
-                    OnboardingButton("Continue", action: onNext)
+                    OnboardingButton(title: "Continue", action: onNext)
                 } else {
-                    OnboardingButton(requesting ? "Requesting…" : "Allow Microphone", action: requestMic)
+                    OnboardingButton(title: requesting ? "Requesting…" : "Allow Microphone", action: requestMic)
                         .disabled(requesting)
                 }
             }
@@ -489,7 +489,7 @@ private struct OnboardShortcutStep: View {
                 Button("Back", action: onBack)
                     .buttonStyle(.borderless)
                     .foregroundColor(.black.opacity(0.6))
-                OnboardingButton("Set Shortcut", action: onNext)
+                OnboardingButton(title: "Set Shortcut", action: onNext)
             }
 
             Spacer()

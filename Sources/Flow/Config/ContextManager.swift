@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Manages user context for improving transcription accuracy.
 ///
@@ -56,16 +57,31 @@ final class ContextManager {
     func buildInstructions(basePrompt: String = "Transcribe exactly what was said.") -> String {
         load() // Always reload for latest
 
-        if context.isEmpty {
-            return "\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything."
+        var parts = ["\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything."]
+
+        // Add user context if available
+        if !context.isEmpty {
+            parts.append("User context (use this to correctly transcribe names, terms, and abbreviations):\(context)")
         }
 
-        return """
-        \(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything.
+        // Add active app context (what the user is currently looking at)
+        if let app = Self.frontmostApp() {
+            parts.append("The user is currently in \(app). Use this to interpret ambiguous words.")
+            print("📋 Active app: \(app)")
+        }
 
-        User context (use this to correctly transcribe names, terms, and abbreviations):
-        \(context)
-        """
+        return parts.joined(separator: " ")
+    }
+
+    // MARK: - Active App Detection
+
+    /// Get the name of the frontmost macOS application.
+    private static func frontmostApp() -> String? {
+        // Use NSWorkspace directly — fast, no subprocess
+        guard let app = NSWorkspace.shared.frontmostApplication?.localizedName else {
+            return nil
+        }
+        return app
     }
 
     /// Save new content to the context file.

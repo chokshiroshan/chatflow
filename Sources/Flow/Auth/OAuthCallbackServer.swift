@@ -5,13 +5,14 @@ import Foundation
 /// Flow:
 /// 1. Start server on port 1455 (Codex CLI standard)
 /// 2. Open browser → auth.openai.com login
-/// 3. Browser redirects to http://127.0.0.1:1455/auth/callback?code=xxx&state=yyy
+/// 3. Browser redirects to http://localhost:1455/auth/callback?code=xxx&state=yyy
 /// 4. Server captures the auth code + state
 /// 5. Shuts down
 final class OAuthCallbackServer {
     private var serverSocket: Int32 = -1
     private var port: UInt16 = 0
     private var continuation: CheckedContinuation<CallbackResult, Error>?
+    private var isListening = false
 
     /// The callback path (default: /auth/callback matching Codex CLI)
     var path: String = "/auth/callback"
@@ -21,7 +22,7 @@ final class OAuthCallbackServer {
 
     /// The redirect URI to use in the OAuth URL.
     var redirectURI: String {
-        "http://127.0.0.1:\(port)\(path)"
+        "http://localhost:\(port)\(path)"
     }
 
     struct CallbackResult {
@@ -37,7 +38,7 @@ final class OAuthCallbackServer {
 
         // Try the fixed port first
         do {
-            try startServer()
+            try bindAndListen()
             return port
         } catch {
             if fixedPort != nil {
@@ -48,19 +49,45 @@ final class OAuthCallbackServer {
                 }
                 // Retry fixed port
                 do {
-                    try startServer()
+                    try bindAndListen()
                     return port
                 } catch {
                     // Fall back to random port
                     print("⚠️ Port \(fixedPort!) taken, using random port")
                     self.fixedPort = nil
-                    try startServer()
+                    try bindAndListen()
                     return port
                 }
             }
             throw error
         }
     }
+
+    /// Wait for the OAuth callback. Server must already be started via start().
+    func waitForCallback() async throws -> CallbackResult {
+        guard serverSocket != -1 else {
+            throw OAuthError.serverStartFailed
+        }
+        print("📡 OAuth callback server listening on http://localhost:\(port)\(path)")
+        return try await withCheckedThrowingContinuation { cont in
+            self.continuation = cont
+            self.acceptConnection()
+        }
+    }
+
+    /// Shut down the server.
+    func stop() {
+        if serverSocket != -1 {
+            shutdown(serverSocket, SHUT_RDWR)
+            close(serverSocket)
+            serverSocket = -1
+            isListening = false
+        }
+    }
+
+    deinit { stop() }
+
+    // MARK: - Private
 
     private func shell(_ cmd: String) -> String {
         let process = Process()
@@ -74,30 +101,10 @@ final class OAuthCallbackServer {
         return String(data: data, encoding: .utf8) ?? ""
     }
 
-    /// Start the server and return the auth code + state from the callback.
-    func waitForCallback() async throws -> CallbackResult {
-        try startServer()
-        print("📡 OAuth callback server listening on http://127.0.0.1:\(port)\(path)")
-        return try await withCheckedThrowingContinuation { cont in
-            self.continuation = cont
-            self.acceptConnection()
-        }
-    }
+    /// Bind the socket and start listening. Only call once.
+    private func bindAndListen() throws {
+        guard serverSocket == -1 else { return } // Already bound
 
-    /// Shut down the server.
-    func stop() {
-        if serverSocket != -1 {
-            shutdown(serverSocket, SHUT_RDWR)
-            close(serverSocket)
-            serverSocket = -1
-        }
-    }
-
-    deinit { stop() }
-
-    // MARK: - Private
-
-    private func startServer() throws {
         serverSocket = socket(AF_INET, SOCK_STREAM, 0)
         guard serverSocket != -1 else {
             throw OAuthError.serverStartFailed
@@ -107,20 +114,22 @@ final class OAuthCallbackServer {
         var reuse: Int32 = 1
         setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout.size(ofValue: reuse)))
 
-        // Bind to 127.0.0.1 on specified or random port
+        // Bind to localhost on specified or random port
         var addr = sockaddr_in()
         addr.sin_len = UInt8(MemoryLayout.size(ofValue: addr))
         addr.sin_family = sa_family_t(AF_INET)
-        // Bind to 0.0.0.0 so we accept connections regardless of how localhost resolves
-        addr.sin_addr.s_addr = INADDR_ANY
-        addr.sin_port = fixedPort.map { UInt16(bigEndian: $0) } ?? 0
+        addr.sin_addr.s_addr = INADDR_ANY  // 0.0.0.0 — works with both localhost and 127.0.0.1
+        addr.sin_port = fixedPort.map { $0.bigEndian } ?? 0
 
         let bindResult = withUnsafePointer(to: addr) { ptr in
             bind(serverSocket, UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self), socklen_t(MemoryLayout<sockaddr_in>.size))
         }
 
         guard bindResult == 0 else {
+            let errno = Darwin.errno
+            print("❌ bind() failed: errno=\(errno) (\(String(cString: strerror(errno))))")
             close(serverSocket)
+            serverSocket = -1
             throw OAuthError.serverStartFailed
         }
 
@@ -132,31 +141,37 @@ final class OAuthCallbackServer {
                 getsockname(serverSocket, rebound, &addrLen)
             }
         }
-        port = UInt16(bigEndian: assignedAddr.sin_port)
+        port = UInt16(assignedAddr.sin_port.bigEndian)
 
         // Start listening
         guard listen(serverSocket, 1) == 0 else {
             close(serverSocket)
+            serverSocket = -1
             throw OAuthError.serverStartFailed
         }
+
+        isListening = true
     }
 
     private func acceptConnection() {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self, self.serverSocket != -1 else { return }
 
+            print("📡 Waiting for callback connection on port \(self.port)...")
+
             var clientAddr = sockaddr()
             var clientLen = socklen_t(MemoryLayout.size(ofValue: clientAddr))
             let clientSocket = accept(self.serverSocket, &clientAddr, &clientLen)
 
             guard clientSocket != -1 else {
+                print("❌ accept() failed: \(String(cString: strerror(Darwin.errno)))")
                 self.continuation?.resume(throwing: OAuthError.acceptFailed)
                 return
             }
             defer { close(clientSocket) }
 
             // Read the HTTP request
-            var buffer = [UInt8](repeating: 0, count: 8192)
+            var buffer = [UInt8](repeating: 0, count: 16384)
             let bytesRead = recv(clientSocket, &buffer, buffer.count, 0)
             guard bytesRead > 0 else {
                 self.continuation?.resume(throwing: OAuthError.noData)
@@ -164,6 +179,7 @@ final class OAuthCallbackServer {
             }
 
             let request = String(bytes: buffer.prefix(bytesRead), encoding: .utf8) ?? ""
+            print("📡 Received callback request: \(request.prefix(200))")
 
             // Parse code + state from the URL
             // GET /auth/callback?code=xxx&state=yyy HTTP/1.1

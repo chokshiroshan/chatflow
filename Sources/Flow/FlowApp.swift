@@ -18,8 +18,8 @@ struct FlowApp: App {
             SettingsView(coordinator: coordinator)
         }
 
-        // Onboarding window (matches web design)
-        Window("ChatFlow Setup", id: "chatflow") {
+        // Onboarding (shown on first launch or missing permissions)
+        Window("ChatFlow Setup", id: "onboarding") {
             OnboardingFlowView(coordinator: coordinator)
         }
         .windowStyle(.plain)

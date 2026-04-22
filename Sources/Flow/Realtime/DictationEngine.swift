@@ -149,11 +149,18 @@ final class DictationEngine {
             return
         }
 
+        // Immediately show processing state
         onStateChanged?(.processing)
 
+        // Make sure we're connected before committing
+        guard let client, isConnected else {
+            print("⚠️ Not connected — reconnecting")
+            reconnect()
+            return
+        }
+
         // Commit immediately — audio was already streamed in real-time
-        // No need to flush, the server already has everything
-        client?.commitAndRespond()
+        client.commitAndRespond()
         print("📤 Committed buffer, waiting for transcript...")
 
         // Wait for transcript (max 5s — should be fast since audio was streamed)

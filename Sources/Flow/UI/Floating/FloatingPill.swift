@@ -258,7 +258,7 @@ final class FloatingPillWindowController {
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
         let width: CGFloat = 60
-        let height: CGFloat = 44
+        let height: CGFloat = 52
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12

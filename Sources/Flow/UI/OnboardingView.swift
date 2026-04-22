@@ -12,9 +12,6 @@ struct OnboardingFlowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Title bar
-            OnboardingTitleBar(step: step, total: steps.count)
-
             // Content
             Group {
                 switch step {
@@ -30,43 +27,15 @@ struct OnboardingFlowView: View {
 
             // Step dots
             StepDots(count: steps.count, current: step)
-                .padding(.bottom, 20)
+                .padding(.bottom, 24)
         }
-        .frame(width: 540, height: 500)
+        .frame(width: 640, height: 600)
         .background(Color(red: 0.949, green: 0.957, blue: 0.973).opacity(0.82))
     }
 
     private func advance() { withAnimation(.easeInOut(duration: 0.3)) { step = min(step + 1, steps.count - 1) } }
     private func goBack() { withAnimation(.easeInOut(duration: 0.3)) { step = max(step - 1, 0) } }
     private func finish() { coordinator.completeOnboarding() }
-}
-
-// MARK: - Title Bar
-
-private struct OnboardingTitleBar: View {
-    let step: Int
-    let total: Int
-
-    var body: some View {
-        HStack(spacing: 8) {
-            // Traffic lights
-            HStack(spacing: 7) {
-                Circle().fill(Color(red: 1.0, green: 0.45, blue: 0.42)).frame(width: 12, height: 12)
-                Circle().fill(Color(red: 1.0, green: 0.74, blue: 0.18)).frame(width: 12, height: 12)
-                Circle().fill(Color(red: 0.10, green: 0.76, blue: 0.20)).frame(width: 12, height: 12)
-            }
-
-            Spacer()
-
-            Text("ChatFlow Setup")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.black.opacity(0.5))
-
-            Spacer().frame(width: 56) // balance traffic lights
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 44)
-    }
 }
 
 // MARK: - Step Dots
@@ -562,11 +531,12 @@ private struct OnboardDoneStep: View {
             Spacer().frame(height: 12)
 
             Text("ChatFlow lives in your menu bar. Hold **\(hotkeyDisplay)** anywhere to start dictating.")
-                .font(.system(size: 16))
+                .font(.system(size: 15))
                 .foregroundColor(.black.opacity(0.52))
-                .lineSpacing(6)
+                .lineSpacing(5)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 440)
 
             Spacer().frame(height: 40)
 
@@ -581,6 +551,8 @@ private struct OnboardDoneStep: View {
                             Text(tip.0)
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.black.opacity(0.8))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
                         Text(tip.1)
                             .font(.system(size: 12))
@@ -616,7 +588,7 @@ private struct OnboardDoneStep: View {
 
             Spacer()
         }
-        .padding(.horizontal, 48)
+        .padding(.horizontal, 40)
     }
 }
 

@@ -37,19 +37,7 @@ struct SettingsView: View {
 
     private var settingsSidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Traffic lights
-            HStack(spacing: 7) {
-                Circle().fill(Color(red: 1.0, green: 0.45, blue: 0.42)).frame(width: 12, height: 12)
-                Circle().fill(Color(red: 1.0, green: 0.74, blue: 0.18)).frame(width: 12, height: 12)
-                Circle().fill(Color(red: 0.10, green: 0.76, blue: 0.20)).frame(width: 12, height: 12)
-                Spacer()
-                Text("Settings")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.black.opacity(0.4))
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 6)
+            Spacer().frame(height: 16)
 
             // Nav items
             VStack(spacing: 2) {

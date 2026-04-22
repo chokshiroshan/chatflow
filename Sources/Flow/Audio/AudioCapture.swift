@@ -94,7 +94,7 @@ final class AudioCapture {
 
     // MARK: - IO Callback (called from Core Audio real-time thread)
 
-    private func processInput(inputData: UnsafePointer<AudioBufferList>) {
+    func processInput(inputData: UnsafePointer<AudioBufferList>) {
         let bufferList = inputData.pointee
         guard bufferList.mNumberBuffers > 0 else { return }
 
@@ -108,7 +108,6 @@ final class AudioCapture {
 
         // Determine format from hwFormat
         let isFloat = hwFormat.map { $0.mFormatFlags & UInt32(kAudioFormatFlagIsFloat) != 0 } ?? true
-        let bytesPerSample = isFloat ? 4 : 2
 
         if isFloat {
             processFloat32(dataPtr: dataPtr, byteCount: Int(buf.mDataByteSize))

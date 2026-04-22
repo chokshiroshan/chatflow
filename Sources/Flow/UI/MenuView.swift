@@ -3,7 +3,6 @@ import SwiftUI
 /// The menu bar dropdown view — dark spacey theme with explicit light text.
 struct MenuView: View {
     @ObservedObject var coordinator: AppCoordinator
-    @Environment(\.openWindow) var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -223,7 +222,7 @@ struct MenuView: View {
             .buttonStyle(.plain)
 
             Button {
-                openWindow(id: "onboarding")
+                coordinator.reopenOnboarding()
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "questionmark.circle")

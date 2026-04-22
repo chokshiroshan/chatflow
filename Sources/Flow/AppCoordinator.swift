@@ -11,7 +11,7 @@ final class AppCoordinator: ObservableObject {
     @Published var showOnboarding: Bool = false
     @Published var permissionsStatus: PermissionsManager.PermissionStatus = PermissionsManager.shared.checkAll()
     @Published var usageDisplay: String = UsageTracker.shared.stats.monthMinutesDisplay
-    @Published var isEnhancedMode: Bool = false  // Screen context mode active
+    @Published var isEnhancedMode: Bool = false
 
     private let auth = ChatGPTAuth.shared
     private var dictationEngine: DictationEngine?
@@ -21,9 +21,9 @@ final class AppCoordinator: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var sessionStartTime: Date?
     private var previousState: FlowState = .idle
+    private var onboardingWindow: NSWindow?
 
     init() {
-        // Single consolidated auth subscription
         auth.$authState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] authState in
@@ -40,23 +40,56 @@ final class AppCoordinator: ObservableObject {
     // MARK: - Startup
 
     private func checkPermissionsAndAuth() {
-        // Always show onboarding on first launch
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-
         let permStatus = permissions.checkAll()
 
         if !hasCompletedOnboarding || !permStatus.allGranted {
             showOnboarding = true
+            // Open onboarding window immediately via AppKit (not SwiftUI openWindow)
+            DispatchQueue.main.async {
+                self.openOnboardingWindow()
+            }
             return
         }
         checkAuth()
     }
 
+    /// Open the onboarding window using NSPanel (reliable, unlike SwiftUI openWindow).
+    private func openOnboardingWindow() {
+        // Don't open duplicate windows
+        guard onboardingWindow == nil else { return }
+
+        let view = OnboardingFlowView(coordinator: self)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 600),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "ChatFlow Setup"
+        window.contentView = NSHostingView(rootView: view)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        self.onboardingWindow = window
+    }
+
     func completeOnboarding() {
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
         showOnboarding = false
+        onboardingWindow?.close()
+        onboardingWindow = nil
         permissionsStatus = permissions.checkAll()
         checkAuth()
+    }
+
+    /// Re-open onboarding (from menu Help button or settings).
+    func reopenOnboarding() {
+        showOnboarding = true
+        openOnboardingWindow()
     }
 
     // MARK: - Auth
@@ -83,7 +116,6 @@ final class AppCoordinator: ObservableObject {
 
     private func activateDictation() {
         guard case .signedIn = authState else { return }
-        // Deactivate any existing engine before creating a new one
         if dictationEngine != nil {
             deactivateAll()
         }
@@ -94,7 +126,7 @@ final class AppCoordinator: ObservableObject {
                 self?.state = newState
                 if newState == .recording {
                     self?.floatingPill.reposition()
-                    self?.isEnhancedMode = engine.isEnhancedMode
+                    self?.isEnhancedMode = self?.dictationEngine?.isEnhancedMode ?? false
                 }
                 if newState == .idle || newState.isError {
                     self?.isEnhancedMode = false
@@ -146,7 +178,6 @@ final class AppCoordinator: ObservableObject {
         }
     }
 
-    /// Refresh permissions status.
     func refreshPermissions() {
         permissionsStatus = permissions.checkAll()
     }

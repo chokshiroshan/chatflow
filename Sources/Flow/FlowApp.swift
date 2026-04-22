@@ -3,24 +3,12 @@ import SwiftUI
 @main
 struct FlowApp: App {
     @StateObject private var coordinator = AppCoordinator()
-    @Environment(\.openWindow) var openWindow
 
     var body: some Scene {
         // Menu bar presence — stateful compact label, no dock icon
         MenuBarExtra {
             MenuView(coordinator: coordinator)
                 .preferredColorScheme(.dark)
-                .onAppear {
-                    // Auto-open onboarding on first launch or missing permissions
-                    if coordinator.showOnboarding {
-                        openWindow(id: "onboarding")
-                    }
-                }
-                .onChange(of: coordinator.showOnboarding) { _, show in
-                    if show {
-                        openWindow(id: "onboarding")
-                    }
-                }
         } label: {
             MenuBarLabel(coordinator: coordinator)
         }
@@ -32,16 +20,6 @@ struct FlowApp: App {
                 .preferredColorScheme(.dark)
         }
         .windowStyle(.hiddenTitleBar)
-
-        // Onboarding (shown on first launch or missing permissions)
-        Window("ChatFlow Setup", id: "onboarding") {
-            OnboardingFlowView(coordinator: coordinator)
-                .preferredColorScheme(.dark)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
-        .defaultSize(width: 640, height: 600)
     }
 }
 

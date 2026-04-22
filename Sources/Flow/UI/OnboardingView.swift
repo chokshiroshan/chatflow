@@ -10,7 +10,6 @@ struct OnboardingFlowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Content area — fills available space
             Group {
                 switch step {
                 case 0: OnboardWelcomeStep(onNext: advance)
@@ -23,11 +22,9 @@ struct OnboardingFlowView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Bottom bar: dots + nav — fixed height
-            VStack(spacing: 0) {
-                FlowStepDots(count: steps.count, current: step)
-                    .padding(.bottom, 14)
-            }
+            // Bottom dots
+            FlowStepDots(count: steps.count, current: step)
+                .padding(.bottom, 14)
         }
         .frame(width: 640, height: 600)
         .background(
@@ -55,9 +52,6 @@ private struct OnboardWelcomeStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 60)
-
             // Animated waveform
             HStack(spacing: 3) {
                 let heights: [CGFloat] = [6, 10, 18, 28, 36, 32, 22, 34, 26, 16, 28, 20, 12, 24, 30, 18, 8]
@@ -91,20 +85,18 @@ private struct OnboardWelcomeStep: View {
 
             Spacer().frame(height: 12)
 
-            Text("Voice-to-text, powered by your ChatGPT plan")
+            Text("Voice-to-text, powered by your ChatGPT account")
                 .font(FlowTypography.body)
                 .foregroundColor(FlowColors.textSecondary)
                 .multilineTextAlignment(.center)
 
-            Spacer().frame(minHeight: 48)
+            Spacer().frame(height: 44)
 
             FlowButton(title: "Get Started", style: .primary) { onNext() }
                 .frame(width: 200, height: 44)
-
-            Spacer()
-                .frame(minHeight: 40)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 100)
     }
 }
 
@@ -119,24 +111,21 @@ private struct OnboardChatGPTStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 30)
-
             // Centered OpenAI logo
             ZStack {
                 Circle()
                     .fill(FlowColors.accent.opacity(0.1))
-                    .frame(width: 90, height: 90)
+                    .frame(width: 80, height: 80)
                     .overlay(
                         Circle()
                             .stroke(FlowColors.accent.opacity(0.2), lineWidth: 1)
                     )
                 OpenAILogo(color: FlowColors.accent, lineWidth: 2.0)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 36, height: 36)
             }
             .flowGlow(FlowColors.accent.opacity(0.3), radius: 16)
 
-            Spacer().frame(height: 24)
+            Spacer().frame(height: 20)
 
             Text("Connect your ChatGPT account")
                 .font(FlowTypography.title)
@@ -145,7 +134,7 @@ private struct OnboardChatGPTStep: View {
 
             Spacer().frame(height: 10)
 
-            Text("ChatFlow uses the Realtime API from your OpenAI account.\nEven the free tier works — no separate subscription needed.")
+            Text("ChatFlow streams audio to OpenAI's Realtime API for transcription.\nUse your existing ChatGPT account — no API key needed.")
                 .font(FlowTypography.body)
                 .foregroundColor(FlowColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -153,14 +142,14 @@ private struct OnboardChatGPTStep: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 380)
 
-            Spacer().frame(height: 20)
+            Spacer().frame(height: 18)
 
-            // Free badge — centered
+            // Badge
             HStack(spacing: 7) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 12))
                     .foregroundColor(FlowColors.accentGreen)
-                Text("Free tier works · No credit card needed")
+                Text("No credit card needed · Uses your ChatGPT plan")
                     .font(FlowTypography.caption)
                     .foregroundColor(FlowColors.accentGreen)
             }
@@ -175,13 +164,13 @@ private struct OnboardChatGPTStep: View {
                     .stroke(FlowColors.accentGreen.opacity(0.15), lineWidth: 0.5)
             )
 
-            Spacer().frame(minHeight: 24)
+            Spacer().frame(height: 22)
 
-            // How it works — centered, compact
+            // How it works
             VStack(spacing: 10) {
-                howItWorksRow(icon: "mic.fill", title: "Your voice", subtitle: "Recorded locally, never stored")
-                howItWorksRow(icon: "bolt.horizontal.fill", title: "Realtime API", subtitle: "OpenAI transcription model")
-                howItWorksRow(icon: "creditcard.fill", title: "Your ChatGPT plan", subtitle: "Free tier included")
+                howItWorksRow(icon: "mic.fill", title: "Your voice", subtitle: "Recorded locally, streamed in real-time")
+                howItWorksRow(icon: "bolt.horizontal.fill", title: "Realtime API", subtitle: "Transcribed by GPT-4o-mini")
+                howItWorksRow(icon: "creditcard.fill", title: "Your ChatGPT plan", subtitle: "Billed through your OpenAI account")
             }
             .frame(maxWidth: 360)
 
@@ -204,7 +193,8 @@ private struct OnboardChatGPTStep: View {
             .padding(.horizontal, 40)
             .padding(.bottom, 8)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 40)
         .onAppear {
             if case .signedIn = coordinator.authState { connected = true }
         }
@@ -256,10 +246,7 @@ private struct OnboardMicStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 40)
-
-            // Mic circle — centered, generous size
+            // Mic circle
             ZStack {
                 if requesting {
                     Circle()
@@ -303,7 +290,7 @@ private struct OnboardMicStep: View {
             }
             .frame(width: 140, height: 140)
 
-            Spacer().frame(height: 28)
+            Spacer().frame(height: 24)
 
             Text(granted ? "Microphone ready" : "Allow microphone access")
                 .font(FlowTypography.title)
@@ -313,7 +300,7 @@ private struct OnboardMicStep: View {
 
             Text(granted
                  ? "ChatFlow can now listen when you hold your shortcut key."
-                 : "ChatFlow only records while you hold your shortcut key.\nYour audio is never stored on our servers."
+                 : "ChatFlow only records while you hold your shortcut key.\nAudio is streamed directly to OpenAI — never stored locally or on our servers."
             )
                 .font(FlowTypography.body)
                 .foregroundColor(FlowColors.textSecondary)
@@ -339,7 +326,8 @@ private struct OnboardMicStep: View {
             .padding(.horizontal, 40)
             .padding(.bottom, 8)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 60)
     }
 
     private func requestMic() {
@@ -366,9 +354,6 @@ private struct OnboardShortcutStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 40)
-
             // Keyboard icon
             ZStack {
                 RoundedRectangle(cornerRadius: FlowRadii.xl)
@@ -389,7 +374,7 @@ private struct OnboardShortcutStep: View {
             }
             .flowGlow(FlowColors.accentPurple.opacity(0.3), radius: 12)
 
-            Spacer().frame(height: 28)
+            Spacer().frame(height: 24)
 
             Text("Choose your shortcut")
                 .font(FlowTypography.title)
@@ -405,7 +390,7 @@ private struct OnboardShortcutStep: View {
 
             Spacer().frame(height: 32)
 
-            // Shortcut pills — 2x2 grid for better layout
+            // Shortcut pills — 2x2 grid
             let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(shortcuts, id: \.self) { s in
@@ -450,7 +435,8 @@ private struct OnboardShortcutStep: View {
             .padding(.horizontal, 40)
             .padding(.bottom, 8)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 60)
     }
 }
 
@@ -479,30 +465,27 @@ private struct OnboardDoneStep: View {
     private let tips: [(String, String, String)] = [
         ("Hold to record", "Keep the key held while you speak.", "mic.fill"),
         ("Works everywhere", "Any text field in any app.", "laptopcomputer.and.iphone"),
-        ("Free to use", "Powered by your ChatGPT account.", "dollarsign.circle.fill"),
+        ("Powered by OpenAI", "Transcribed by GPT-4o-mini in real-time.", "bolt.horizontal.fill"),
     ]
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-                .frame(minHeight: 30)
-
             // Checkmark
             ZStack {
                 Circle()
                     .fill(FlowColors.accentGreen.opacity(0.12))
-                    .frame(width: 90, height: 90)
+                    .frame(width: 80, height: 80)
                     .overlay(
                         Circle()
                             .stroke(FlowColors.accentGreen.opacity(0.25), lineWidth: 1)
                     )
                 Image(systemName: "checkmark")
-                    .font(.system(size: 42, weight: .medium))
+                    .font(.system(size: 38, weight: .medium))
                     .foregroundColor(FlowColors.accentGreen)
                     .flowGlow(FlowColors.accentGreen, radius: 10)
             }
 
-            Spacer().frame(height: 28)
+            Spacer().frame(height: 24)
 
             Text("You're all set!")
                 .font(FlowTypography.titleLarge)
@@ -518,7 +501,7 @@ private struct OnboardDoneStep: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 380)
 
-            Spacer().frame(minHeight: 28)
+            Spacer().frame(height: 24)
 
             // Tip cards
             HStack(spacing: 10) {
@@ -556,7 +539,8 @@ private struct OnboardDoneStep: View {
                 .frame(width: 220, height: 44)
                 .padding(.bottom, 8)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 50)
         .padding(.horizontal, 40)
     }
 }

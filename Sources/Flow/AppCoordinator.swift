@@ -94,7 +94,14 @@ final class AppCoordinator: ObservableObject {
         guard case .signedIn = authState else { return }
         let engine = DictationEngine(auth: auth, config: config)
         engine.onStateChanged = { [weak self] newState in
-            Task { @MainActor in self?.state = newState; self?.handleStateChange(newState) }
+            Task { @MainActor in
+                self?.state = newState
+                self?.handleStateChange(newState)
+                // Reposition pill to active screen when recording starts
+                if newState == .recording {
+                    self?.floatingPill.reposition()
+                }
+            }
         }
         engine.onPartialTranscript = { [weak self] text in
             Task { @MainActor in self?.partialTranscript = text }

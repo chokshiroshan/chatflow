@@ -1,5 +1,15 @@
 import SwiftUI
 
+// MARK: - Screen Helper
+
+extension NSScreen {
+    /// Find the screen that currently has the mouse cursor.
+    static var screenWithMouse: NSScreen? {
+        let mouseLocation = NSEvent.mouseLocation
+        return screens.first { NSMouseInRect(mouseLocation, $0.frame, false) }
+    }
+}
+
 /// Premium floating pill overlay — Wispr Flow-inspired design.
 ///
 /// Design principles:
@@ -57,8 +67,8 @@ struct FloatingPill: View {
             statusContent
                 .frame(maxWidth: 320, alignment: .leading)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
         .background(pillBackground)
         .clipShape(Capsule())
         .overlay(
@@ -301,6 +311,13 @@ final class FloatingPillWindowController {
         print("🟢 Floating pill window shown")
     }
 
+    func reposition() {
+        // Rebuild on the active screen
+        window?.orderOut(nil)
+        window = nil
+        rebuildWindow()
+    }
+
     func hide() {
         window?.orderOut(nil)
         window = nil
@@ -309,11 +326,12 @@ final class FloatingPillWindowController {
     private func rebuildWindow() {
         guard let coordinator else { return }
 
-        let screen = NSScreen.main!
+        // Use the screen that currently has the focused app
+        let screen = NSScreen.screenWithMouse ?? NSScreen.main!
         let width: CGFloat = 400
-        let height: CGFloat = 52
-        let x = (screen.frame.width - width) / 2
-        let y = screen.visibleFrame.minY + 16  // Bottom center, above dock
+        let height: CGFloat = 56
+        let x = screen.frame.origin.x + (screen.frame.width - width) / 2
+        let y = screen.frame.origin.y + 24  // Bottom center of active screen
 
         let panel = NSPanel(
             contentRect: NSRect(x: x, y: y, width: width, height: height),
@@ -334,7 +352,7 @@ final class FloatingPillWindowController {
         panel.isReleasedWhenClosed = false
 
         let hostingView = NSHostingView(rootView: FloatingPill(coordinator: coordinator))
-        hostingView.frame = panel.contentView!.bounds
+        hostingView.frame = NSRect(origin: .zero, size: NSSize(width: width, height: height))
         hostingView.autoresizingMask = [.width, .height]
         panel.contentView?.addSubview(hostingView)
 

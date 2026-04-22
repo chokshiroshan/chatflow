@@ -231,13 +231,14 @@ struct FloatingPill: View {
 
 /// Manages the floating pill as a borderless, always-on-top window.
 final class FloatingPillWindowController {
-    private var window: NSWindow?
+    private var window: NSPanel?
     private weak var coordinator: AppCoordinator?
 
     func show(coordinator: AppCoordinator) {
         self.coordinator = coordinator
         guard window == nil else { return }
         rebuildWindow()
+        print("🟢 Floating pill window shown")
     }
 
     func hide() {
@@ -254,27 +255,30 @@ final class FloatingPillWindowController {
         let x = (screen.frame.width - width) / 2
         let y = screen.frame.height - 100
 
-        let win = NSWindow(
+        let panel = NSPanel(
             contentRect: NSRect(x: x, y: y, width: width, height: height),
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
 
-        win.isOpaque = false
-        win.backgroundColor = .clear
-        win.hasShadow = true
-        win.level = .floating
-        win.ignoresMouseEvents = false
-        win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        win.isReleasedWhenClosed = false
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.level = .statusBar + 1  // Above everything
+        panel.ignoresMouseEvents = false
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = true
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
 
         let hostingView = NSHostingView(rootView: FloatingPill(coordinator: coordinator))
-        hostingView.frame = win.contentView!.bounds
+        hostingView.frame = panel.contentView!.bounds
         hostingView.autoresizingMask = [.width, .height]
-        win.contentView?.addSubview(hostingView)
+        panel.contentView?.addSubview(hostingView)
 
-        win.orderFrontRegardless()
-        self.window = win
+        panel.orderFrontRegardless()
+        self.window = panel
     }
 }

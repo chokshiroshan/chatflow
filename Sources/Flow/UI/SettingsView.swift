@@ -50,8 +50,7 @@ struct SettingsView: View {
             }
 
             Picker("Model", selection: $coordinator.config.realtimeModel) {
-                Text("gpt-realtime-1.5 (latest)").tag("gpt-realtime-1.5")
-                Text("gpt-4o-realtime-preview").tag("gpt-4o-realtime-preview-2024-12-17")
+                Text("gpt-realtime (recommended)").tag("gpt-realtime")
             }
 
             Toggle("Launch at Login", isOn: $autoStartEnabled)

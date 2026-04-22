@@ -57,27 +57,20 @@ struct FloatingPill: View {
 
     @ViewBuilder
     private var pillContent: some View {
-        HStack(spacing: 10) {
-            // Animated waveform icon
-            waveIcon
-                .frame(width: 24, height: 24)
-
-            // Status / transcript
-            statusContent
-                .frame(maxWidth: 120, alignment: .leading)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(pillBackground)
-        .clipShape(Capsule())
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    withAnimation(.interactiveSpring()) {
-                        dragOffset = value.translation
+        waveIcon
+            .frame(width: 24, height: 24)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(pillBackground)
+            .clipShape(Capsule())
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        withAnimation(.interactiveSpring()) {
+                            dragOffset = value.translation
+                        }
                     }
-                }
-        )
+            )
     }
 
     // MARK: - Wave Icon
@@ -264,8 +257,8 @@ final class FloatingPillWindowController {
 
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
-        let width: CGFloat = 200
-        let height: CGFloat = 60
+        let width: CGFloat = 60
+        let height: CGFloat = 44
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12

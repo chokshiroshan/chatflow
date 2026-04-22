@@ -3,12 +3,24 @@ import SwiftUI
 @main
 struct FlowApp: App {
     @StateObject private var coordinator = AppCoordinator()
+    @Environment(\.openWindow) var openWindow
 
     var body: some Scene {
         // Menu bar presence — stateful compact label, no dock icon
         MenuBarExtra {
             MenuView(coordinator: coordinator)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    // Auto-open onboarding on first launch or missing permissions
+                    if coordinator.showOnboarding {
+                        openWindow(id: "onboarding")
+                    }
+                }
+                .onChange(of: coordinator.showOnboarding) { _, show in
+                    if show {
+                        openWindow(id: "onboarding")
+                    }
+                }
         } label: {
             MenuBarLabel(coordinator: coordinator)
         }
@@ -24,6 +36,7 @@ struct FlowApp: App {
         // Onboarding (shown on first launch or missing permissions)
         Window("ChatFlow Setup", id: "onboarding") {
             OnboardingFlowView(coordinator: coordinator)
+                .preferredColorScheme(.dark)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
@@ -70,13 +83,13 @@ private struct MenuBarLabel: View {
 
     private var tooltip: String {
         switch coordinator.state {
-        case .idle: return "Flow — Ready"
-        case .connecting: return "Flow — Connecting"
-        case .recording: return "Flow — Recording"
-        case .processing: return "Flow — Transcribing"
-        case .injecting: return "Flow — Injecting text"
-        case .error(let msg): return "Flow — Error: \(msg)"
-        case .speaking: return "Flow — Active"
+        case .idle: return "ChatFlow — Ready"
+        case .connecting: return "ChatFlow — Connecting"
+        case .recording: return "ChatFlow — Recording"
+        case .processing: return "ChatFlow — Transcribing"
+        case .injecting: return "ChatFlow — Injecting text"
+        case .error(let msg): return "ChatFlow — Error: \(msg)"
+        case .speaking: return "ChatFlow — Active"
         }
     }
 }

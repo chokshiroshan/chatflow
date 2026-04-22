@@ -328,17 +328,23 @@ private struct OnboardMicStep: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, 60)
+        .onAppear { checkMicPermission() }
     }
 
     private func requestMic() {
         requesting = true
         Task {
             _ = await PermissionsManager.shared.requestMicrophone()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                requesting = false
-                granted = true
-            }
+            // Small delay for macOS to update permission state
+            try? await Task.sleep(for: .milliseconds(500))
+            granted = PermissionsManager.shared.checkMicrophone()
+            requesting = false
         }
+    }
+
+    /// Also check on appear (in case user granted via System Settings)
+    private func checkMicPermission() {
+        granted = PermissionsManager.shared.checkMicrophone()
     }
 }
 
@@ -349,6 +355,8 @@ private struct OnboardShortcutStep: View {
     let onNext: () -> Void
     let onBack: () -> Void
     @State private var selectedShortcut = "Ctrl+Space"
+    @State private var accessibilityGranted = false
+    @State private var inputMonitoringGranted = false
 
     private let shortcuts = ["Ctrl+Space", "Cmd+Shift+Space", "⌥ Space", "Right ⌘"]
 
@@ -420,6 +428,35 @@ private struct OnboardShortcutStep: View {
                 .font(.system(size: 11))
                 .foregroundColor(FlowColors.textTertiary)
 
+            Spacer().frame(height: 16)
+
+            // Permission status
+            VStack(spacing: 8) {
+                permRow(
+                    granted: accessibilityGranted,
+                    icon: "lock.shield",
+                    label: "Accessibility",
+                    action: {
+                        PermissionsManager.shared.requestAccessibility()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            accessibilityGranted = PermissionsManager.shared.checkAccessibility()
+                        }
+                    }
+                )
+                permRow(
+                    granted: inputMonitoringGranted,
+                    icon: "keyboard",
+                    label: "Input Monitoring",
+                    action: {
+                        PermissionsManager.shared.openInputMonitoringSettings()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            inputMonitoringGranted = PermissionsManager.shared.checkInputMonitoring()
+                        }
+                    }
+                )
+            }
+            .frame(maxWidth: 380)
+
             Spacer()
 
             FlowNavBar(onBack: onBack) {
@@ -437,6 +474,45 @@ private struct OnboardShortcutStep: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, 60)
+        .onAppear {
+            accessibilityGranted = PermissionsManager.shared.checkAccessibility()
+            inputMonitoringGranted = PermissionsManager.shared.checkInputMonitoring()
+        }
+    }
+
+    private func permRow(granted: Bool, icon: String, label: String, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(granted ? FlowColors.accentGreen : FlowColors.accentOrange)
+                .frame(width: 20)
+            Text(label)
+                .font(FlowTypography.bodyMedium)
+                .foregroundColor(FlowColors.textPrimary)
+            Spacer()
+            if granted {
+                Text("Granted")
+                    .font(FlowTypography.caption)
+                    .foregroundColor(FlowColors.accentGreen)
+            } else {
+                Button(action: action) {
+                    Text("Grant →")
+                        .font(FlowTypography.caption)
+                        .foregroundColor(FlowColors.accent)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                .fill(FlowColors.card)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                .stroke(granted ? FlowColors.accentGreen.opacity(0.2) : FlowColors.accentOrange.opacity(0.2), lineWidth: 0.5)
+        )
     }
 }
 

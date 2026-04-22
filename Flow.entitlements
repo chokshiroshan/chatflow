@@ -10,5 +10,10 @@
     <true/>
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
+    <!-- Required for CGEventTap (global hotkey) under hardened runtime -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
 </dict>
 </plist>

@@ -39,8 +39,12 @@ final class AppCoordinator: ObservableObject {
     // MARK: - Startup
 
     private func checkPermissionsAndAuth() {
+        // Always show onboarding on first launch
+        let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
         let permStatus = permissions.checkAll()
-        if !permStatus.allGranted {
+
+        if !hasCompletedOnboarding || !permStatus.allGranted {
             showOnboarding = true
             return
         }
@@ -48,7 +52,9 @@ final class AppCoordinator: ObservableObject {
     }
 
     func completeOnboarding() {
+        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
         showOnboarding = false
+        permissionsStatus = permissions.checkAll()
         checkAuth()
     }
 
@@ -85,7 +91,6 @@ final class AppCoordinator: ObservableObject {
             Task { @MainActor in
                 self?.handleStateChange(newState)
                 self?.state = newState
-                // Reposition pill to active screen when recording starts
                 if newState == .recording {
                     self?.floatingPill.reposition()
                 }
@@ -114,7 +119,6 @@ final class AppCoordinator: ObservableObject {
             }
             if config.soundEffectsEnabled { sounds.play(.stopRecording) }
         case .idle:
-            // Play success sound when transitioning from injecting → idle
             if previousState == .injecting {
                 if config.soundEffectsEnabled { sounds.play(.success) }
             }
@@ -128,7 +132,6 @@ final class AppCoordinator: ObservableObject {
 
     // MARK: - Config Updates
 
-    /// Update hotkey and restart the hotkey manager.
     func updateHotkey(_ newHotkey: String) {
         config.hotkey = newHotkey
         config.save()

@@ -89,12 +89,20 @@ fi
 echo "🎨 Creating app icon..."
 create_app_icon "$APP_BUNDLE/Contents/Resources/AppIcon.icns" 2>/dev/null || create_placeholder_icon "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 
-# Ad-hoc code sign (required for macOS to not block the app)
-echo "🔐 Code signing..."
-codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || {
-    echo "⚠️  Code signing failed. The app will still work but users may need to"
-    echo "   right-click → Open on first launch to bypass Gatekeeper."
-}
+# Ad-hoc code sign with entitlements (required for CGEventTap, audio, accessibility)
+echo "🔐 Code signing with entitlements..."
+if [[ -f "Flow.entitlements" ]]; then
+    codesign --force --deep --sign - --entitlements Flow.entitlements --options runtime "$APP_BUNDLE" 2>/dev/null || {
+        echo "⚠️  Code signing with hardened runtime failed. Trying without runtime..."
+        codesign --force --deep --sign - --entitlements Flow.entitlements "$APP_BUNDLE" 2>/dev/null || {
+            echo "⚠️  Code signing failed entirely. The app will still work but users may need to"
+            echo "   right-click → Open on first launch to bypass Gatekeeper."
+            echo "   Also run: xattr -cr $APP_BUNDLE"
+        }
+    }
+else
+    codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || true
+fi
 
 # Calculate size
 SIZE=$(du -sh "$APP_BUNDLE" | cut -f1)

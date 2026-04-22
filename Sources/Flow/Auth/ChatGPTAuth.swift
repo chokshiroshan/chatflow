@@ -65,7 +65,7 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
                 let challenge = Self.generateCodeChallenge(from: verifier)
                 let state = Self.randomState()
 
-                // Start callback server on port 1455 (Codex standard)
+                // Start callback server on port 1455 (Codex standard), falls back to random
                 let server = OAuthCallbackServer()
                 server.path = redirectPath
                 self.callbackServer = server

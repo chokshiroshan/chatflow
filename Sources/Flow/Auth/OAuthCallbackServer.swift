@@ -30,10 +30,48 @@ final class OAuthCallbackServer {
     }
 
     /// Start the server on a specific or random port. Returns the port used.
+    /// If the fixed port is taken, tries to kill the stale process and retry,
+    /// then falls back to a random port.
     func start(fixedPort: UInt16? = nil) throws -> UInt16 {
         self.fixedPort = fixedPort
-        try startServer()
-        return port
+
+        // Try the fixed port first
+        do {
+            try startServer()
+            return port
+        } catch {
+            if fixedPort != nil {
+                // Try to kill any stale process on that port
+                if let port = fixedPort {
+                    _ = shell("lsof -ti :\(port) | xargs kill -9 2>/dev/null")
+                    Thread.sleep(forTimeInterval: 0.3)
+                }
+                // Retry fixed port
+                do {
+                    try startServer()
+                    return port
+                } catch {
+                    // Fall back to random port
+                    print("⚠️ Port \(fixedPort!) taken, using random port")
+                    self.fixedPort = nil
+                    try startServer()
+                    return port
+                }
+            }
+            throw error
+        }
+    }
+
+    private func shell(_ cmd: String) -> String {
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = ["-c", cmd]
+        process.standardOutput = pipe
+        try? process.run()
+        process.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8) ?? ""
     }
 
     /// Start the server and return the auth code + state from the callback.

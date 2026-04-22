@@ -60,9 +60,10 @@ struct FloatingPill: View {
         waveIcon
             .frame(width: 24, height: 24)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
             .background(pillBackground)
             .clipShape(Capsule())
+            .frame(maxWidth: .infinity, maxHeight: .infinity)  // Center in panel
             .gesture(
                 DragGesture()
                     .onChanged { value in
@@ -258,7 +259,7 @@ final class FloatingPillWindowController {
         // Use the screen that currently has the mouse cursor
         let screen = NSScreen.screenWithMouse ?? NSScreen.main!
         let width: CGFloat = 64
-        let height: CGFloat = 48
+        let height: CGFloat = 56
         let x = screen.frame.origin.x + (screen.frame.width - width) / 2
         // Position above the dock — use visibleFrame which excludes dock
         let y = screen.visibleFrame.origin.y + 12

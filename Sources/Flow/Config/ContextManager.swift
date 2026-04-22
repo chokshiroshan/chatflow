@@ -57,7 +57,7 @@ final class ContextManager {
     func buildInstructions(basePrompt: String = "Transcribe exactly what was said.") -> String {
         load() // Always reload for latest
 
-        var parts = ["\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything."]
+        var parts = ["\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything. If there is no clear speech, output nothing."]
 
         // Add user context if available
         if !context.isEmpty {

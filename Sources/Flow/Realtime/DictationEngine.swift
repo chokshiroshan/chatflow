@@ -149,9 +149,10 @@ final class DictationEngine {
         let chunks = chunkCount
         print("🛑 Recording stopped (\(chunks) chunks)")
 
-        // Need at least a few chunks
-        guard chunks > 2 else {
-            print("⚠️ Too few chunks — skipping")
+        // Need at least a few chunks (half a second of audio)
+        guard chunks > 12 else {
+            print("⚠️ Too few chunks — cancelling response")
+            client?.cancelResponse()  // Don't let the model hallucinate
             onStateChanged?(.idle)
             isFinishing = false
             reconnect()

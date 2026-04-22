@@ -82,32 +82,25 @@ final class RealtimeClient {
 
         switch mode {
         case .dictation(let lang):
-            // Match Codex CLI v2 transcription session exactly:
-            // - type: "transcription" (dedicated STT mode, not conversational)
-            // - model: "gpt-4o-mini-transcribe" (better than whisper-1)
-            // - audio format: audio/pcm @ 24000Hz
-            // - noise_reduction: near_field
-            // - no turn detection, no output
+            // v1 Realtime API format with best transcription settings:
+            // - gpt-4o-mini-transcribe (better than whisper-1)
+            // - near_field noise reduction
+            // - text-only output (no audio response needed)
+            // - no turn detection (we control it manually)
             sessionConfig = """
             {
                 "type": "session.update",
                 "session": {
-                    "type": "transcription",
-                    "audio": {
-                        "input": {
-                            "format": {
-                                "type": "audio/pcm",
-                                "rate": 24000
-                            },
-                            "noise_reduction": {
-                                "type": "near_field"
-                            },
-                            "transcription": {
-                                "model": "gpt-4o-mini-transcribe",
-                                "language": "\(lang)"
-                            }
-                        }
-                    }
+                    "modalities": ["text"],
+                    "instructions": "Transcribe the user's speech exactly as spoken. Output only the transcription.",
+                    "input_audio_format": "pcm16",
+                    "output_audio_format": "pcm16",
+                    "input_audio_transcription": {
+                        "model": "gpt-4o-mini-transcribe",
+                        "language": "\(lang)"
+                    },
+                    "turn_detection": null,
+                    "max_response_output_tokens": 1024
                 }
             }
             """

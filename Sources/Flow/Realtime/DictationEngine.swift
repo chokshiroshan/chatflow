@@ -192,11 +192,23 @@ final class DictationEngine {
         reconnect()
     }
 
+    private var reconnectAttempts = 0
+
     private func reconnect() {
         client?.disconnect()
         client = nil
         isConnected = false
-        Task { await preConnect() }
+        reconnectAttempts += 1
+
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
+        let delay = min(Double(reconnectAttempts), 5) * 1.0
+        print("🔄 Reconnecting in \(delay)s (attempt \(reconnectAttempts))...")
+
+        Task {
+            try? await Task.sleep(for: .seconds(delay))
+            await preConnect()
+            if isConnected { reconnectAttempts = 0 }
+        }
     }
 
     // MARK: - Callbacks
@@ -212,7 +224,10 @@ final class DictationEngine {
         client.onError = { [weak self] err in
             Task { @MainActor in
                 print("⚠️ Realtime error: \(err)")
-                self?.onStateChanged?(.error(err))
+                // Only reconnect if we were actually recording (not during pre-connect)
+                if self?.isRecording == true {
+                    self?.onStateChanged?(.error(err))
+                }
                 self?.reconnect()
             }
         }

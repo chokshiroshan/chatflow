@@ -1,36 +1,43 @@
 import SwiftUI
 
-/// Wispr Flow-inspired floating pill with live waveform animation.
+/// Premium floating pill overlay — Wispr Flow-inspired design.
 ///
-/// Shows near the cursor when dictation is active:
-/// - Animated sine-wave while recording
-/// - Partial transcript streaming as you speak
-/// - Processing spinner → Done checkmark
-///
-/// Only visible when actively recording or processing.
+/// Design principles:
+/// - Minimal, dark glass aesthetic
+/// - Smooth sine-wave animation (not static bars)
+/// - Capsule shape with subtle gradient border
+/// - Bottom-center of screen (like Wispr Flow)
+/// - Draggable to reposition
+/// - States: hidden → listening (waveform) → processing (spinner) → done (checkmark fade)
 struct FloatingPill: View {
     @ObservedObject var coordinator: AppCoordinator
     @State private var dragOffset: CGSize = .zero
     @State private var opacity: Double = 0
-    @State private var pulseScale: CGFloat = 1.0
-    @State private var wavePhase: CGFloat = 0
-    @State private var waveAmplitudes: [CGFloat] = [0.3, 0.5, 0.8, 1.0, 0.8, 0.5, 0.3]
-
+    @State private var scale: CGFloat = 0.8
+    @State private var waveOffset: CGFloat = 0
+    @State private var glowOpacity: Double = 0
+    @State private var dotScales: [CGFloat] = Array(repeating: 0.6, count: 5)
+    @State private var timer = Timer.publish(every: 0.08, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Group {
             if shouldShow {
                 pillContent
                     .opacity(opacity)
+                    .scaleEffect(scale)
                     .offset(dragOffset)
                     .onAppear { appearAnimation() }
                     .onDisappear { disappearAnimation() }
                     .onChange(of: shouldShow) { _, showing in
                         if showing { appearAnimation() } else { disappearAnimation() }
                     }
+                    .onReceive(timer) { _ in
+                        updateWaveAnimation()
+                    }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, 16)
     }
 
     private var shouldShow: Bool {
@@ -41,23 +48,39 @@ struct FloatingPill: View {
 
     @ViewBuilder
     private var pillContent: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             // Animated waveform icon
             waveIcon
+                .frame(width: 32, height: 32)
 
-            // Status text
+            // Status / transcript
             statusContent
+                .frame(maxWidth: 320, alignment: .leading)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(pillBackground)
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(borderColor, lineWidth: 1))
-        .shadow(color: shadowColor, radius: 12, y: 4)
+        .overlay(
+            Capsule()
+                .strokeBorder(
+                    LinearGradient(
+                        colors: borderColor,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
+        )
+        .shadow(color: Color.black.opacity(0.3), radius: 20, y: 8)
+        .shadow(color: glowColor.opacity(0.3), radius: 16, y: 4)
         .gesture(
             DragGesture()
-                .onChanged { value in dragOffset = value.translation }
-                .onEnded { _ in dragOffset = .zero }
+                .onChanged { value in
+                    withAnimation(.interactiveSpring()) {
+                        dragOffset = value.translation
+                    }
+                }
         )
     }
 
@@ -66,56 +89,42 @@ struct FloatingPill: View {
     @ViewBuilder
     private var waveIcon: some View {
         ZStack {
-            // Glow ring
-            if coordinator.state == .recording {
-                Circle()
-                    .fill(Color.red.opacity(0.15))
-                    .frame(width: 28, height: 28)
-                    .scaleEffect(pulseScale)
-            }
+            // Subtle glow ring
+            Circle()
+                .fill(glowColor.opacity(glowOpacity * 0.15))
+                .frame(width: 32, height: 32)
 
-            // Animated wave bars
-            HStack(spacing: 2.5) {
+            // Animated dots (sine wave pattern)
+            HStack(spacing: 3) {
                 ForEach(0..<5, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(waveBarColor)
-                        .frame(width: 3, height: waveBarHeight(for: i))
-                        .animation(
-                            .easeInOut(duration: 0.35)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(i) * 0.08),
-                            value: coordinator.state == .recording
-                        )
+                    Capsule()
+                        .fill(iconColor)
+                        .frame(width: 3, height: 18 * dotScales[i])
+                        .animation(.easeInOut(duration: 0.12), value: dotScales[i])
                 }
-            }
-            .frame(width: 22, height: 18)
-        }
-        .frame(width: 28, height: 28)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                pulseScale = 1.4
             }
         }
     }
 
-    private var waveBarColor: Color {
+    private var iconColor: Color {
         switch coordinator.state {
-        case .recording: return .red
-        case .connecting: return .orange
-        case .processing: return .yellow
-        case .speaking: return .green
-        case .injecting: return .blue
+        case .recording: return Color(red: 1.0, green: 0.35, blue: 0.35)
+        case .connecting: return Color(red: 1.0, green: 0.75, blue: 0.3)
+        case .processing: return Color(red: 0.5, green: 0.75, blue: 1.0)
+        case .injecting: return Color(red: 0.35, green: 0.9, blue: 0.55)
+        case .speaking: return Color(red: 0.35, green: 0.85, blue: 0.65)
+        case .error: return Color(red: 1.0, green: 0.35, blue: 0.35)
         default: return .gray
         }
     }
 
-    private func waveBarHeight(for index: Int) -> CGFloat {
-        if coordinator.state == .recording {
-            return [8, 14, 6, 16, 10][index % 5]
-        } else if coordinator.state == .connecting {
-            return 6 // flat bars
-        } else {
-            return 4
+    private var glowColor: Color {
+        switch coordinator.state {
+        case .recording: return Color(red: 1.0, green: 0.3, blue: 0.3)
+        case .connecting: return Color(red: 1.0, green: 0.7, blue: 0.2)
+        case .processing: return Color(red: 0.3, green: 0.6, blue: 1.0)
+        case .injecting: return Color(red: 0.2, green: 0.8, blue: 0.4)
+        default: return .clear
         }
     }
 
@@ -125,57 +134,57 @@ struct FloatingPill: View {
     private var statusContent: some View {
         switch coordinator.state {
         case .connecting:
-            HStack(spacing: 6) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Connecting...")
+            HStack(spacing: 8) {
+                loadingDots
+                Text("Connecting")
                     .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.6))
             }
 
         case .recording:
             if coordinator.partialTranscript.isEmpty {
-                Text("Listening...")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Text("Listening")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
             } else {
                 Text(coordinator.partialTranscript)
                     .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .frame(maxWidth: 280, alignment: .leading)
             }
 
         case .processing:
-            HStack(spacing: 6) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Transcribing...")
+            HStack(spacing: 8) {
+                loadingDots
+                Text("Transcribing")
                     .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.6))
             }
 
         case .injecting:
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text("Done")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(.green)
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.55))
             }
 
         case .speaking:
             Text(coordinator.partialTranscript)
                 .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
                 .lineLimit(1)
 
         case .error(let msg):
             HStack(spacing: 6) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.red.opacity(0.8))
                 Text(msg)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.red.opacity(0.7))
                     .lineLimit(1)
             }
 
@@ -184,52 +193,103 @@ struct FloatingPill: View {
         }
     }
 
-    // MARK: - Background & Styling
+    // MARK: - Loading Dots
 
     @ViewBuilder
-    private var pillBackground: some View {
-        RoundedRectangle(cornerRadius: 22)
-            .fill(.ultraThinMaterial)
-            .blur(radius: 0.5)
-    }
-
-    private var borderColor: Color {
-        switch coordinator.state {
-        case .recording: return .red.opacity(0.4)
-        case .connecting: return .orange.opacity(0.3)
-        case .processing: return .yellow.opacity(0.3)
-        case .injecting: return .green.opacity(0.4)
-        case .speaking: return .green.opacity(0.3)
-        case .error: return .red.opacity(0.3)
-        default: return .white.opacity(0.1)
+    private var loadingDots: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(.white.opacity(0.4))
+                    .frame(width: 4, height: 4)
+                    .scaleEffect(dotScales[i % 5])
+            }
         }
     }
 
-    private var shadowColor: Color {
+    // MARK: - Background
+
+    @ViewBuilder
+    private var pillBackground: some View {
+        ZStack {
+            // Dark base
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.black.opacity(0.75))
+
+            // Frosted glass layer
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.ultraThinMaterial)
+                .opacity(0.4)
+
+            // Subtle inner light
+            RoundedRectangle(cornerRadius: 24)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.08),
+                            .white.opacity(0.02),
+                            .clear
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        }
+    }
+
+    private var borderColor: [Color] {
         switch coordinator.state {
-        case .recording: return .red.opacity(0.2)
-        default: return .black.opacity(0.15)
+        case .recording: return [.red.opacity(0.3), .red.opacity(0.1)]
+        case .connecting: return [.orange.opacity(0.2), .orange.opacity(0.05)]
+        case .processing: return [.blue.opacity(0.2), .blue.opacity(0.05)]
+        case .injecting: return [.green.opacity(0.3), .green.opacity(0.1)]
+        case .error: return [.red.opacity(0.2), .red.opacity(0.05)]
+        default: return [.white.opacity(0.1), .white.opacity(0.03)]
         }
     }
 
     // MARK: - Animations
 
     private func appearAnimation() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+        glowOpacity = 1
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             opacity = 1
+            scale = 1.0
         }
     }
 
     private func disappearAnimation() {
-        withAnimation(.easeOut(duration: 0.25)) {
+        glowOpacity = 0
+        withAnimation(.easeOut(duration: 0.2)) {
             opacity = 0
+            scale = 0.9
+        }
+    }
+
+    private func updateWaveAnimation() {
+        if coordinator.state == .recording {
+            waveOffset += 0.3
+            for i in 0..<5 {
+                let phase = waveOffset + Double(i) * 0.8
+                dotScales[i] = 0.3 + 0.7 * abs(sin(phase))
+            }
+        } else if coordinator.state == .connecting || coordinator.state == .processing {
+            waveOffset += 0.15
+            for i in 0..<5 {
+                let phase = waveOffset + Double(i) * 0.5
+                dotScales[i] = 0.5 + 0.3 * abs(sin(phase))
+            }
+        } else {
+            for i in 0..<5 {
+                dotScales[i] = 0.4
+            }
         }
     }
 }
 
 // MARK: - Window Controller
 
-/// Manages the floating pill as a borderless, always-on-top window.
+/// Manages the floating pill as a borderless, always-on-top NSPanel.
 final class FloatingPillWindowController {
     private var window: NSPanel?
     private weak var coordinator: AppCoordinator?
@@ -250,10 +310,10 @@ final class FloatingPillWindowController {
         guard let coordinator else { return }
 
         let screen = NSScreen.main!
-        let width: CGFloat = 420
+        let width: CGFloat = 400
         let height: CGFloat = 52
         let x = (screen.frame.width - width) / 2
-        let y = screen.frame.height - 100
+        let y = screen.visibleFrame.minY + 16  // Bottom center, above dock
 
         let panel = NSPanel(
             contentRect: NSRect(x: x, y: y, width: width, height: height),
@@ -264,8 +324,8 @@ final class FloatingPillWindowController {
 
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
-        panel.level = .statusBar + 1  // Above everything
+        panel.hasShadow = false  // We handle shadow in SwiftUI
+        panel.level = .statusBar + 1
         panel.ignoresMouseEvents = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isFloatingPanel = true

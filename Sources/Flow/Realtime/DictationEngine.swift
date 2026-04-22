@@ -92,22 +92,35 @@ final class DictationEngine {
 
         // Connect if not pre-connected
         if !isConnected {
-            onStateChanged?(.connecting)
-            do {
-                guard let token = await auth.ensureValidToken() else {
-                    onStateChanged?(.error("Session expired. Please sign in again."))
+            // If reconnecting in background, just wait briefly for it
+            if isReconnecting {
+                print("⏳ Waiting for reconnect to complete...")
+                for _ in 1...20 {
+                    if isConnected { break }
+                    try? await Task.sleep(for: .milliseconds(100))
+                }
+            }
+            
+            // Still not connected? Do it ourselves
+            if !isConnected {
+                isReconnecting = false  // Cancel pending reconnect
+                onStateChanged?(.connecting)
+                do {
+                    guard let token = await auth.ensureValidToken() else {
+                        onStateChanged?(.error("Session expired. Please sign in again."))
+                        return
+                    }
+
+                    let client = RealtimeClient()
+                    wireCallbacks(client)
+                    try await client.connect(accessToken: token, model: config.realtimeModel, mode: .dictation(language: config.language))
+                    self.client = client
+                    isConnected = true
+                } catch {
+                    print("⚠️ Connect failed: \(error)")
+                    onStateChanged?(.error("Connection failed: \(error.localizedDescription)"))
                     return
                 }
-
-                let client = RealtimeClient()
-                wireCallbacks(client)
-                try await client.connect(accessToken: token, model: config.realtimeModel, mode: .dictation(language: config.language))
-                self.client = client
-                isConnected = true
-            } catch {
-                print("⚠️ Connect failed: \(error)")
-                onStateChanged?(.error("Connection failed: \(error.localizedDescription)"))
-                return
             }
         }
 
@@ -223,11 +236,13 @@ final class DictationEngine {
     }
 
     private var reconnectAttempts = 0
+    private var isReconnecting = false
 
     private func reconnect() {
         client?.disconnect()
         client = nil
         isConnected = false
+        isReconnecting = true
         reconnectAttempts += 1
 
         // Exponential backoff: 1s, 2s, 4s, 8s, max 5s
@@ -236,6 +251,7 @@ final class DictationEngine {
 
         Task {
             try? await Task.sleep(for: .seconds(delay))
+            isReconnecting = false
             await preConnect()
             if isConnected { reconnectAttempts = 0 }
         }

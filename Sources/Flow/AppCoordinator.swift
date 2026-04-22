@@ -9,6 +9,8 @@ final class AppCoordinator: ObservableObject {
     @Published var partialTranscript: String = ""
     @Published var config: FlowConfig = .load()
     @Published var showOnboarding: Bool = false
+    @Published var permissionsStatus: PermissionsManager.PermissionStatus = PermissionsManager.shared.checkAll()
+    @Published var usageDisplay: String = UsageTracker.shared.stats.monthMinutesDisplay
 
     private let auth = ChatGPTAuth.shared
     private var dictationEngine: DictationEngine?
@@ -16,6 +18,7 @@ final class AppCoordinator: ObservableObject {
     private let sounds = SoundManager.shared
     private let permissions = PermissionsManager.shared
     private var cancellables = Set<AnyCancellable>()
+    private var sessionStartTime: Date?
 
     init() {
         auth.$authState
@@ -98,13 +101,43 @@ final class AppCoordinator: ObservableObject {
 
     private func handleStateChange(_ newState: FlowState) {
         switch newState {
-        case .recording: sounds.play(.startRecording)
-        case .processing, .injecting: sounds.play(.stopRecording)
+        case .recording:
+            sessionStartTime = Date()
+            if config.soundEffectsEnabled { sounds.play(.startRecording) }
+        case .processing, .injecting:
+            if let start = sessionStartTime {
+                UsageTracker.shared.recordSession(durationSeconds: Date().timeIntervalSince(start))
+                usageDisplay = UsageTracker.shared.stats.monthMinutesDisplay
+                sessionStartTime = nil
+            }
+            if config.soundEffectsEnabled { sounds.play(.stopRecording) }
         case .idle:
-            if state == .injecting { sounds.play(.success) }
-        case .error: sounds.play(.error)
+            if state == .injecting {
+                if config.soundEffectsEnabled { sounds.play(.success) }
+            }
+        case .error:
+            sessionStartTime = nil
+            if config.soundEffectsEnabled { sounds.play(.error) }
         default: break
         }
+    }
+
+    // MARK: - Config Updates
+
+    /// Update hotkey and restart the hotkey manager.
+    func updateHotkey(_ newHotkey: String) {
+        config.hotkey = newHotkey
+        config.save()
+        // Reactivate the engine to pick up new hotkey
+        if dictationEngine != nil {
+            deactivateAll()
+            activateDictation()
+        }
+    }
+
+    /// Refresh permissions status.
+    func refreshPermissions() {
+        permissionsStatus = permissions.checkAll()
     }
 
     // MARK: - Cleanup

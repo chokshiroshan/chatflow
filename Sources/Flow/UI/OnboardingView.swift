@@ -1,96 +1,75 @@
 import SwiftUI
 
+// MARK: - Onboarding Flow
+
+/// Multi-step onboarding matching the web design:
+/// Welcome → ChatGPT → Microphone → Shortcut → Done
 struct OnboardingFlowView: View {
     @ObservedObject var coordinator: AppCoordinator
     @State private var step = 0
-    @State private var selectedShortcut: String
 
-    private let steps = ["Welcome", "ChatGPT", "Permissions", "Shortcut", "Done"]
-
-    init(coordinator: AppCoordinator) {
-        self.coordinator = coordinator
-        _selectedShortcut = State(initialValue: ShortcutDisplay.toDisplay(coordinator.config.hotkey))
-    }
+    private let steps = ["welcome", "chatgpt", "mic", "shortcut", "done"]
 
     var body: some View {
         VStack(spacing: 0) {
-            OnboardingHeader(currentStep: step + 1, totalSteps: steps.count, title: steps[step])
+            // Title bar
+            OnboardingTitleBar(step: step, total: steps.count)
 
+            // Content
             Group {
                 switch step {
-                case 0:
-                    WelcomeStep(onNext: advance)
-                case 1:
-                    AccountStep(coordinator: coordinator, onNext: advance, onBack: goBack)
-                case 2:
-                    PermissionsStep(onNext: advance, onBack: goBack)
-                case 3:
-                    ShortcutStep(
-                        selectedShortcut: $selectedShortcut,
-                        onNext: persistShortcutAndAdvance,
-                        onBack: goBack
-                    )
-                default:
-                    DoneStep(
-                        shortcutLabel: selectedShortcut,
-                        onFinish: coordinator.completeOnboarding
-                    )
+                case 0: OnboardWelcomeStep(onNext: advance)
+                case 1: OnboardChatGPTStep(coordinator: coordinator, onNext: advance, onBack: goBack)
+                case 2: OnboardMicStep(onNext: advance, onBack: goBack)
+                case 3: OnboardShortcutStep(coordinator: coordinator, onNext: advance, onBack: goBack)
+                case 4: OnboardDoneStep(coordinator: coordinator, onFinish: finish)
+                default: EmptyView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // Step dots
             StepDots(count: steps.count, current: step)
-                .padding(.bottom, 18)
+                .padding(.bottom, 20)
         }
         .frame(width: 540, height: 500)
-        .background(Color(red: 0.95, green: 0.96, blue: 0.98))
+        .background(Color(red: 0.949, green: 0.957, blue: 0.973).opacity(0.82))
     }
 
-    private func advance() {
-        withAnimation(.easeInOut(duration: 0.25)) {
-            step = min(step + 1, steps.count - 1)
-        }
-    }
-
-    private func goBack() {
-        withAnimation(.easeInOut(duration: 0.25)) {
-            step = max(step - 1, 0)
-        }
-    }
-
-    private func persistShortcutAndAdvance() {
-        coordinator.config.hotkey = ShortcutDisplay.toStored(selectedShortcut)
-        coordinator.config.save()
-        advance()
-    }
+    private func advance() { withAnimation(.easeInOut(duration: 0.3)) { step = min(step + 1, steps.count - 1) } }
+    private func goBack() { withAnimation(.easeInOut(duration: 0.3)) { step = max(step - 1, 0) } }
+    private func finish() { coordinator.completeOnboarding() }
 }
 
-private struct OnboardingHeader: View {
-    let currentStep: Int
-    let totalSteps: Int
-    let title: String
+// MARK: - Title Bar
+
+private struct OnboardingTitleBar: View {
+    let step: Int
+    let total: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("ChatFlow Setup")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.black.opacity(0.75))
-                Spacer()
-                Text("Step \(currentStep) of \(totalSteps)")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.black.opacity(0.45))
+        HStack(spacing: 8) {
+            // Traffic lights
+            HStack(spacing: 7) {
+                Circle().fill(Color(red: 1.0, green: 0.45, blue: 0.42)).frame(width: 12, height: 12)
+                Circle().fill(Color(red: 1.0, green: 0.74, blue: 0.18)).frame(width: 12, height: 12)
+                Circle().fill(Color(red: 0.10, green: 0.76, blue: 0.20)).frame(width: 12, height: 12)
             }
 
-            Text(title)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.black.opacity(0.88))
+            Spacer()
+
+            Text("ChatFlow Setup")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.black.opacity(0.5))
+
+            Spacer().frame(width: 56) // balance traffic lights
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 22)
-        .padding(.bottom, 18)
+        .padding(.horizontal, 16)
+        .frame(height: 44)
     }
 }
+
+// MARK: - Step Dots
 
 private struct StepDots: View {
     let count: Int
@@ -98,369 +77,577 @@ private struct StepDots: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(0..<count, id: \.self) { index in
+            ForEach(0..<count, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(index == current ? Color.blue : Color.black.opacity(0.15))
-                    .frame(width: index == current ? 18 : 7, height: 7)
-                    .animation(.easeInOut(duration: 0.25), value: current)
+                    .fill(i == current ? Color(red: 0.0, green: 0.48, blue: 1.0) : Color.black.opacity(0.18))
+                    .frame(width: i == current ? 20 : 7, height: 7)
+                    .animation(.easeInOut(duration: 0.3), value: current)
             }
         }
     }
 }
 
-private struct WelcomeStep: View {
+// MARK: - Step 1: Welcome
+
+private struct OnboardWelcomeStep: View {
     let onNext: () -> Void
+    @State private var animate = false
 
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: 0) {
             Spacer()
 
-            Image(systemName: "waveform")
-                .font(.system(size: 42, weight: .semibold))
-                .foregroundColor(.purple)
-
-            VStack(spacing: 10) {
-                Text("Dictation for every app")
-                    .font(.system(size: 32, weight: .heavy))
-                    .foregroundColor(.black.opacity(0.88))
-
-                Text("We'll connect your ChatGPT account, verify permissions, and set a shortcut so you can start dictating right away.")
-                    .font(.system(size: 15))
-                    .foregroundColor(.black.opacity(0.55))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 360)
-            }
-
-            Button("Get Started", action: onNext)
-                .buttonStyle(OnboardingPrimaryButtonStyle())
-
-            Spacer()
-        }
-        .padding(.horizontal, 24)
-    }
-}
-
-private struct AccountStep: View {
-    @ObservedObject var coordinator: AppCoordinator
-    let onNext: () -> Void
-    let onBack: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("ChatFlow uses your ChatGPT account for transcription, so you do not need to paste in an API key.")
-                .font(.system(size: 15))
-                .foregroundColor(.black.opacity(0.6))
-
-            VStack(alignment: .leading, spacing: 12) {
-                infoRow(icon: "safari", text: "Sign-in opens in your default browser.")
-                infoRow(icon: "lock.shield", text: "Tokens are stored in Apple Keychain.")
-                infoRow(icon: "person.crop.circle.badge.checkmark", text: statusText)
-            }
-            .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color.white.opacity(0.8))
-            )
-
-            Spacer()
-
-            HStack {
-                Button("Back", action: onBack)
-                    .buttonStyle(.plain)
-                    .foregroundColor(.black.opacity(0.55))
-
-                Spacer()
-
-                if coordinator.authState.isSignedIn {
-                    Button("Continue", action: onNext)
-                        .buttonStyle(OnboardingPrimaryButtonStyle())
-                } else if isSigningIn {
-                    Button("Waiting for browser...") { }
-                        .buttonStyle(OnboardingPrimaryButtonStyle(disabled: true))
-                        .disabled(true)
-                } else {
-                    Button("Sign in with ChatGPT") {
-                        coordinator.signIn()
-                    }
-                    .buttonStyle(OnboardingPrimaryButtonStyle())
-                }
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 28)
-    }
-
-    private var isSigningIn: Bool {
-        if case .signingIn = coordinator.authState { return true }
-        return false
-    }
-
-    private var statusText: String {
-        switch coordinator.authState {
-        case .signedIn(let email, _):
-            return "Connected as \(email)"
-        case .signingIn:
-            return "Waiting for sign-in to finish"
-        case .error(let message):
-            return "Sign-in failed: \(message)"
-        case .signedOut:
-            return "Not connected yet"
-        }
-    }
-
-    private func infoRow(icon: String, text: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundColor(.green)
-                .frame(width: 18)
-            Text(text)
-                .font(.system(size: 13))
-                .foregroundColor(.black.opacity(0.68))
-            Spacer()
-        }
-    }
-}
-
-private struct PermissionsStep: View {
-    let onNext: () -> Void
-    let onBack: () -> Void
-
-    @State private var status = PermissionsManager.shared.checkAll()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("ChatFlow needs microphone, accessibility, and input monitoring access to listen for your shortcut and paste text back into the active app.")
-                .font(.system(size: 15))
-                .foregroundColor(.black.opacity(0.6))
-
-            VStack(spacing: 12) {
-                permissionRow(
-                    title: "Microphone",
-                    detail: "Capture audio while you hold the shortcut.",
-                    granted: status.microphone
-                )
-                permissionRow(
-                    title: "Accessibility",
-                    detail: "Paste transcribed text into the focused app.",
-                    granted: status.accessibility
-                )
-                permissionRow(
-                    title: "Input Monitoring",
-                    detail: "Detect your shortcut anywhere on macOS.",
-                    granted: status.inputMonitoring
-                )
-            }
-
-            HStack(spacing: 10) {
-                Button("Request Microphone") {
-                    Task {
-                        _ = await PermissionsManager.shared.requestMicrophone()
-                        refreshStatus()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-
-                Button("Open Accessibility") {
-                    PermissionsManager.shared.openAccessibilitySettings()
-                }
-                .buttonStyle(.bordered)
-
-                Button("Open Input Monitoring") {
-                    PermissionsManager.shared.openInputMonitoringSettings()
-                }
-                .buttonStyle(.bordered)
-            }
-
-            Button("Refresh Status", action: refreshStatus)
-                .buttonStyle(.plain)
-                .foregroundColor(.blue)
-
-            Spacer()
-
-            HStack {
-                Button("Back", action: onBack)
-                    .buttonStyle(.plain)
-                    .foregroundColor(.black.opacity(0.55))
-
-                Spacer()
-
-                Button("Continue", action: onNext)
-                    .buttonStyle(OnboardingPrimaryButtonStyle(disabled: !status.allGranted))
-                    .disabled(!status.allGranted)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 28)
-        .onAppear(perform: refreshStatus)
-    }
-
-    private func permissionRow(title: String, detail: String, granted: Bool) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: granted ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(granted ? .green : .gray)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(detail)
-                    .font(.system(size: 12))
-                    .foregroundColor(.black.opacity(0.55))
-            }
-            Spacer()
-            Text(granted ? "Granted" : "Pending")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(granted ? .green : .orange)
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.8))
-        )
-    }
-
-    private func refreshStatus() {
-        status = PermissionsManager.shared.checkAll()
-    }
-}
-
-private struct ShortcutStep: View {
-    @Binding var selectedShortcut: String
-    let onNext: () -> Void
-    let onBack: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Pick the shortcut you'll hold to dictate. You can change this later in Settings.")
-                .font(.system(size: 15))
-                .foregroundColor(.black.opacity(0.6))
-
-            VStack(spacing: 12) {
-                ForEach(ShortcutDisplay.pills, id: \.self) { shortcut in
-                    Button {
-                        selectedShortcut = shortcut
-                    } label: {
-                        HStack {
-                            Text(shortcut)
-                                .font(.system(size: 15, weight: .semibold))
-                            Spacer()
-                            if selectedShortcut == shortcut {
-                                Image(systemName: "checkmark.circle.fill")
-                            }
-                        }
-                        .foregroundColor(selectedShortcut == shortcut ? .blue : .black.opacity(0.75))
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(selectedShortcut == shortcut ? Color.blue.opacity(0.10) : Color.white.opacity(0.8))
+            // Animated waveform
+            HStack(spacing: 3) {
+                let heights: [CGFloat] = [6, 10, 18, 28, 36, 32, 22, 34, 26, 16, 28, 20, 12, 24, 30, 18, 8]
+                ForEach(0..<heights.count, id: \.self) { i in
+                    let baseHeight = heights[i]
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(red: 0.65, green: 0.55, blue: 0.98), Color(red: 0.43, green: 0.16, blue: 0.85)],
+                                startPoint: .top, endPoint: .bottom
+                            )
                         )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(selectedShortcut == shortcut ? Color.blue : Color.black.opacity(0.08), lineWidth: 1)
+                        .frame(width: 4, height: animate ? baseHeight : baseHeight * 0.6)
+                        .shadow(color: Color(red: 0.43, green: 0.16, blue: 0.85).opacity(0.35), radius: 3)
+                        .animation(
+                            .easeInOut(duration: 0.8 + Double(i % 4) * 0.15)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(i) * 0.05),
+                            value: animate
                         )
-                    }
-                    .buttonStyle(.plain)
                 }
             }
+            .frame(height: 48)
+            .onAppear { animate = true }
 
-            Spacer()
+            Spacer().frame(height: 28)
 
-            HStack {
-                Button("Back", action: onBack)
-                    .buttonStyle(.plain)
-                    .foregroundColor(.black.opacity(0.55))
-
-                Spacer()
-
-                Button("Save Shortcut", action: onNext)
-                    .buttonStyle(OnboardingPrimaryButtonStyle())
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 28)
-    }
-}
-
-private struct DoneStep: View {
-    let shortcutLabel: String
-    let onFinish: () -> Void
-
-    var body: some View {
-        VStack(spacing: 18) {
-            Spacer()
-
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 52))
-                .foregroundColor(.green)
-
-            Text("You're all set")
+            Text("Welcome to ChatFlow")
                 .font(.system(size: 30, weight: .heavy))
+                .foregroundColor(.black.opacity(0.9))
 
-            Text("ChatFlow lives in your menu bar. Hold \(shortcutLabel) anywhere to start dictating.")
-                .font(.system(size: 15))
-                .foregroundColor(.black.opacity(0.58))
+            Spacer().frame(height: 12)
+
+            Text("Voice-to-text, powered by your ChatGPT plan")
+                .font(.system(size: 16))
+                .foregroundColor(.black.opacity(0.55))
+                .lineSpacing(4)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 340)
 
-            Button("Start dictating", action: onFinish)
-                .buttonStyle(OnboardingPrimaryButtonStyle())
+            Spacer().frame(height: 40)
+
+            // Get Started button
+            Button(action: onNext) {
+                Text("Get Started")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 200, height: 44)
+                    .background(Color(red: 0.0, green: 0.48, blue: 1.0))
+                    .cornerRadius(10)
+                    .shadow(color: Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.35), radius: 8, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
 
             Spacer()
         }
-        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
     }
 }
 
-private struct OnboardingPrimaryButtonStyle: ButtonStyle {
-    var disabled = false
+// MARK: - Step 2: ChatGPT Connect
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .frame(minWidth: 140)
+private struct OnboardChatGPTStep: View {
+    @ObservedObject var coordinator: AppCoordinator
+    let onNext: () -> Void
+    let onBack: () -> Void
+    @State private var connected = false
+    @State private var loading = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Green hero banner
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 16) {
+                    // ChatGPT icon
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: 54, height: 54)
+                            .background(.ultraThinMaterial)
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Use your ChatGPT plan")
+                            .font(.system(size: 20, weight: .heavy))
+                            .foregroundColor(.white)
+                        Text("ChatFlow uses the Realtime API from your existing OpenAI account — **even the free tier**. No separate subscription, ever.")
+                            .font(.system(size: 15))
+                            .foregroundColor(.white.opacity(0.88))
+                            .lineSpacing(2)
+                    }
+                }
+
+                Spacer().frame(height: 18)
+
+                // Free badge
+                HStack(spacing: 7) {
+                    Circle().fill(Color(red: 0.64, green: 1.0, blue: 0.87)).frame(width: 8, height: 8)
+                    Text("Free ChatGPT account works · No credit card needed")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.18))
+                .cornerRadius(12)
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(disabled ? Color.gray.opacity(0.5) : Color.blue.opacity(configuration.isPressed ? 0.82 : 1.0))
+                LinearGradient(
+                    colors: [Color(red: 0.05, green: 0.62, blue: 0.44), Color(red: 0.06, green: 0.64, blue: 0.50), Color(red: 0.10, green: 0.70, blue: 0.58)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
             )
+            .cornerRadius(20)
+
+            Spacer().frame(height: 24)
+
+            // How it works
+            VStack(alignment: .leading, spacing: 0) {
+                Text("HOW IT WORKS")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.black.opacity(0.4))
+                    .padding(.bottom, 12)
+
+                howItWorksRow(number: 1, title: "Your voice", subtitle: "Recorded locally, never stored", highlight: false)
+                howItWorksRow(number: 2, title: "Realtime API", subtitle: "OpenAI real-time transcription model", highlight: false)
+                howItWorksRow(number: 3, title: "Your ChatGPT plan", subtitle: "Billed to your account — free tier included", highlight: true)
+            }
+
+            Spacer()
+
+            // Buttons
+            HStack {
+                Button("Back", action: onBack)
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.black.opacity(0.6))
+
+                Spacer()
+
+                if connected {
+                    Button(action: onNext) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark")
+                            Text("Connected — Continue")
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 9)
+                        .background(Color(red: 0.05, green: 0.62, blue: 0.44))
+                        .cornerRadius(10)
+                        .shadow(color: Color(red: 0.05, green: 0.62, blue: 0.44).opacity(0.4), radius: 8, x: 0, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button(action: handleConnect) {
+                        HStack(spacing: 6) {
+                            if loading { ProgressControl() }
+                            Text(loading ? "Connecting…" : "Sign in with ChatGPT")
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 9)
+                        .background(loading ? Color.gray : Color(red: 0.05, green: 0.62, blue: 0.44))
+                        .cornerRadius(10)
+                        .shadow(color: Color(red: 0.05, green: 0.62, blue: 0.44).opacity(0.4), radius: 8, x: 0, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(loading)
+                }
+            }
+        }
+        .padding(.horizontal, 56)
+        .padding(.bottom, 10)
+        .onAppear {
+            if case .signedIn = coordinator.authState { connected = true }
+        }
+        .onChange(of: coordinator.authState) { _, newState in
+            switch newState {
+            case .signedIn:
+                loading = false
+                connected = true
+            case .error(let msg):
+                loading = false
+                // Show error briefly then reset
+                print("⚠️ Onboarding auth error: \(msg)")
+            case .signingIn:
+                loading = true
+            default:
+                break
+            }
+        }
+    }
+
+    private func howItWorksRow(number: Int, title: String, subtitle: String, highlight: Bool) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(highlight ? Color(red: 0.06, green: 0.64, blue: 0.50).opacity(0.12) : Color.black.opacity(0.06))
+                    .frame(width: 28, height: 28)
+                Text("\(number)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(highlight ? Color(red: 0.05, green: 0.62, blue: 0.44) : Color.black.opacity(0.4))
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.system(size: 14, weight: .semibold)).foregroundColor(.black.opacity(0.85))
+                Text(subtitle).font(.system(size: 12)).foregroundColor(.black.opacity(0.45))
+            }
+        }
+        .padding(.bottom, 10)
+    }
+
+    private func handleConnect() {
+        loading = true
+        coordinator.signIn()
+        // Auth state observation in .onChange will set connected = true on success
     }
 }
 
-private enum ShortcutDisplay {
-    static let pills: [String] = [
-        "Ctrl+Space",
-        "Cmd+Shift+Space",
-        "⌥ Space",
-        "Right ⌘"
+// MARK: - Step 3: Microphone
+
+private struct OnboardMicStep: View {
+    let onNext: () -> Void
+    let onBack: () -> Void
+    @State private var granted = false
+    @State private var requesting = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Mic circle
+            ZStack {
+                if requesting {
+                    Circle()
+                        .stroke(Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.4), lineWidth: 2)
+                        .frame(width: 100, height: 100)
+                    Circle()
+                        .stroke(Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.2), lineWidth: 2)
+                        .frame(width: 120, height: 120)
+                }
+
+                ZStack {
+                    Circle()
+                        .fill(
+                            granted
+                            ? LinearGradient(colors: [Color(red: 0.20, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.72, blue: 0.32)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : requesting
+                            ? LinearGradient(colors: [Color(red: 0.0, green: 0.48, blue: 1.0), Color(red: 0.35, green: 0.78, blue: 0.98)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : LinearGradient(colors: [Color.black.opacity(0.08), Color.black.opacity(0.06)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .frame(width: 100, height: 100)
+                        .shadow(
+                            color: granted ? Color(red: 0.20, green: 0.78, blue: 0.35).opacity(0.4) : requesting ? Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.3) : .clear,
+                            radius: 24, x: 0, y: 6
+                        )
+
+                    if granted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 44, weight: .medium))
+                            .foregroundColor(.white)
+                    } else {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(requesting ? .white : .black.opacity(0.35))
+                    }
+                }
+            }
+            .frame(width: 120, height: 120)
+
+            Spacer().frame(height: 28)
+
+            Text(granted ? "Microphone ready" : "Allow microphone access")
+                .font(.system(size: 26, weight: .heavy))
+                .foregroundColor(.black.opacity(0.88))
+
+            Spacer().frame(height: 10)
+
+            Text(granted
+                 ? "ChatFlow can now listen when you hold your shortcut key."
+                 : "ChatFlow only records while you hold your shortcut key. Your audio is never stored."
+            )
+                .font(.system(size: 15))
+                .foregroundColor(.black.opacity(0.52))
+                .lineSpacing(4)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+
+            Spacer().frame(height: 36)
+
+            // Buttons
+            HStack(spacing: 10) {
+                Button("Back", action: onBack)
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.black.opacity(0.6))
+
+                if granted {
+                    OnboardingButton(title: "Continue", action: onNext)
+                } else {
+                    OnboardingButton(title: requesting ? "Requesting…" : "Allow Microphone", action: requestMic)
+                        .disabled(requesting)
+                }
+            }
+
+            Spacer()
+        }
+    }
+
+    private func requestMic() {
+        requesting = true
+        Task {
+            _ = await PermissionsManager.shared.requestMicrophone()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                requesting = false
+                granted = true
+            }
+        }
+    }
+}
+
+// MARK: - Step 4: Shortcut
+
+private struct OnboardShortcutStep: View {
+    @ObservedObject var coordinator: AppCoordinator
+    let onNext: () -> Void
+    let onBack: () -> Void
+    @State private var selectedShortcut = "Ctrl+Space"
+
+    private let shortcuts = ["Ctrl+Space", "Cmd+Shift+Space", "⌥ Space", "Right ⌘"]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Key icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(LinearGradient(colors: [Color(red: 0.35, green: 0.34, blue: 0.84), Color(red: 0.48, green: 0.43, blue: 0.96)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 80, height: 80)
+                    .shadow(color: Color(red: 0.35, green: 0.34, blue: 0.84).opacity(0.4), radius: 24, x: 0, y: 8)
+                Image(systemName: "keyboard")
+                    .font(.system(size: 36))
+                    .foregroundColor(.white)
+            }
+
+            Spacer().frame(height: 28)
+
+            Text("Choose your shortcut")
+                .font(.system(size: 26, weight: .heavy))
+                .foregroundColor(.black.opacity(0.88))
+
+            Spacer().frame(height: 10)
+
+            Text("Hold to record, release to transcribe. Works in every app system-wide.")
+                .font(.system(size: 15))
+                .foregroundColor(.black.opacity(0.52))
+                .lineSpacing(4)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 300)
+
+            Spacer().frame(height: 32)
+
+            // Shortcut pills
+            HStack(spacing: 10) {
+                ForEach(shortcuts, id: \.self) { s in
+                    Button(action: { selectedShortcut = s }) {
+                        Text(s)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(s == selectedShortcut ? Color(red: 0.35, green: 0.34, blue: 0.84) : .black.opacity(0.7))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(s == selectedShortcut ? Color(red: 0.35, green: 0.34, blue: 0.84).opacity(0.08) : Color.white.opacity(0.6))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(s == selectedShortcut ? Color(red: 0.35, green: 0.34, blue: 0.84) : Color.black.opacity(0.12), lineWidth: s == selectedShortcut ? 2 : 1.5)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Spacer().frame(height: 28)
+
+            Text("You can change this anytime in Settings → Shortcut")
+                .font(.system(size: 13))
+                .foregroundColor(.black.opacity(0.4))
+
+            Spacer().frame(height: 32)
+
+            HStack(spacing: 10) {
+                Button("Back", action: onBack)
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.black.opacity(0.6))
+                OnboardingButton(title: "Set Shortcut", action: {
+                    let hotkeyString = selectedShortcut.lowercased()
+                        .replacingOccurrences(of: " ", with: "+")
+                        .replacingOccurrences(of: "⌥+", with: "option+")
+                        .replacingOccurrences(of: "⌘", with: "cmd")
+                    coordinator.updateHotkey(hotkeyString)
+                    onNext()
+                })
+            }
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Step 5: Done
+
+private struct OnboardDoneStep: View {
+    @ObservedObject var coordinator: AppCoordinator
+    let onFinish: () -> Void
+
+    private var hotkeyDisplay: String {
+        let h = coordinator.config.hotkey
+        return h
+            .replacingOccurrences(of: "ctrl", with: "Ctrl")
+            .replacingOccurrences(of: "option", with: "⌥")
+            .replacingOccurrences(of: "cmd", with: "⌘")
+            .replacingOccurrences(of: "shift", with: "⇧")
+            .replacingOccurrences(of: "+", with: " ")
+    }
+
+    private let tips: [(String, String, String)] = [
+        ("Hold to record", "Keep the key held while you speak. Release to transcribe instantly.", "mic.fill"),
+        ("Works everywhere", "Dictate in emails, docs, Slack, Notion — any text field.", "laptopcomputer.and.iphone"),
+        ("Free to use", "Powered by your ChatGPT account. Free tier included.", "dollarsign.circle.fill"),
     ]
 
-    static func toStored(_ display: String) -> String {
-        switch display {
-        case "Ctrl+Space":
-            return "ctrl+space"
-        case "Cmd+Shift+Space":
-            return "cmd+shift+space"
-        case "⌥ Space":
-            return "option+space"
-        case "Right ⌘":
-            return "rightcmd"
-        default:
-            return "ctrl+space"
-        }
-    }
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
 
-    static func toDisplay(_ stored: String) -> String {
-        switch stored.lowercased() {
-        case "ctrl+space":
-            return "Ctrl+Space"
-        case "cmd+shift+space":
-            return "Cmd+Shift+Space"
-        case "option+space", "opt+space", "alt+space":
-            return "⌥ Space"
-        case "rightcmd", "rcmd", "right+cmd":
-            return "Right ⌘"
-        default:
-            return "Ctrl+Space"
+            // Checkmark
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(colors: [Color(red: 0.20, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.72, blue: 0.32)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 90, height: 90)
+                    .shadow(color: Color(red: 0.20, green: 0.78, blue: 0.35).opacity(0.45), radius: 32, x: 0, y: 8)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 46, weight: .medium))
+                    .foregroundColor(.white)
+            }
+
+            Spacer().frame(height: 28)
+
+            Text("You're all set!")
+                .font(.system(size: 30, weight: .heavy))
+                .foregroundColor(.black.opacity(0.9))
+
+            Spacer().frame(height: 12)
+
+            Text("ChatFlow lives in your menu bar. Hold **\(hotkeyDisplay)** anywhere to start dictating.")
+                .font(.system(size: 16))
+                .foregroundColor(.black.opacity(0.52))
+                .lineSpacing(6)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+
+            Spacer().frame(height: 40)
+
+            // Tip cards
+            HStack(spacing: 12) {
+                ForEach(tips, id: \.0) { tip in
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Image(systemName: tip.2)
+                                .font(.system(size: 11))
+                                .foregroundColor(.black.opacity(0.5))
+                            Text(tip.0)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.black.opacity(0.8))
+                        }
+                        Text(tip.1)
+                            .font(.system(size: 12))
+                            .foregroundColor(.black.opacity(0.48))
+                            .lineSpacing(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.black.opacity(0.04))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.black.opacity(0.08), lineWidth: 0.5)
+                    )
+                }
+            }
+
+            Spacer().frame(height: 40)
+
+            Button(action: onFinish) {
+                Text("Open ChatFlow")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 220, height: 44)
+                    .background(Color(red: 0.0, green: 0.48, blue: 1.0))
+                    .cornerRadius(10)
+                    .shadow(color: Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.35), radius: 8, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
         }
+        .padding(.horizontal, 48)
+    }
+}
+
+// MARK: - Shared Components
+
+struct OnboardingButton: View {
+    let title: String
+    let action: () -> Void
+    var disabled = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 9)
+                .background(disabled ? Color.gray : Color(red: 0.0, green: 0.48, blue: 1.0))
+                .cornerRadius(10)
+                .shadow(color: Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.35), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+    }
+}
+
+/// Small indeterminate progress indicator for buttons
+private struct ProgressControl: View {
+    var body: some View {
+        ProgressView()
+            .controlSize(.small)
+            .padding(.trailing, 2)
     }
 }

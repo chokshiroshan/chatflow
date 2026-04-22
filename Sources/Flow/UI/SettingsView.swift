@@ -8,6 +8,7 @@ struct SettingsView: View {
     @ObservedObject var coordinator: AppCoordinator
     @State private var autoStartEnabled = AutoStartManager.shared.isEnabled
     @State private var selectedTab = "general"
+    @State private var inputDevices: [AudioCapture.InputDevice] = AudioCapture.listInputDevices()
 
     var body: some View {
         HStack(spacing: 0) {
@@ -121,8 +122,10 @@ struct SettingsView: View {
             settingsSection("App") {
                 settingsToggleRow("Launch at login", isOn: $autoStartEnabled)
                     .onChange(of: autoStartEnabled) { _, _ in try? AutoStartManager.shared.toggle() }
-                settingsToggleRow("Sound effects", isOn: .constant(true))
-                settingsToggleRow("Auto-paste after transcription", isOn: .constant(true), isLast: true)
+                settingsToggleRow("Sound effects", isOn: $coordinator.config.soundEffectsEnabled)
+                    .onChange(of: coordinator.config.soundEffectsEnabled) { _, _ in coordinator.config.save() }
+                settingsToggleRow("Auto-paste after transcription", isOn: $coordinator.config.autoPasteEnabled, isLast: true)
+                    .onChange(of: coordinator.config.autoPasteEnabled) { _, _ in coordinator.config.save() }
             }
 
             // Transcription section
@@ -136,6 +139,7 @@ struct SettingsView: View {
                     Text("Japanese").tag("ja")
                     Text("Chinese").tag("zh")
                 }
+                .onChange(of: coordinator.config.language) { _, _ in coordinator.config.save() }
                 settingsPickerRow("Model", selection: .constant("Whisper-1"), isLast: true) {
                     Text("Whisper-1").tag("Whisper-1")
                 }
@@ -143,10 +147,18 @@ struct SettingsView: View {
 
             // Appearance
             settingsSection("Appearance") {
-                settingsPickerRow("Appearance", selection: .constant("Match System"), isLast: true) {
-                    Text("Match System").tag("Match System")
-                    Text("Light").tag("Light")
-                    Text("Dark").tag("Dark")
+                settingsPickerRow("Appearance", selection: $coordinator.config.appearance, isLast: true) {
+                    Text("Match System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .onChange(of: coordinator.config.appearance) { _, newValue in
+                    coordinator.config.save()
+                    switch newValue {
+                    case "light": NSApp.appearance = NSAppearance(named: .aqua)
+                    case "dark":  NSApp.appearance = NSAppearance(named: .darkAqua)
+                    default:      NSApp.appearance = nil  // System default
+                    }
                 }
             }
         }
@@ -159,22 +171,22 @@ struct SettingsView: View {
             settingsSection("Hold to Record") {
                 VStack(alignment: .leading, spacing: 16) {
                     // Shortcut pills
-                    let shortcutOptions = ["Ctrl+Space", "Cmd+Shift+Space", "⌥ Space", "Right ⌘"]
+                    let shortcutOptions = [("Ctrl+Space", "ctrl+space"), ("Cmd+Shift+Space", "cmd+shift+space"), ("⌥ Space", "option+space"), ("Right ⌘", "rcmd")]
                     HStack(spacing: 10) {
-                        ForEach(shortcutOptions, id: \.self) { s in
-                            Button(action: { coordinator.config.hotkey = s.lowercased().replacingOccurrences(of: " ", with: "+") }) {
-                                Text(s)
+                        ForEach(shortcutOptions, id: \.1) { display, value in
+                            Button(action: { coordinator.updateHotkey(value) }) {
+                                Text(display)
                                     .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(coordinator.config.hotkey == s.lowercased().replacingOccurrences(of: " ", with: "+") ? Color(red: 0.0, green: 0.48, blue: 1.0) : .black.opacity(0.7))
+                                    .foregroundColor(coordinator.config.hotkey == value ? Color(red: 0.0, green: 0.48, blue: 1.0) : .black.opacity(0.7))
                                     .padding(.horizontal, 18)
                                     .padding(.vertical, 10)
                                     .background(
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(coordinator.config.hotkey == s.lowercased().replacingOccurrences(of: " ", with: "+") ? Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.07) : Color.white.opacity(0.6))
+                                            .fill(coordinator.config.hotkey == value ? Color(red: 0.0, green: 0.48, blue: 1.0).opacity(0.07) : Color.white.opacity(0.6))
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10)
-                                            .stroke(coordinator.config.hotkey == s.lowercased().replacingOccurrences(of: " ", with: "+") ? Color(red: 0.0, green: 0.48, blue: 1.0) : Color.black.opacity(0.12), lineWidth: coordinator.config.hotkey == s.lowercased().replacingOccurrences(of: " ", with: "+") ? 2 : 1.5)
+                                            .stroke(coordinator.config.hotkey == value ? Color(red: 0.0, green: 0.48, blue: 1.0) : Color.black.opacity(0.12), lineWidth: coordinator.config.hotkey == value ? 2 : 1.5)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -194,10 +206,17 @@ struct SettingsView: View {
     private var settingsMic: some View {
         VStack(alignment: .leading, spacing: 24) {
             settingsSection("Input Device") {
-                settingsPickerRow("Microphone", selection: .constant("MacBook Pro Microphone"), isLast: true) {
-                    Text("MacBook Pro Microphone").tag("MacBook Pro Microphone")
-                    Text("External USB Mic").tag("External USB Mic")
-                    Text("AirPods Pro").tag("AirPods Pro")
+                settingsPickerRow("Microphone", selection: Binding(
+                    get: { coordinator.config.selectedMicDeviceUID ?? "default" },
+                    set: { newValue in
+                        coordinator.config.selectedMicDeviceUID = newValue == "default" ? nil : newValue
+                        coordinator.config.save()
+                    }
+                ), isLast: true) {
+                    Text("System Default").tag("default")
+                    ForEach(inputDevices) { device in
+                        Text(device.name).tag(device.uid)
+                    }
                 }
             }
 
@@ -270,33 +289,18 @@ struct SettingsView: View {
             }
 
             settingsSection("Permissions") {
-                HStack {
-                    Text("Microphone access")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.78))
-                    Spacer()
-                    HStack(spacing: 6) {
-                        Circle().fill(Color(red: 0.20, green: 0.78, blue: 0.35)).frame(width: 8, height: 8)
-                        Text("Granted")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
-                    }
+                permissionRow(label: "Microphone access", granted: coordinator.permissionsStatus.microphone) {
+                    PermissionsManager.shared.requestAccessibility()
+                    coordinator.refreshPermissions()
                 }
-                .padding(.vertical, 13)
-
-                HStack {
-                    Text("Accessibility (auto-paste)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.78))
-                    Spacer()
-                    HStack(spacing: 6) {
-                        Circle().fill(Color(red: 0.20, green: 0.78, blue: 0.35)).frame(width: 8, height: 8)
-                        Text("Granted")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
-                    }
+                permissionRow(label: "Accessibility (auto-paste)", granted: coordinator.permissionsStatus.accessibility) {
+                    PermissionsManager.shared.openAccessibilitySettings()
+                    coordinator.refreshPermissions()
                 }
-                .padding(.vertical, 13)
+                permissionRow(label: "Input Monitoring", granted: coordinator.permissionsStatus.inputMonitoring, isLast: true) {
+                    PermissionsManager.shared.openInputMonitoringSettings()
+                    coordinator.refreshPermissions()
+                }
             }
         }
     }
@@ -353,7 +357,7 @@ struct SettingsView: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black.opacity(0.78))
                     Spacer()
-                    Text("~12 min transcribed")
+                    Text(coordinator.usageDisplay)
                         .font(.system(size: 13))
                         .foregroundColor(.black.opacity(0.6))
                 }
@@ -443,6 +447,39 @@ struct SettingsView: View {
             Text("View →")
                 .font(.system(size: 13))
                 .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
+        }
+        .padding(.vertical, 13)
+        .overlay(alignment: .bottom) {
+            if !isLast {
+                Divider()
+            }
+        }
+    }
+
+    private func permissionRow(label: String, granted: Bool, isLast: Bool = false, onFix: @escaping () -> Void) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.black.opacity(0.78))
+            Spacer()
+            if granted {
+                HStack(spacing: 6) {
+                    Circle().fill(Color(red: 0.20, green: 0.78, blue: 0.35)).frame(width: 8, height: 8)
+                    Text("Granted")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(red: 0.20, green: 0.78, blue: 0.35))
+                }
+            } else {
+                Button(action: onFix) {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color(red: 0.95, green: 0.35, blue: 0.30)).frame(width: 8, height: 8)
+                        Text("Grant")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(red: 0.0, green: 0.48, blue: 1.0))
+                    }
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.vertical, 13)
         .overlay(alignment: .bottom) {

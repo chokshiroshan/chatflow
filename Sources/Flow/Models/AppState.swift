@@ -45,6 +45,63 @@ enum AuthState: Equatable {
     case error(String)
 }
 
+// MARK: - Usage Tracking
+
+/// Tracks dictation usage stats, persisted to ~/.flow/usage.json
+final class UsageTracker {
+    static let shared = UsageTracker()
+    private let url = FlowConfig.configDir.appendingPathComponent("usage.json")
+
+    struct Stats: Codable {
+        var totalSessions: Int = 0
+        var totalSeconds: Double = 0
+        var monthSessions: Int = 0
+        var monthSeconds: Double = 0
+        var monthKey: String = ""  // "2026-04" format
+
+        var monthMinutesDisplay: String {
+            let mins = Int(monthSeconds / 60)
+            if mins < 1 { return "< 1 min transcribed" }
+            return "~\(mins) min transcribed"
+        }
+    }
+
+    private(set) var stats = Stats()
+
+    private init() { load() }
+
+    func recordSession(durationSeconds: Double) {
+        stats.totalSessions += 1
+        stats.totalSeconds += durationSeconds
+
+        let now = Calendar.current.component(.year, from: Date()) * 100 + Calendar.current.component(.month, from: Date())
+        let key = String(now)
+        if stats.monthKey != key {
+            stats.monthKey = key
+            stats.monthSessions = 0
+            stats.monthSeconds = 0
+        }
+        stats.monthSessions += 1
+        stats.monthSeconds += durationSeconds
+        save()
+    }
+
+    private func load() {
+        guard let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode(Stats.self, from: data) else { return }
+        stats = decoded
+    }
+
+    private func save() {
+        try? FileManager.default.createDirectory(at: FlowConfig.configDir, withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let data = try? encoder.encode(stats) {
+            try? data.write(to: url)
+        }
+    }
+}
+
 // MARK: - Configuration
 
 struct FlowConfig: Codable {
@@ -53,6 +110,10 @@ struct FlowConfig: Codable {
     var language: String = "en"
     var realtimeModel: String = "gpt-realtime"
     var injectMethod: InjectMethod = .clipboard
+    var soundEffectsEnabled: Bool = true
+    var autoPasteEnabled: Bool = true
+    var appearance: String = "system"
+    var selectedMicDeviceUID: String? = nil
 
     enum HotkeyMode: String, Codable, CaseIterable {
         case hold
@@ -63,6 +124,12 @@ struct FlowConfig: Codable {
         case clipboard
         case accessibility
         case keystrokes
+    }
+
+    enum Appearance: String, CaseIterable {
+        case system = "system"
+        case light = "light"
+        case dark = "dark"
     }
 
     static let configDir = FileManager.default.homeDirectoryForCurrentUser

@@ -3,17 +3,20 @@ import AppKit
 import CryptoKit
 import CommonCrypto
 
-/// Authenticates with ChatGPT via OAuth PKCE using the ChatGPT web app client ID.
+/// Authenticates with ChatGPT via OAuth PKCE — exactly matching the Codex CLI flow.
 ///
-/// Uses the same client ID as chatgpt.com web app (app_X8zY6vW2pQ9tR3dE7nK1jL5gH)
-/// which works with regular ChatGPT subscriptions (no API org needed).
+/// Reverse-engineered from openai/codex source (codex-rs/login/):
+/// - Client ID: app_EMoamEEZ73f0CkXaXp7hrann
+/// - Issuer: https://auth.openai.com
+/// - Scope: openid profile email offline_access api.connectors.read api.connectors.invoke
+/// - Extra params: id_token_add_organizations, codex_cli_simplified_flow, originator
+/// - PKCE: S256 with URL-safe base64 no-pad verifier (64 random bytes)
+/// - Token exchange: form-urlencoded (not JSON)
+/// - Refresh: form-urlencoded (not JSON)
 ///
-/// Flow:
-/// 1. Generate PKCE code_verifier + code_challenge
-/// 2. Open system browser to auth.openai.com/authorize
-/// 3. User logs in → browser redirects to localhost with auth code
-/// 4. Exchange code for tokens (access + refresh via offline_access scope)
-/// 5. Store refresh token → auto-refresh access tokens before expiry
+/// For ChatGPT subscription auth, all API calls route through:
+///   https://chatgpt.com/backend-api/codex
+/// (not api.openai.com — that's for API key auth only)
 final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     static let shared = ChatGPTAuth()
 
@@ -26,12 +29,16 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
     private let keychain = KeychainStore.shared
     private var callbackServer: OAuthCallbackServer?
 
-    // MARK: - OAuth Config (ChatGPT web app client)
+    // MARK: - OAuth Config (matching Codex CLI exactly)
 
-    private let clientID = "app_X8zY6vW2pQ9tR3dE7nK1jL5gH"
+    /// Codex CLI client ID (from codex-rs/login/src/auth/manager.rs)
+    private let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"
     private let issuer = "https://auth.openai.com"
-    private let scopes = "openid email profile offline_access model.request model.read organization.read"
+
+    /// Codex CLI scope (from codex-rs/login/src/server.rs build_authorize_url)
+    private let scopes = "openid profile email offline_access api.connectors.read api.connectors.invoke"
     private let redirectPath = "/auth/callback"
+    private let callbackPort: UInt16 = 1455
 
     init() {
         // Restore existing session
@@ -53,29 +60,31 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
 
         Task { @MainActor in
             do {
-                // Generate PKCE
+                // Generate PKCE (matching Codex: URL-safe base64 no-pad, 64 random bytes)
                 let verifier = Self.generateCodeVerifier()
                 let challenge = Self.generateCodeChallenge(from: verifier)
-                let state = Self.randomString(length: 32)
+                let state = Self.randomState()
 
-                // Start callback server
+                // Start callback server on port 1455 (Codex standard)
                 let server = OAuthCallbackServer()
                 server.path = redirectPath
                 self.callbackServer = server
-                let port = try server.start(fixedPort: 1455)
+                let port = try server.start(fixedPort: callbackPort)
                 let redirectURI = "http://localhost:\(port)\(redirectPath)"
 
-                // Build authorize URL
+                // Build authorize URL — matching Codex's build_authorize_url() exactly
                 var components = URLComponents(string: "\(issuer)/oauth/authorize")!
                 components.queryItems = [
+                    URLQueryItem(name: "response_type", value: "code"),
                     URLQueryItem(name: "client_id", value: clientID),
                     URLQueryItem(name: "redirect_uri", value: redirectURI),
-                    URLQueryItem(name: "response_type", value: "code"),
                     URLQueryItem(name: "scope", value: scopes),
                     URLQueryItem(name: "code_challenge", value: challenge),
                     URLQueryItem(name: "code_challenge_method", value: "S256"),
+                    URLQueryItem(name: "id_token_add_organizations", value: "true"),
+                    URLQueryItem(name: "codex_cli_simplified_flow", value: "true"),
                     URLQueryItem(name: "state", value: state),
-                    URLQueryItem(name: "audience", value: "https://api.openai.com/v1"),
+                    URLQueryItem(name: "originator", value: "codex_cli_rs"),
                 ]
 
                 guard let authURL = components.url else {
@@ -94,7 +103,7 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
                     throw AuthError.authFailed("State mismatch")
                 }
 
-                // Exchange code for tokens
+                // Exchange code for tokens (form-urlencoded, matching Codex)
                 let tokens = try await exchangeCode(result.code, verifier: verifier, redirectURI: redirectURI)
 
                 self.accessToken = tokens.accessToken
@@ -188,22 +197,23 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         return !tokens.isExpired
     }
 
-    // MARK: - OAuth Token Exchange
+    // MARK: - OAuth Token Exchange (matching Codex's exchange_code_for_tokens)
 
     private func exchangeCode(_ code: String, verifier: String, redirectURI: String) async throws -> KeychainStore.AuthTokens {
         var request = URLRequest(url: URL(string: "\(issuer)/oauth/token")!)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let body = [
-            "grant_type": "authorization_code",
-            "code": code,
-            "code_verifier": verifier,
-            "client_id": clientID,
-            "redirect_uri": redirectURI,
+        // Codex uses form-urlencoded, matching the spec
+        let params: [(String, String)] = [
+            ("grant_type", "authorization_code"),
+            ("code", code),
+            ("redirect_uri", redirectURI),
+            ("client_id", clientID),
+            ("code_verifier", verifier),
         ]
 
-        request.httpBody = body.map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
+        request.httpBody = params.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
             .joined(separator: "&")
             .data(using: .utf8)
 
@@ -216,7 +226,7 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         guard httpResp.statusCode == 200 else {
             let body = String(data: data, encoding: .utf8) ?? "unknown"
             print("❌ Token exchange failed (\(httpResp.statusCode)): \(body)")
-            throw AuthError.authFailed("Token exchange failed: \(httpResp.statusCode)")
+            throw AuthError.authFailed("Token exchange failed (\(httpResp.statusCode)): \(body)")
         }
 
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
@@ -243,24 +253,29 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         )
     }
 
+    /// Refresh token using form-urlencoded (matching Codex's refresh flow)
     private func refreshToken(_ refreshToken: String) async throws -> KeychainStore.AuthTokens {
         var request = URLRequest(url: URL(string: "\(issuer)/oauth/token")!)
         request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: String] = [
-            "grant_type": "refresh_token",
-            "refresh_token": refreshToken,
-            "client_id": clientID,
+        // Codex refresh: form-urlencoded, NOT JSON
+        let params: [(String, String)] = [
+            ("grant_type", "refresh_token"),
+            ("refresh_token", refreshToken),
+            ("client_id", clientID),
         ]
 
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.httpBody = params.map { "\($0.0)=\($0.1.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
+            .joined(separator: "&")
+            .data(using: .utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            let httpResp = response as? HTTPURLResponse
             let body = String(data: data, encoding: .utf8) ?? "unknown"
-            throw AuthError.authFailed("Refresh failed: \(body)")
+            throw AuthError.authFailed("Refresh failed (\(httpResp?.statusCode ?? 0)): \(body)")
         }
 
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
@@ -283,14 +298,21 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
         )
     }
 
-    // MARK: - PKCE Helpers
+    // MARK: - PKCE Helpers (matching Codex's pkce.rs exactly)
 
+    /// Generate PKCE code verifier: URL-safe base64 no-pad of 64 random bytes
+    /// (matching Codex: base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes))
     private static func generateCodeVerifier() -> String {
         var buffer = [UInt8](repeating: 0, count: 64)
         _ = SecRandomCopyBytes(kSecRandomDefault, 64, &buffer)
-        return Data(buffer).map { String(format: "%02x", $0) }.joined()
+        return Data(buffer).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
 
+    /// Generate PKCE code challenge: URL-safe base64 no-pad of SHA256(verifier)
+    /// (matching Codex: BASE64URL-ENCODE(SHA256(verifier)) without padding)
     private static func generateCodeChallenge(from verifier: String) -> String {
         let data = verifier.data(using: .utf8)!
         let hashed = SHA256.hash(data: data)
@@ -300,9 +322,15 @@ final class ChatGPTAuth: @unchecked Sendable, ObservableObject {
             .replacingOccurrences(of: "=", with: "")
     }
 
-    private static func randomString(length: Int) -> String {
-        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        return String((0..<length).map { _ in chars.randomElement()! })
+    /// Generate random state: URL-safe base64 no-pad of 32 random bytes
+    /// (matching Codex: generate_state() in server.rs)
+    private static func randomState() -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, 32, &bytes)
+        return Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
 
     // MARK: - JWT Parsing

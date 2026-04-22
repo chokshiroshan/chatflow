@@ -52,7 +52,7 @@ struct FlowConfig: Codable {
     var hotkey: String = "ctrl+space"
     var hotkeyMode: HotkeyMode = .hold
     var language: String = "en"
-    var realtimeModel: String = "gpt-realtime-1.5"
+    var realtimeModel: String = "gpt-realtime"
     var preferredMode: AppMode = .dictation
     var injectMethod: InjectMethod = .clipboard
     var voiceChatVoice: String = "alloy"

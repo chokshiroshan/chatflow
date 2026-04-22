@@ -5,12 +5,11 @@ struct FlowApp: App {
     @StateObject private var coordinator = AppCoordinator()
 
     var body: some Scene {
-        // Menu bar presence — icon only, no dock icon
+        // Menu bar presence — stateful compact label, no dock icon
         MenuBarExtra {
             MenuView(coordinator: coordinator)
         } label: {
-            Image(systemName: menuBarSymbol)
-                .help(menuBarTooltip)
+            MenuBarLabel(coordinator: coordinator)
         }
         .menuBarExtraStyle(.window)
 
@@ -28,20 +27,45 @@ struct FlowApp: App {
         .defaultPosition(.center)
         .defaultSize(width: 420, height: 440)
     }
+}
 
-    private var menuBarSymbol: String {
+private struct MenuBarLabel: View {
+    @ObservedObject var coordinator: AppCoordinator
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbol)
+            if shortText != nil {
+                Text(shortText!)
+                    .font(.system(size: 11, weight: .semibold))
+            }
+        }
+        .help(tooltip)
+    }
+
+    private var symbol: String {
         switch coordinator.state {
         case .idle: return "waveform"
-        case .connecting: return "dot.radiowaves.left.and.right"
+        case .connecting: return "bolt.horizontal.circle"
         case .recording: return "record.circle.fill"
-        case .processing: return "ellipsis.circle"
-        case .injecting: return "checkmark.circle"
-        case .error: return "exclamationmark.circle"
-        case .speaking: return "speaker.wave.2"
+        case .processing: return "ellipsis.circle.fill"
+        case .injecting: return "checkmark.circle.fill"
+        case .error: return "exclamationmark.circle.fill"
+        case .speaking: return "speaker.wave.2.fill"
         }
     }
 
-    private var menuBarTooltip: String {
+    private var shortText: String? {
+        switch coordinator.state {
+        case .recording: return "REC"
+        case .processing: return "…"
+        case .injecting: return "OK"
+        case .error: return "ERR"
+        default: return nil
+        }
+    }
+
+    private var tooltip: String {
         switch coordinator.state {
         case .idle: return "Flow — Ready"
         case .connecting: return "Flow — Connecting"

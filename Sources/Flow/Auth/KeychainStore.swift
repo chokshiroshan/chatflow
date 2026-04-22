@@ -1,13 +1,15 @@
 import Foundation
-import Security
 
-/// Stores and retrieves OAuth tokens from the macOS Keychain.
+/// Stores and retrieves OAuth tokens from a local file.
 ///
-/// Uses the Security framework directly (no third-party keyring crate).
-/// Tokens are stored with service="ai.flow.app" and account="chatgpt_tokens".
+/// Originally used macOS Keychain, but unsigned CLI builds trigger
+/// repeated password prompts. File-based storage avoids this entirely.
+/// Tokens are stored at ~/.flow/auth.json with restricted permissions (600).
 final class KeychainStore {
     static let shared = KeychainStore()
-    private let service = "ai.flow.app"
+    private var storageURL: URL {
+        FlowConfig.configDir.appendingPathComponent("auth.json")
+    }
 
     private init() {}
 
@@ -27,54 +29,32 @@ final class KeychainStore {
     }
 
     func saveTokens(_ tokens: AuthTokens) throws {
+        // Ensure ~/.flow/ exists
+        try? FileManager.default.createDirectory(
+            at: FlowConfig.configDir,
+            withIntermediateDirectories: true
+        )
+
         let data = try JSONEncoder().encode(tokens)
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "chatgpt_tokens",
-        ]
+        try data.write(to: storageURL, options: .atomic)
 
-        // Delete existing
-        SecItemDelete(query as CFDictionary)
-
-        // Add new
-        let addQuery: [String: Any] = query.merging([
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-        ]) { _, new in new }
-
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw KeychainError.saveFailed(status)
-        }
+        // Set file permissions to owner-only (rw-------)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: storageURL.path
+        )
     }
 
     func loadTokens() -> AuthTokens? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "chatgpt_tokens",
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        guard status == errSecSuccess, let data = result as? Data else {
+        guard FileManager.default.fileExists(atPath: storageURL.path),
+              let data = try? Data(contentsOf: storageURL) else {
             return nil
         }
-
         return try? JSONDecoder().decode(AuthTokens.self, from: data)
     }
 
     func deleteTokens() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "chatgpt_tokens",
-        ]
-        SecItemDelete(query as CFDictionary)
+        try? FileManager.default.removeItem(at: storageURL.path)
     }
 }
 
@@ -84,8 +64,8 @@ enum KeychainError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .saveFailed(let s): return "Keychain save failed (status: \(s))"
-        case .loadFailed(let s): return "Keychain load failed (status: \(s))"
+        case .saveFailed(let s): return "Save failed (status: \(s))"
+        case .loadFailed(let s): return "Load failed (status: \(s))"
         }
     }
 }

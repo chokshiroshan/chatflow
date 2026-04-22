@@ -1,124 +1,197 @@
 import Foundation
-import AVFoundation
+import CoreAudio
+import AudioToolbox
 
-/// Captures microphone audio via AVAudioEngine, outputs 24kHz mono PCM16.
+/// Captures microphone audio via Core Audio AudioDevice IO proc.
 ///
-/// Strategy: Connect inputNode → mixer at HARDWARE format (avoids connect crash),
-/// then tap the mixer node at hardware format (mixer is not an IO node, so taps work),
-/// then downsample to 24kHz in the callback.
+/// Bypasses AVAudioEngine entirely — goes straight to the hardware via
+/// AudioDeviceCreateIOProcID. Works at any sample rate (24kHz or 48kHz)
+/// since there's no format matching layer to crash.
 final class AudioCapture {
-    private var engine: AVAudioEngine?
-    private var mixer: AVAudioMixerNode?
+    private var deviceID: AudioObjectID = 0
+    private var procID: AudioDeviceIOProcID?
     private var chunkCount = 0
-    private var tapFired = false
+    private var callbackFired = false
+    private var hwSampleRate: Float64 = 48000
+    private var hwFormat: AudioStreamBasicDescription?
 
-    var isRunning: Bool { engine?.isRunning ?? false }
     static let targetSampleRate: Double = 24000.0
     var onAudioData: ((Data) -> Void)?
+    var isRunning: Bool { procID != nil }
 
-    func start() async throws {
-        let granted = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
-            AVAudioApplication.requestRecordPermission { granted in
-                cont.resume(returning: granted)
-            }
+    func start() throws {
+        // 1. Get default input device
+        var propSize = UInt32(MemoryLayout<AudioObjectID>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propSize, &deviceID
+        )
+        guard status == noErr, deviceID != 0 else {
+            print("⚠️ No default input device (status=\(status))")
+            throw AudioError.noInputDevice
         }
-        guard granted else { throw AudioError.permissionDenied }
 
-        let engine = AVAudioEngine()
-        self.engine = engine
-        let inputNode = engine.inputNode
+        // 2. Get device sample rate
+        propSize = UInt32(MemoryLayout<Float64>.size)
+        address.mSelector = kAudioDevicePropertyNominalSampleRate
+        address.mScope = kAudioObjectPropertyScopeGlobal
+        address.mElement = kAudioObjectPropertyElementMain
+        status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &propSize, &hwSampleRate)
+        print("🎤 Device \(deviceID): \(hwSampleRate)Hz")
 
-        // Read hardware format BEFORE starting
-        let hwFormat = inputNode.outputFormat(forBus: 0)
-        guard hwFormat.sampleRate > 0 else { throw AudioError.noInputDevice }
-        print("🎤 Hardware: \(hwFormat.sampleRate)Hz, \(hwFormat.channelCount)ch, interleaved=\(hwFormat.isInterleaved)")
+        // 3. Get the physical stream format (input scope, element 1)
+        var asbd = AudioStreamBasicDescription()
+        propSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        address.mSelector = kAudioStreamPropertyPhysicalFormat
+        address.mScope = kAudioDevicePropertyScopeInput
+        address.mElement = 1
+        status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &propSize, &asbd)
+        if status == noErr {
+            hwFormat = asbd
+            print("🎤 Stream: \(asbd.mSampleRate)Hz, \(asbd.mChannelsPerFrame)ch, fmt=\(fourCC(asbd.mFormatID)), flags=\(asbd.mFormatFlags), bits=\(asbd.mBitsPerChannel), bytes/frame=\(asbd.mBytesPerFrame)")
+        } else {
+            print("⚠️ Could not get stream format (status=\(status)), assuming float32")
+        }
 
-        // Create mixer and connect input → mixer at HARDWARE format
-        // (can't use 24kHz here — "Input HW format and tap format not matching" crash)
-        let mixer = AVAudioMixerNode()
-        engine.attach(mixer)
-        self.mixer = mixer
-        engine.connect(inputNode, to: mixer, format: hwFormat)
+        // 4. Create IO proc
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
+        var newProcID: AudioDeviceIOProcID?
+        status = AudioDeviceCreateIOProcID(deviceID, ioCallback, selfPtr, &newProcID)
+        guard status == noErr, let pid = newProcID else {
+            print("⚠️ AudioDeviceCreateIOProcID failed: \(status)")
+            throw AudioError.unsupportedFormat
+        }
+        self.procID = pid
 
-        // Mute output so mic doesn't play through speakers
-        engine.mainMixerNode.outputVolume = 0
-
-        // Start engine
-        try engine.start()
-        print("🎙️ Engine started (input → mixer @ \(Int(hwFormat.sampleRate))Hz)")
-
-        // Small settle delay
-        try await Task.sleep(for: .milliseconds(200))
-
-        // Read mixer's actual output format after engine is running
-        let mixerFormat = mixer.outputFormat(forBus: 0)
-        print("🎤 Mixer output: \(mixerFormat.sampleRate)Hz, \(mixerFormat.channelCount)ch, interleaved=\(mixerFormat.isInterleaved)")
-
-        // Tap the mixer node at its own output format
-        mixer.installTap(onBus: 0, bufferSize: 1024, format: mixerFormat) { [weak self] buffer, _ in
-            self?.handleBuffer(buffer)
+        // 5. Start
+        status = AudioDeviceStart(deviceID, pid)
+        guard status == noErr else {
+            print("⚠️ AudioDeviceStart failed: \(status)")
+            AudioDeviceDestroyIOProcID(deviceID, pid)
+            self.procID = nil
+            throw AudioError.noInputDevice
         }
 
         chunkCount = 0
-        tapFired = false
-        print("🎙️ Tap installed on mixer (\(Int(mixerFormat.sampleRate))Hz)")
-
-        // Verify tap fires
-        try await Task.sleep(for: .milliseconds(500))
-        if !tapFired {
-            print("⚠️ Tap hasn't fired after 500ms...")
-            try await Task.sleep(for: .milliseconds(1500))
-            if !tapFired {
-                print("❌ Tap never fired")
-                mixer.removeTap(onBus: 0)
-                engine.stop()
-                self.engine = nil
-                self.mixer = nil
-                throw AudioError.noInputDevice
-            }
-        }
+        callbackFired = false
+        print("🎙️ CoreAudio IO started")
     }
 
     func stop() {
-        print("🛑 Audio stopped. \(chunkCount) chunks sent.")
+        if let pid = procID {
+            AudioDeviceStop(deviceID, pid)
+            AudioDeviceDestroyIOProcID(deviceID, pid)
+        }
+        procID = nil
+        print("🛑 Audio stopped. \(chunkCount) chunks.")
         chunkCount = 0
-        tapFired = false
-        mixer?.removeTap(onBus: 0)
-        engine?.stop()
-        engine = nil
-        mixer = nil
+        callbackFired = false
     }
 
-    private func handleBuffer(_ buffer: AVAudioPCMBuffer) {
-        if !tapFired {
-            tapFired = true
-            print("🎙️ TAP FIRED! frames=\(buffer.frameLength), rate=\(buffer.format.sampleRate)Hz")
+    // MARK: - IO Callback (called from Core Audio real-time thread)
+
+    private func processInput(inputData: UnsafePointer<AudioBufferList>) {
+        let bufferList = inputData.pointee
+        guard bufferList.mNumberBuffers > 0 else { return }
+
+        let buf = bufferList.mBuffers
+        guard buf.mDataByteSize > 0, let dataPtr = buf.mData else { return }
+
+        if !callbackFired {
+            callbackFired = true
+            print("🎙️ IO CALLBACK FIRED! bytes=\(buf.mDataByteSize), ch=\(buf.mNumberChannels)")
         }
 
-        let frameLength = Int(buffer.frameLength)
-        guard frameLength > 0, let floatData = buffer.floatChannelData else { return }
+        // Determine format from hwFormat
+        let isFloat = hwFormat.map { $0.mFormatFlags & UInt32(kAudioFormatFlagIsFloat) != 0 } ?? true
+        let bytesPerSample = isFloat ? 4 : 2
 
-        let samples = floatData[0]
-        let srcRate = buffer.format.sampleRate
-        let ratio = Self.targetSampleRate / srcRate
-        let outputCount = Int(Double(frameLength) * ratio)
+        if isFloat {
+            processFloat32(dataPtr: dataPtr, byteCount: Int(buf.mDataByteSize))
+        } else {
+            processInt16(dataPtr: dataPtr, byteCount: Int(buf.mDataByteSize))
+        }
+    }
+
+    private func processFloat32(dataPtr: UnsafeMutableRawPointer, byteCount: Int) {
+        let frameCount = byteCount / 4
+        guard frameCount > 0 else { return }
+
+        let floatPtr = dataPtr.assumingMemoryBound(to: Float.self)
+        let ratio = Float(Self.targetSampleRate / hwSampleRate)
+        let outputCount = Int(Float(frameCount) * ratio)
         guard outputCount > 0 else { return }
 
         var pcm16 = Data(capacity: outputCount * 2)
         for i in 0..<outputCount {
-            let srcIdx = min(Int(Double(i) / ratio), frameLength - 1)
-            let clamped = max(-1.0, min(1.0, samples[srcIdx]))
+            let srcIdx = min(Int(Float(i) / ratio), frameCount - 1)
+            let sample = floatPtr[srcIdx]
+            let clamped = max(-1.0, min(1.0, sample))
             let intSample = Int16(clamped * 32767.0)
             pcm16.append(contentsOf: withUnsafeBytes(of: intSample.littleEndian) { Array($0) })
         }
 
-        guard !pcm16.isEmpty else { return }
+        emitChunk(pcm16, inputFrames: frameCount, outputFrames: outputCount)
+    }
+
+    private func processInt16(dataPtr: UnsafeMutableRawPointer, byteCount: Int) {
+        let frameCount = byteCount / 2
+        guard frameCount > 0 else { return }
+
+        let int16Ptr = dataPtr.assumingMemoryBound(to: Int16.self)
+        let ratio = Float(Self.targetSampleRate / hwSampleRate)
+        let outputCount = Int(Float(frameCount) * ratio)
+        guard outputCount > 0 else { return }
+
+        var pcm16 = Data(capacity: outputCount * 2)
+        for i in 0..<outputCount {
+            let srcIdx = min(Int(Float(i) / ratio), frameCount - 1)
+            pcm16.append(contentsOf: withUnsafeBytes(of: int16Ptr[srcIdx].littleEndian) { Array($0) })
+        }
+
+        emitChunk(pcm16, inputFrames: frameCount, outputFrames: outputCount)
+    }
+
+    private func emitChunk(_ data: Data, inputFrames: Int, outputFrames: Int) {
+        guard !data.isEmpty else { return }
         chunkCount += 1
         if chunkCount == 1 {
-            print("🎙️ First chunk: \(pcm16.count) bytes (\(outputCount) samples from \(frameLength) @ \(Int(srcRate))Hz → \(Int(Self.targetSampleRate))Hz)")
+            print("🎙️ First chunk: \(data.count) bytes (\(outputFrames) from \(inputFrames) @ \(Int(hwSampleRate))Hz)")
         }
-        onAudioData?(pcm16)
+        onAudioData?(data)
     }
+
+    private func fourCC(_ code: UInt32) -> String {
+        let bytes: [CChar] = [
+            CChar(truncatingIfNeeded: (code >> 24) & 0xFF),
+            CChar(truncatingIfNeeded: (code >> 16) & 0xFF),
+            CChar(truncatingIfNeeded: (code >> 8) & 0xFF),
+            CChar(truncatingIfNeeded: code & 0xFF),
+            0
+        ]
+        return String(cString: bytes)
+    }
+}
+
+// MARK: - C-compatible IO callback (free function)
+
+private func ioCallback(
+    device: AudioObjectID,
+    currentTime: UnsafePointer<AudioTimeStamp>,
+    inputData: UnsafePointer<AudioBufferList>,
+    inputTime: UnsafePointer<AudioTimeStamp>,
+    outputData: UnsafeMutablePointer<AudioBufferList>,
+    outputTime: UnsafePointer<AudioTimeStamp>,
+    clientData: UnsafeMutableRawPointer?
+) -> OSStatus {
+    guard let clientData = clientData else { return noErr }
+    let capture = Unmanaged<AudioCapture>.fromOpaque(clientData).takeUnretainedValue()
+    capture.processInput(inputData: inputData)
+    return noErr
 }
 
 enum AudioError: LocalizedError {
@@ -129,7 +202,7 @@ enum AudioError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedFormat: return "Cannot create audio tap"
+        case .unsupportedFormat: return "Cannot create audio IO proc"
         case .permissionDenied: return "Microphone permission denied"
         case .notRunning: return "Audio capture not running"
         case .noInputDevice: return "No microphone detected"

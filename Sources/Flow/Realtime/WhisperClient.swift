@@ -53,26 +53,26 @@ final class WhisperClient {
         // Model field
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-        body.append(model)
+        body.append(model.data(using: .utf8)!)
         body.append("\r\n".data(using: .utf8)!)
 
         // Language field
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
-        body.append(language)
+        body.append(language.data(using: .utf8)!)
         body.append("\r\n".data(using: .utf8)!)
 
         // Response format
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n".data(using: .utf8)!)
-        body.append("verbose_json")
+        body.append("verbose_json".data(using: .utf8)!)
         body.append("\r\n".data(using: .utf8)!)
 
         // Optional prompt for better accuracy
         if let prompt {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"prompt\"\r\n\r\n".data(using: .utf8)!)
-            body.append(prompt)
+            body.append(prompt.data(using: .utf8)!)
             body.append("\r\n".data(using: .utf8)!)
         }
 
@@ -95,7 +95,7 @@ final class WhisperClient {
         }
 
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-        let text = json["text"] as? String ?? ""
+        let text = (json["text"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 
         print("📝 Whisper transcript: \"\(text)\"")
         return text

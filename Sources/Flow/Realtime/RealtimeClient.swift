@@ -82,17 +82,13 @@ final class RealtimeClient {
 
         switch mode {
         case .dictation(let lang):
-            // v1 Realtime API format with best transcription settings:
-            // - gpt-4o-mini-transcribe (better than whisper-1)
-            // - near_field noise reduction
-            // - text-only output (no audio response needed)
-            // - no turn detection (we control it manually)
+            let instructions = ContextManager.shared.buildInstructions()
             sessionConfig = """
             {
                 "type": "session.update",
                 "session": {
                     "modalities": ["text"],
-                    "instructions": "Transcribe exactly what was said. Output only the spoken words, preserving proper nouns, brand names, technical terms, and abbreviations as-is. Do not correct, interpret, or rephrase anything.",
+                    "instructions": "\(instructions.escapingJSON)",
                     "input_audio_format": "pcm16",
                     "output_audio_format": "pcm16",
                     "input_audio_transcription": {
@@ -303,5 +299,16 @@ enum RealtimeError: LocalizedError {
         case .notConnected: return "Not connected to Realtime API"
         case .authFailed: return "Authentication failed"
         }
+    }
+}
+
+// MARK: - String JSON Escaping
+
+extension String {
+    var escapingJSON: String {
+        self
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
     }
 }

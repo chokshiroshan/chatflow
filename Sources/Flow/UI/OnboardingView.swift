@@ -214,8 +214,8 @@ private struct OnboardChatGPTStep: View {
                 } else {
                     PrimaryActionButton(
                         title: loading ? "Connecting…" : "Sign in with ChatGPT",
-                        showsProgress: loading,
                         color: Color(red: 0.05, green: 0.62, blue: 0.44),
+                        showsProgress: loading,
                         disabled: loading,
                         action: handleConnect
                     )

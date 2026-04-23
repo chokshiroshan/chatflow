@@ -1,121 +1,110 @@
-# 🎤💬 Flow
+# 🎤 ChatFlow
 
-Voice dictation + voice chat for macOS, powered by your ChatGPT subscription.
+Voice dictation for macOS, powered by your ChatGPT subscription.
 
-**Two modes:**
-- **🎤 Dictation** — Press Fn, speak, release → text appears in any app
-- **💬 Voice Chat** — Click to start → real-time voice conversation with ChatGPT
+Hold a hotkey, speak, release → text appears in any app. Lives in the menu bar.
 
-Zero dependencies. Pure Swift + Apple frameworks.
+**Enhanced mode:** Hold **Shift + hotkey** to capture screen context for better accuracy on technical terms.
 
 ---
 
-## Quick Start (Xcode)
+## Install
+
+### Option 1: DMG (recommended)
+
+1. Download `ChatFlow.dmg` from [Releases](https://github.com/chokshiroshan/chatflow/releases)
+2. Open the DMG
+3. Drag **ChatFlow** to **Applications**
+4. Right-click → Open on first launch (bypasses Gatekeeper)
+
+### Option 2: Homebrew
+
+```bash
+brew install --cask chatflow
+```
+
+### Option 3: Build from source
 
 ```bash
 git clone https://github.com/chokshiroshan/chatflow.git
 cd chatflow
-open Package.swift
+
+# Just the .app
+./build.sh
+
+# .app + DMG installer
+./build.sh dmg
+
+# Clean build artifacts
+./build.sh clean
 ```
 
-Then in Xcode:
-1. Select **Flow** scheme → **My Mac**
-2. **Product → Run** (⌘R)
-3. Grant permissions when prompted (mic, accessibility, input monitoring)
-4. Sign in with your ChatGPT account in the web view
-5. Press **Fn** to dictate, or click **Start Voice Chat** from the menu bar
+## First Launch
 
-## Why Xcode?
+ChatFlow needs three macOS permissions:
 
-`swift run` works but **won't have proper entitlements** — no mic access, no global hotkeys, no text injection. You need Xcode for:
-- Microphone access
-- Accessibility API (text injection)
-- Input monitoring (global hotkeys)
-- Proper app signing
+1. **Microphone** — for voice capture
+2. **Accessibility** — for global hotkey and text injection
+3. **Input Monitoring** — for keyboard event handling
 
-## Building from Terminal
+The onboarding flow walks you through all three. You'll also sign in with your ChatGPT account.
 
-If you just want to verify it compiles:
-```bash
-swift build
-```
+## Usage
+
+| Action | What happens |
+|---|---|
+| **Hold Ctrl+Space** | Start recording. Release to transcribe + inject. |
+| **Hold Ctrl+Shift+Space** | Enhanced mode — captures screen for context-aware transcription. |
+| **Menu bar → Settings** | Change hotkey, sounds, sign-in, privacy info. |
 
 ## Features
 
-| Feature | Status |
-|---|---|
-| Dictation mode (Fn → text in any app) | ✅ |
-| Voice chat mode (real-time conversation) | ✅ |
-| ChatGPT login via web view | ✅ |
-| Backend-api path (free with subscription) | ✅ |
-| Developer API fallback (OPENAI_API_KEY) | ✅ |
-| Groq Whisper free fallback | ✅ |
-| Floating pill overlay | ✅ |
-| Sound effects | ✅ |
-| Permissions onboarding | ✅ |
-| Auto-start at login | ✅ |
-| 6 voice options | ✅ |
-| 10+ languages | ✅ |
-| Keychain token storage | ✅ |
-
-## API Priority
-
-Flow tries multiple backends in order:
-
-1. **ChatGPT backend-api** — Free with your subscription. Uses your login session.
-2. **OpenAI Realtime API** — Requires `OPENAI_API_KEY` env var. Pay-per-use.
-3. **Groq Whisper** — Free tier. Transcription only (no voice chat). Requires `GROQ_API_KEY` env var.
-
-## Configuration
-
-All settings accessible from the menu bar → Settings:
-- Hotkey (Fn, Right ⌘, Right ⌥, F5-F8)
-- Mode (hold-to-talk or toggle)
-- Text injection method (clipboard, accessibility, keystrokes)
-- Voice (Alloy, Echo, Fable, Onyx, Nova, Shimmer)
-- Language (10+ languages)
-- Auto-start at login
-
-Config stored at `~/.flow/config.json`.
+- **Real-time transcription** via OpenAI Realtime API
+- **Screen-aware mode** — screenshot + GPT-4o-mini vision for domain vocabulary
+- **Works everywhere** — any text field in any app
+- **Floating pill** — visual feedback while recording
+- **Sound effects** — start/stop/success/error sounds
+- **Auto-start at login** — optional
+- **ChatGPT auth** — uses your existing subscription, no API key needed
+- **Keychain storage** — tokens stored securely
 
 ## Architecture
 
 ```
 Sources/Flow/
-├── AppCoordinator.swift      # Wires all subsystems
-├── FlowApp.swift              # SwiftUI app entry point
-├── Auth/                      # ChatGPT authentication
-│   ├── ChatGPTAuth.swift      # Web view login + token capture
-│   ├── KeychainStore.swift    # Secure token storage
-│   └── OAuthCallbackServer.swift
-├── Audio/                     # Audio capture & playback
-│   ├── AudioCapture.swift     # Mic → 24kHz PCM16
-│   └── AudioPlayer.swift      # PCM16 → speakers
-├── Hotkey/                    # Global hotkey detection
-│   └── HotkeyManager.swift    # CGEventTap-based
-├── Injection/                 # Text injection into apps
-│   └── TextInjector.swift     # Clipboard / AXUI / keystrokes
-├── Models/                    # Data models
-│   └── AppState.swift         # FlowState, FlowConfig, etc.
+├── AppCoordinator.swift       # Central state management
+├── FlowApp.swift              # SwiftUI app entry (menu bar only)
+├── Auth/                      # ChatGPT OAuth PKCE authentication
+├── Audio/                     # Mic capture (24kHz PCM16) + playback
+├── Config/                    # Context & instruction building
+├── Context/                   # Screen context extraction (vision API)
+├── Hotkey/                    # CGEventTap global hotkey detection
+├── Injection/                 # Text injection (clipboard Cmd+V)
+├── Models/                    # FlowState, FlowConfig, AppState
 ├── Permissions/               # macOS permission management
-│   └── PermissionsManager.swift
-├── Realtime/                  # API clients
-│   ├── RealtimeClient.swift   # WebSocket Realtime API
-│   ├── ChatGPTBackendClient.swift  # backend-api path
-│   ├── DualPathClient.swift   # Orchestrates API fallback chain
-│   ├── DictationEngine.swift  # Dictation mode logic
-│   ├── VoiceChatEngine.swift  # Voice chat mode logic
-│   └── GroqFallback.swift     # Free Groq Whisper fallback
-├── Startup/                   # Auto-start management
-│   └── AutoStartManager.swift
-└── UI/                        # SwiftUI views
+├── Realtime/                  # WebSocket Realtime API + dictation engine
+├── Startup/                   # Launch-at-login management
+└── UI/                        # All SwiftUI views
+    ├── Floating/              # Floating pill window controller
     ├── MenuView.swift         # Menu bar popover
-    ├── VoiceChatView.swift    # Voice chat window
     ├── SettingsView.swift     # Settings window
-    ├── OnboardingView.swift   # First-launch permissions
-    ├── FloatingPill.swift     # Translucent overlay
-    └── SoundManager.swift     # System sound effects
+    ├── OnboardingView.swift   # First-launch setup flow
+    └── DesignSystem.swift     # Colors, typography, radii
 ```
+
+## Build Scripts
+
+| Script | Purpose |
+|---|---|
+| `./build.sh` | Build .app bundle with entitlements |
+| `./build.sh dmg` | Build .app + DMG installer |
+| `./build.sh clean` | Remove all build artifacts |
+
+## Requirements
+
+- macOS 14+ (Sonoma)
+- ChatGPT account (Plus/Pro/Team/Enterprise)
+- Xcode Command Line Tools (for building from source)
 
 ## License
 

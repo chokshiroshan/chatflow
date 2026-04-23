@@ -50,6 +50,8 @@ final class DictationEngine {
         client = nil
         isRecording = false
         isConnected = false
+        isReconnecting = false
+        reconnectAttempts = 0  // Reset on clean shutdown
     }
 
     // MARK: - Pre-connect

@@ -289,10 +289,29 @@ enum RealtimeError: LocalizedError {
 // MARK: - String JSON Escaping
 
 extension String {
+    /// Escape a string for embedding inside a JSON string value.
+    /// Handles: backslash, double-quote, newline, carriage return, tab,
+    /// and control characters (U+0000..U+001F) per RFC 8259 §7.
     var escapingJSON: String {
-        self
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-            .replacingOccurrences(of: "\n", with: "\\n")
+        var result = ""
+        result.reserveCapacity(count)
+        for char in self {
+            switch char {
+            case "\\": result += "\\\\"
+            case "\"": result += "\\\""
+            case "\n":  result += "\\n"
+            case "\r":  result += "\\r"
+            case "\t":  result += "\\t"
+            default:
+                if char.asciiValue.map({ $0 < 0x20 }) ?? false {
+                    // Control character — encode as \u00XX
+                    let hex = String(format: "\\u%04x", char.asciiValue!)
+                    result += hex
+                } else {
+                    result.append(char)
+                }
+            }
+        }
+        return result
     }
 }

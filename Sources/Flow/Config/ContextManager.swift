@@ -7,19 +7,30 @@ import AppKit
 /// personal context like names, technical terms, project names, etc.
 /// This gets injected into the Realtime API session instructions so the
 /// transcription model knows the user's vocabulary.
+///
+/// Caches the file content with a 5-second staleness window to avoid
+/// re-reading from disk on every instruction build.
 final class ContextManager {
     static let shared = ContextManager()
 
     private let contextFilePath: URL
     private(set) var context: String = ""
+    private var lastLoadTime: Date = .distantPast
+    private let cacheTTL: TimeInterval = 5.0  // Reload at most every 5s
 
     private init() {
         contextFilePath = FlowConfig.configDir.appendingPathComponent("context.md")
     }
 
     /// Load context from file. Returns the raw context string.
+    /// Uses a 5-second cache to avoid hitting disk on every call.
     @discardableResult
     func load() -> String {
+        // Skip reload if cached recently
+        if Date().timeIntervalSince(lastLoadTime) < cacheTTL && !context.isEmpty {
+            return context
+        }
+        lastLoadTime = Date()
         guard FileManager.default.fileExists(atPath: contextFilePath.path),
               let data = try? Data(contentsOf: contextFilePath),
               let text = String(data: data, encoding: .utf8) else {
@@ -54,8 +65,9 @@ final class ContextManager {
     }
 
     /// Build the full instructions string with context injected.
+    /// Reloads context from file at most every 5 seconds (cached).
     func buildInstructions(basePrompt: String = "Transcribe exactly what was said.", screenContext: String? = nil) -> String {
-        load() // Always reload for latest
+        load() // Cached — only hits disk if >5s since last read
 
         var parts = ["\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything. If there is no clear speech, output nothing."]
 

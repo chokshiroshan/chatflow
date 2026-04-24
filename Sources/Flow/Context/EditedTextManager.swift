@@ -41,6 +41,19 @@ struct TextContext {
         }
         return parts.joined(separator: ". ")
     }
+
+    /// Detailed debug description showing ALL context fields for logging
+    var debugDescription: String {
+        """
+        TextContext {
+          fullContents: "\(fullContents.prefix(100))\(fullContents.count > 100 ? "..." : "")" (\(fullContents.count) chars)
+          beforeCursor: "\(beforeCursor.suffix(80))" (\(beforeCursor.count) chars)
+          afterCursor: "\(afterCursor.prefix(80))" (\(afterCursor.count) chars)
+          selectedText: "\(selectedText)" (\(selectedText.count) chars)
+          isEmpty: \(isEmpty)
+        }
+        """
+    }
 }
 
 /// Monitors the currently focused text field to capture context before dictation.
@@ -126,6 +139,34 @@ final class EditedTextManager {
         }
 
         return context
+    }
+
+    /// Build a transcription prompt for the `input_audio_transcription.prompt` field.
+    /// This is the DEDICATED field for the STT model — much more effective than
+    /// putting text context into session.instructions.
+    ///
+    /// For gpt-4o-mini-transcribe: free text that guides transcription.
+    /// We put the text field context here so the transcriber knows what words to expect.
+    func buildTranscriptionPrompt(from context: TextContext?) -> String? {
+        guard let ctx = context, !ctx.isEmpty else { return nil }
+
+        var parts: [String] = []
+
+        if !ctx.beforeCursor.isEmpty {
+            let snippet = String(ctx.beforeCursor.suffix(100))
+            parts.append("text before cursor: \(snippet)")
+        }
+        if !ctx.afterCursor.isEmpty {
+            let snippet = String(ctx.afterCursor.prefix(100))
+            parts.append("text after cursor: \(snippet)")
+        }
+        if !ctx.selectedText.isEmpty {
+            parts.append("selected text to replace: \(ctx.selectedText)")
+        }
+
+        guard !parts.isEmpty else { return nil }
+
+        return parts.joined(separator: ". ")
     }
 
     /// Build an instruction snippet from current text context for injection.

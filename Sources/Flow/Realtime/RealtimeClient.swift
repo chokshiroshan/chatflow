@@ -131,13 +131,42 @@ final class RealtimeClient {
 
     /// Update session instructions with current context (active app, etc.)
     /// Call this right before recording starts so the app context is fresh.
-    func refreshInstructions(language: String) {
+    /// NOTE: instructions = base prompt + vocabulary (for the overall model)
+    ///        transcription prompt = text field context (for the STT model specifically)
+    func refreshInstructions(language: String, transcriptionPrompt: String? = nil) {
         guard isConnected else { return }
         let instructions = ContextManager.shared.buildInstructions()
+
+        var transConfig = """
+        {"model":"gpt-4o-mini-transcribe","language":"\(language)"
+        """
+        if let prompt = transcriptionPrompt, !prompt.isEmpty {
+            transConfig += ",\"prompt\":\"\(prompt.escapingJSON)\""
+        }
+        transConfig += "}"
+
         let event = """
-        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(language)"}}}
+        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":\(transConfig)}}
+        """
+
+        // Log the full context being sent
+        print("📋 ═══ SESSION UPDATE ═══")
+        print("📋 instructions: \(instructions.prefix(300))\(instructions.count > 300 ? "..." : "")")
+        print("📋 transcription prompt: \(transcriptionPrompt ?? "nil")")
+        print("📋 ═══════════════════")
+
+        try? send(event)
+    }
+
+    /// Send a system message mid-session (for dynamic context like screen content).
+    /// This is lighter-weight than session.update for small context changes.
+    func sendSystemMessage(_ text: String) {
+        guard isConnected else { return }
+        let event = """
+        {"type":"conversation.item.create","item":{"type":"message","role":"system","content":[{"type":"input_text","text":"\(text.escapingJSON)"}]}}
         """
         try? send(event)
+        print("📋 System message sent: \(text.prefix(150))\(text.count > 150 ? "..." : "")")
     }
 
     func cancelResponse() {

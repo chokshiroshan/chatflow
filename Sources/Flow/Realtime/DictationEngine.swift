@@ -134,12 +134,12 @@ final class DictationEngine {
             }
         }
 
-        // Refresh instructions with current active app
-        client?.refreshInstructions(language: config.language)
-
         // Snapshot the focused text field before recording starts
         dictationTextContext = EditedTextManager.shared.getTextContext()
-        print("📝 Captured text context: \(dictationTextContext?.summary ?? "nil")")
+
+        // Refresh instructions with current active app + build transcription prompt
+        let transcriptionPrompt = EditedTextManager.shared.buildTranscriptionPrompt(from: dictationTextContext)
+        client?.refreshInstructions(language: config.language, transcriptionPrompt: transcriptionPrompt)
 
         isRecording = true
         isFinishing = false
@@ -149,16 +149,12 @@ final class DictationEngine {
         screenContextInjected = false
         onPartialTranscript?("")
 
-        // Inject text field context into session instructions if available
-        if let ctx = dictationTextContext, !ctx.isEmpty {
-            if let textInstructions = EditedTextManager.shared.buildContextInstructions(from: ctx) {
-                injectTextContext(textInstructions)
-            } else {
-                print("📝 buildContextInstructions returned nil")
-            }
-        } else {
-            print("📝 No text context to inject")
-        }
+        // Log full context for debugging
+        print("📝 ═══ CONTEXT DEBUG ═══")
+        print("📝 Text field context: \(dictationTextContext?.debugDescription ?? "nil")")
+        print("📝 Transcription prompt: \(transcriptionPrompt ?? "nil")")
+        print("📝 Full instructions: \(ContextManager.shared.buildInstructions())")
+        print("📝 ══════════════════")
 
         // Check for enhanced mode (Shift held during hotkey press)
         // Uses curKeysDown tracking from HotkeyManager for reliable state
@@ -250,43 +246,15 @@ final class DictationEngine {
         onStateChanged?(.idle)
     }
 
-    /// Inject text field context into the live Realtime API session.
-    /// This tells the transcription model what's already in the text field
-    /// so it can match style, handle "continue", and replace selections.
-    @MainActor
-    private func injectTextContext(_ textInstructions: String) {
-        guard isRecording else { return }
-
-        let instructions = ContextManager.shared.buildInstructions(
-            textContext: textInstructions
-        )
-
-        print("📝 Text field context: \(textInstructions.prefix(200))")
-
-        let event = """
-        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(config.language)"}}}
-        """
-        try? client?.send(event)
-        print("📝 Text field context injected into session")
-    }
-
-    /// Inject screen context into the live Realtime API session.
-    /// This updates instructions mid-recording so the transcription model
-    /// can use what's on screen for better accuracy.
+    /// Inject screen context via system message (lighter than session.update).
+    /// This tells the model what's on screen for better accuracy.
     @MainActor
     private func injectScreenContext(_ context: String) {
         guard isRecording, !screenContextInjected else { return }
         screenContextInjected = true
 
-        let instructions = ContextManager.shared.buildInstructions(
-            screenContext: context
-        )
-
-        let event = """
-        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(config.language)"}}}
-        """
-        try? client?.send(event)
-        print("📸 Screen context injected into session")
+        client?.sendSystemMessage("Screen context (what the user sees — use for vocabulary and terms): \(context)")
+        print("📸 Screen context injected via system message")
     }
 
     private func handleTranscript(_ text: String) {

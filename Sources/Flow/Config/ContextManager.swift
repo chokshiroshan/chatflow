@@ -79,18 +79,11 @@ final class ContextManager {
         // Add active app context (what the user is currently looking at)
         if let app = Self.frontmostApp() {
             parts.append("The user is currently in \(app). Use this to interpret ambiguous words.")
-            print("📋 Active app: \(app)")
         }
 
-        // Add screen context from vision API (enhanced mode)
-        if let screenContext, !screenContext.isEmpty {
-            parts.append("Screen context (what the user sees right now — use this for domain-specific vocabulary and terms):\(screenContext)")
-        }
-
-        // Add text field context (what's already in the focused text field)
-        if let textContext, !textContext.isEmpty {
-            parts.append(textContext)
-        }
+        // NOTE: text field context now goes into input_audio_transcription.prompt
+        //       NOT here in instructions — it's more effective in the dedicated STT field
+        //       screen context goes into conversation.item.create system messages
 
         return parts.joined(separator: " ")
     }

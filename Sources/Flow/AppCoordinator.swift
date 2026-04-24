@@ -44,9 +44,9 @@ final class AppCoordinator: ObservableObject {
         // Detected via FLOW_HEADLESS env var OR running from a CloseLoop job worktree
         let env = ProcessInfo.processInfo.environment
         let isHeadless = env["FLOW_HEADLESS"] == "1"
-            || Bundle.main.bundlePath.contains("CloseLoop")
-            || Bundle.main.bundlePath.contains("closeloop")
-            || Bundle.main.executablePath.contains("CloseLoop")
+            || (Bundle.main.bundlePath as String).contains("CloseLoop")
+            || (Bundle.main.bundlePath as String).contains("closeloop")
+            || (Bundle.main.executablePath as String).contains("CloseLoop")
 
         if isHeadless {
             print("🤖 Headless mode — skipping onboarding & permissions")

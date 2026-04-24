@@ -28,6 +28,9 @@ final class VolumeManager {
     /// The device ID we muted, so we unmute the same one.
     private var mutedDeviceID: AudioDeviceID? = nil
 
+    /// Volume level before we muted — saved as backup for restore.
+    private var savedVolume: Float32? = nil
+
     private init() {}
 
     // MARK: - Public API
@@ -51,6 +54,9 @@ final class VolumeManager {
             print("[VolumeManager] Could not get default output device — skipping mute")
             return
         }
+
+        // Save current volume as backup for restore
+        savedVolume = getDeviceVolume(deviceID: deviceID)
 
         // Check current mute state before touching it
         let currentlyMuted = isDeviceMuted(deviceID: deviceID)
@@ -92,24 +98,38 @@ final class VolumeManager {
 
         // Delay unmute by 300ms to let codec stabilize (WisprFlow pattern)
         let deviceID = mutedDeviceID
+        let volumeBeforeMute = savedVolume
         isCurrentlyMuted = false
         wasPreviouslyMuted = false
         mutedDeviceID = nil
+        savedVolume = nil
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self else { return }
+            var restored = false
+
             if let deviceID = deviceID {
-                if self.setMuteState(muted: false, deviceID: deviceID) {
-                    print("[VolumeManager] Restored audio — unmuted")
-                } else {
-                    print("[VolumeManager] Failed to unmute device — trying current default")
-                    // Fallback: try current default device
-                    if let fallbackID = self.getDefaultOutputDeviceID() {
-                        if self.setMuteState(muted: false, deviceID: fallbackID) {
-                            print("[VolumeManager] Restored audio via fallback device")
-                        }
-                    }
+                restored = self.setMuteState(muted: false, deviceID: deviceID)
+            }
+
+            if !restored, let fallbackID = self.getDefaultOutputDeviceID() {
+                restored = self.setMuteState(muted: false, deviceID: fallbackID)
+            }
+
+            // Check if volume got zeroed out — restore if we have a saved value
+            if let currentDevice = deviceID ?? self.getDefaultOutputDeviceID() {
+                let currentVol = self.getDeviceVolume(deviceID: currentDevice)
+                if let saved = volumeBeforeMute, saved > 0, (currentVol ?? 0) < 0.01 {
+                    print("[VolumeManager] Volume dropped to zero — restoring to \(saved)")
+                    self.setDeviceVolume(volume: saved, deviceID: currentDevice)
+                    restored = true
                 }
+            }
+
+            if restored {
+                print("[VolumeManager] Restored audio")
+            } else {
+                print("[VolumeManager] Could not restore audio — user may need to unmute manually")
             }
         }
     }
@@ -201,6 +221,56 @@ final class VolumeManager {
             &muteValue
         )
 
+        return status == noErr
+    }
+
+    // MARK: - Volume Helpers
+
+    /// Get the scalar volume (0.0 - 1.0) of an output device.
+    private func getDeviceVolume(deviceID: AudioDeviceID) -> Float32? {
+        var volume: Float32 = 0
+        var dataSize = UInt32(MemoryLayout<Float32>.size)
+
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+            mScope: kAudioObjectPropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        // Try virtual main volume first (works for aggregate/BT devices)
+        var status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, &volume)
+
+        if status != noErr {
+            // Fallback to standard volume
+            address.mSelector = kAudioDevicePropertyVolumeScalar
+            status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, &volume)
+        }
+
+        return status == noErr ? volume : nil
+    }
+
+    /// Set the scalar volume (0.0 - 1.0) of an output device.
+    private func setDeviceVolume(volume: Float32, deviceID: AudioDeviceID) -> Bool {
+        let dataSize = UInt32(MemoryLayout<Float32>.size)
+
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+            mScope: kAudioObjectPropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var status = AudioObjectSetPropertyData(deviceID, &address, 0, nil, dataSize, &volume)
+
+        if status != noErr {
+            address.mSelector = kAudioDevicePropertyVolumeScalar
+            status = AudioObjectSetPropertyData(deviceID, &address, 0, nil, dataSize, &volume)
+        }
+
+        if status == noErr {
+            print("[VolumeManager] Set volume to \(volume) on device \(deviceID)")
+        } else {
+            print("[VolumeManager] Failed to set volume — error \(status)")
+        }
         return status == noErr
     }
 }

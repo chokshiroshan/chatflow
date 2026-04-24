@@ -132,8 +132,9 @@ final class EditedTextManager {
     ///
     /// Returns a string suitable for appending to session instructions,
     /// or nil if there's no useful context.
-    func buildContextInstructions() -> String? {
-        guard let ctx = getTextContext(), !ctx.isEmpty else {
+    func buildContextInstructions(from context: TextContext? = nil) -> String? {
+        let ctx = context ?? lastContext
+        guard let ctx, !ctx.isEmpty else {
             return nil
         }
 

@@ -139,6 +139,7 @@ final class DictationEngine {
 
         // Snapshot the focused text field before recording starts
         dictationTextContext = EditedTextManager.shared.getTextContext()
+        print("📝 Captured text context: \(dictationTextContext?.summary ?? "nil")")
 
         isRecording = true
         isFinishing = false
@@ -149,8 +150,14 @@ final class DictationEngine {
         onPartialTranscript?("")
 
         // Inject text field context into session instructions if available
-        if let textInstructions = EditedTextManager.shared.buildContextInstructions() {
-            injectTextContext(textInstructions)
+        if let ctx = dictationTextContext, !ctx.isEmpty {
+            if let textInstructions = EditedTextManager.shared.buildContextInstructions(from: ctx) {
+                injectTextContext(textInstructions)
+            } else {
+                print("📝 buildContextInstructions returned nil")
+            }
+        } else {
+            print("📝 No text context to inject")
         }
 
         // Check for enhanced mode (Shift held during hotkey press)
@@ -253,6 +260,8 @@ final class DictationEngine {
         let instructions = ContextManager.shared.buildInstructions(
             textContext: textInstructions
         )
+
+        print("📝 Text field context: \(textInstructions.prefix(200))")
 
         let event = """
         {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(config.language)"}}}

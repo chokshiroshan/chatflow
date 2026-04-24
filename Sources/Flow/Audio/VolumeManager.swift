@@ -75,7 +75,8 @@ final class VolumeManager {
     /// Restore the previous mute state after recording stops.
     ///
     /// Only unmutes if *we* muted it and the user hadn't already muted
-    /// before recording started.
+    /// before recording started. Adds a short delay to let the audio
+    /// codec stabilize (AirPods/BT devices need this).
     func restoreAfterRecording() {
         guard isCurrentlyMuted else {
             // Not muted by us — nothing to restore
@@ -89,25 +90,28 @@ final class VolumeManager {
             return
         }
 
-        // Try to unmute the same device we muted
-        if let deviceID = mutedDeviceID {
-            if setMuteState(muted: false, deviceID: deviceID) {
-                print("[VolumeManager] Restored audio — unmuted")
-            } else {
-                print("[VolumeManager] Failed to unmute device — user may need to unmute manually")
-            }
-        } else {
-            // Fallback: unmute whatever the current default is
-            if let deviceID = getDefaultOutputDeviceID() {
-                if setMuteState(muted: false, deviceID: deviceID) {
-                    print("[VolumeManager] Restored audio — unmuted (fallback device)")
-                }
-            }
-        }
-
+        // Delay unmute by 300ms to let codec stabilize (WisprFlow pattern)
+        let deviceID = mutedDeviceID
         isCurrentlyMuted = false
         wasPreviouslyMuted = false
         mutedDeviceID = nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self else { return }
+            if let deviceID = deviceID {
+                if self.setMuteState(muted: false, deviceID: deviceID) {
+                    print("[VolumeManager] Restored audio — unmuted")
+                } else {
+                    print("[VolumeManager] Failed to unmute device — trying current default")
+                    // Fallback: try current default device
+                    if let fallbackID = self.getDefaultOutputDeviceID() {
+                        if self.setMuteState(muted: false, deviceID: fallbackID) {
+                            print("[VolumeManager] Restored audio via fallback device")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - CoreAudio Helpers

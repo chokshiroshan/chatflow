@@ -66,7 +66,7 @@ final class ContextManager {
 
     /// Build the full instructions string with context injected.
     /// Reloads context from file at most every 5 seconds (cached).
-    func buildInstructions(basePrompt: String = "Transcribe exactly what was said.", screenContext: String? = nil) -> String {
+    func buildInstructions(basePrompt: String = "Transcribe exactly what was said.", screenContext: String? = nil, textContext: String? = nil) -> String {
         load() // Cached — only hits disk if >5s since last read
 
         var parts = ["\(basePrompt) Output only the spoken words. Do not correct, interpret, or rephrase anything. If there is no clear speech, output nothing."]
@@ -85,6 +85,11 @@ final class ContextManager {
         // Add screen context from vision API (enhanced mode)
         if let screenContext, !screenContext.isEmpty {
             parts.append("Screen context (what the user sees right now — use this for domain-specific vocabulary and terms):\(screenContext)")
+        }
+
+        // Add text field context (what's already in the focused text field)
+        if let textContext, !textContext.isEmpty {
+            parts.append(textContext)
         }
 
         return parts.joined(separator: " ")

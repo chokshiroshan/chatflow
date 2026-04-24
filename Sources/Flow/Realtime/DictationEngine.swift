@@ -26,6 +26,7 @@ final class DictationEngine {
     private var isFinishing = false  // Guard against double-finish
     private(set) var isEnhancedMode = false  // Screen context mode
     private var screenContextInjected = false  // Whether vision context was applied
+    private var dictationTextContext: TextContext?  // Captured when dictation starts
 
     init(auth: ChatGPTAuth, config: FlowConfig) {
         self.auth = auth
@@ -136,6 +137,9 @@ final class DictationEngine {
         // Refresh instructions with current active app
         client?.refreshInstructions(language: config.language)
 
+        // Snapshot the focused text field before recording starts
+        dictationTextContext = EditedTextManager.shared.getTextContext()
+
         isRecording = true
         isFinishing = false
         chunkCount = 0
@@ -143,6 +147,11 @@ final class DictationEngine {
         lastTranscript = ""
         screenContextInjected = false
         onPartialTranscript?("")
+
+        // Inject text field context into session instructions if available
+        if let textInstructions = EditedTextManager.shared.buildContextInstructions() {
+            injectTextContext(textInstructions)
+        }
 
         // Check for enhanced mode (Shift held during hotkey press)
         // Uses curKeysDown tracking from HotkeyManager for reliable state
@@ -232,6 +241,24 @@ final class DictationEngine {
         isRecording = false
         isFinishing = false
         onStateChanged?(.idle)
+    }
+
+    /// Inject text field context into the live Realtime API session.
+    /// This tells the transcription model what's already in the text field
+    /// so it can match style, handle "continue", and replace selections.
+    @MainActor
+    private func injectTextContext(_ textInstructions: String) {
+        guard isRecording else { return }
+
+        let instructions = ContextManager.shared.buildInstructions(
+            textContext: textInstructions
+        )
+
+        let event = """
+        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":{"model":"gpt-4o-mini-transcribe","language":"\(config.language)"}}}
+        """
+        try? client?.send(event)
+        print("📝 Text field context injected into session")
     }
 
     /// Inject screen context into the live Realtime API session.

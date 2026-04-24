@@ -2,6 +2,7 @@
 # closeloop_vision.sh — Build+Run+Screenshot+Vision Analysis for ChatFlow
 # Usage: ./scripts/closeloop_vision.sh [prompt]
 #
+# Reads secrets from environment or /etc/closeloop/env.
 # Compresses screenshots automatically for reliable vision model analysis.
 set -e
 
@@ -10,8 +11,18 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCREENSHOT_DIR="$PROJECT_DIR/build_screenshots"
 mkdir -p "$SCREENSHOT_DIR"
 
-export CLOSELOOP_DISPATCHER_URL=http://localhost:8765
-export CLOSELOOP_POOL_SECRET=39aff1cc68000239a1b2485990c40b469ac8a28c730968b8d54c61fa0b2f89a7
+# Read secrets from env file if not already set
+if [ -z "$CLOSELOOP_POOL_SECRET" ] && [ -f /etc/closeloop/env ]; then
+    source /etc/closeloop/env
+fi
+if [ -z "$CLOSELOOP_DISPATCHER_URL" ]; then
+    export CLOSELOOP_DISPATCHER_URL=http://localhost:8765
+fi
+
+if [ -z "$CLOSELOOP_POOL_SECRET" ]; then
+    echo "error: set CLOSELOOP_POOL_SECRET (or create /etc/closeloop/env)"
+    exit 1
+fi
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 

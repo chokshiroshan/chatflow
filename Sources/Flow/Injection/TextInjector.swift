@@ -96,17 +96,12 @@ struct TextInjector {
             // There IS a focused element — paste likely went there
             pasteSucceeded = true
         } else {
-            // No focused element — try app activation then paste again (WisprFlow's last resort)
-            print("⚠️ No focused element — attempting fallback paste after app activation")
-            if let app = NSWorkspace.shared.frontmostApplication {
-                app.activate()
-                Thread.sleep(forTimeInterval: 0.05)
-                simulatePaste()
-                pasteSucceeded = true  // Optimistic
-                failureReason = "fallback_activation_paste"
-            } else {
-                failureReason = "no_focused_element"
-            }
+            // No focused element (common in terminal apps like Codex)
+            // The first simulatePaste() already sent Cmd+V to the frontmost app.
+            // Don't paste again — that causes double text.
+            print("⚠️ No focused element — paste was already sent to frontmost app")
+            pasteSucceeded = true  // The first paste was already sent
+            failureReason = "no_focused_element_paste_sent"
         }
 
         // Step 5: Restore clipboard after a delay (background, non-blocking)

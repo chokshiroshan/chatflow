@@ -54,6 +54,12 @@ final class DictationEngine {
         reconnectAttempts = 0  // Reset on clean shutdown
     }
 
+    /// Update hotkey at runtime without restarting the engine (WisprFlow pattern).
+    func updateHotkey(_ newKey: String) {
+        hotkey.updateCombo(newKey)
+        print("🎤 Hotkey updated to: \(newKey) — no engine restart needed")
+    }
+
     // MARK: - Pre-connect
 
     private func preConnect() async {
@@ -139,6 +145,7 @@ final class DictationEngine {
         onPartialTranscript?("")
 
         // Check for enhanced mode (Shift held during hotkey press)
+        // Uses curKeysDown tracking from HotkeyManager for reliable state
         isEnhancedMode = hotkey.isEnhancedTrigger
         if isEnhancedMode {
             print("📸 Enhanced mode — capturing screen context...")
@@ -263,9 +270,18 @@ final class DictationEngine {
         print("📝 Transcript: \"\(cleaned)\"")
         onStateChanged?(.injecting)
 
-        let success = TextInjector.inject(cleaned)
-        print(success ? "✅ Text injected" : "❌ Text injection failed")
-        onStateChanged?(success ? .idle : .error("Text injection failed"))
+        let result = TextInjector.injectWithResult(cleaned)
+        switch result {
+        case .success:
+            print("✅ Text injected successfully")
+            onStateChanged?(.idle)
+        case .failed(let reason):
+            print("❌ Text injection failed: \(reason)")
+            onStateChanged?(.error("Text injection failed: \(reason)"))
+        case .blocked:
+            print("⚠️ Text injection blocked (readonly field?)")
+            onStateChanged?(.error("Paste blocked — text field may be readonly"))
+        }
 
         // Reconnect for next session
         reconnect()

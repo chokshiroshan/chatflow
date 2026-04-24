@@ -172,9 +172,10 @@ final class AppCoordinator: ObservableObject {
     func updateHotkey(_ newHotkey: String) {
         config.hotkey = newHotkey
         config.save()
-        if dictationEngine != nil {
-            deactivateAll()
-            activateDictation()
+        // Use runtime combo update — no need to tear down and rebuild
+        // the entire dictation engine just for a hotkey change (WisprFlow pattern)
+        if let engine = dictationEngine {
+            engine.updateHotkey(newHotkey)
         }
     }
 

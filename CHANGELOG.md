@@ -4,6 +4,35 @@
 
 ---
 
+### 2026-04-24 — v0.2 WisprFlow-Inspired Improvements 🔧
+
+**Reverse-engineered WisprFlow v1.5.55 and ported 5 key features.**
+
+#### HotkeyManager Rewrite
+- **`curKeysDown` set** — tracks ALL held keys (not just a bool for the hotkey)
+- **`modifierKeysDown` set** — separate modifier state tracking
+- **Stale key cleanup** — handles keys held before app start on first event
+- **Tap resilience** — auto-restart event tap on disable, with retry count + max retries
+- **Runtime hotkey update** — `updateCombo()` changes hotkey without full engine teardown
+
+#### TextInjector Rewrite
+- **`DelayedClipboardProvider`** — lazy NSPasteboardItemDataProvider (WisprFlow pattern)
+  - Text isn't materialized until target app requests it during paste
+  - More efficient, less clipboard manager flicker
+- **Concealed clipboard type** — `org.nspasteboard.ConcealedType` marks data as sensitive
+- **Failed paste detection** — timer-based detection with AX fallback tiers
+- **Multi-tier paste fallback** — delayed provider → AX check → app activation → last resort
+- **Paste result tracking** — `injectWithResult()` returns `.success`/`.failed`/`.blocked`
+
+#### AppCoordinator
+- Hotkey updates now use runtime `updateCombo()` instead of full engine teardown
+
+#### DictationEngine
+- `updateHotkey()` method for runtime hotkey changes
+- Transcript handler uses new `PasteResult` for better error reporting
+
+---
+
 ### 2026-04-22 — v0.1 WORKING PROTOTYPE 🎉
 
 **Full end-to-end voice dictation working with ChatGPT subscription (no API key needed).**

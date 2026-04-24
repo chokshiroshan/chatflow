@@ -19,3 +19,7 @@ build/
 # IDE
 *.xcuserstate
 IDEWorkspaceChecks.plist
+
+# Reverse engineering research (never commit)
+research/wisprflow/
+*.dmg

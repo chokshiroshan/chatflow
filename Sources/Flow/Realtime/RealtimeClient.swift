@@ -3,7 +3,7 @@ import Foundation
 /// WebSocket client for OpenAI's Realtime API.
 ///
 /// Matches Codex CLI v2 protocol:
-/// - Transcription mode: dedicated STT with gpt-4o-mini-transcribe
+/// - Transcription mode: dedicated STT with gpt-4o-transcribe
 /// - Voice chat mode: conversational with server VAD
 /// - Audio: PCM16 24kHz mono
 ///
@@ -226,7 +226,7 @@ final class RealtimeClient {
         case "session.updated":
             print("  ✅ Session configured")
 
-        // Input audio transcription (gpt-4o-mini-transcribe — primary STT)
+        // Input audio transcription (gpt-4o-transcribe — primary STT)
         // This is the server-side transcription of what was actually spoken.
         case "conversation.item.input_audio_transcription.delta":
             if let delta = obj["delta"] as? String {

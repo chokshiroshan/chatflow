@@ -149,20 +149,6 @@ final class VolumeManager {
             mElement: kAudioObjectPropertyElementMain
         )
 
-        // First check if the property exists (some devices don't support mute)
-        var writable: DarwinBoolean = false
-        let propStatus = AudioObjectGetPropertyInfo(
-            deviceID,
-            &address,
-            0,
-            nil,
-            &writable
-        )
-
-        guard propStatus == noErr else {
-            return false
-        }
-
         let status = AudioObjectGetPropertyData(
             deviceID,
             &address,
@@ -188,16 +174,16 @@ final class VolumeManager {
 
         // Check if the property is writable
         var writable: DarwinBoolean = false
-        let propInfoStatus = AudioObjectGetPropertyInfo(
+        let propInfoStatus = AudioObjectGetPropertyData(
             deviceID,
             &address,
             0,
             nil,
-            &writable
+            &dataSize,
+            &muteValue  // read current value first
         )
-
-        guard propInfoStatus == noErr, writable.boolValue else {
-            print("[VolumeManager] Mute property not writable for device \(deviceID)")
+        guard propInfoStatus == noErr else {
+            print("[VolumeManager] Mute property not accessible for device \(deviceID)")
             return false
         }
 

@@ -247,7 +247,7 @@ private class DelayedClipboardProvider: NSObject, NSPasteboardItemDataProvider {
         super.init()
     }
 
-    func pasteboard(_ pasteboard: NSPasteboard, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
+    func pasteboard(_ pasteboard: NSPasteboard?, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
         switch type {
         case .string:
             item.setString(text, forType: .string)

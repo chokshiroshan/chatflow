@@ -4,6 +4,18 @@ import SwiftUI
 struct FlowApp: App {
     @StateObject private var coordinator = AppCoordinator()
 
+    init() {
+        // Single-instance guard — prevent duplicate processes
+        let lockPath = NSTemporaryDirectory() + "chatflow.singleton.lock"
+        let distributedLock = NSDistributedLock(path: lockPath)
+        if distributedLock?.try() == false {
+            print("⚠️ Another instance of ChatFlow is already running. Exiting.")
+            // Force exit — can't use NSApp.terminate here since app hasn't launched yet
+            exit(1)
+        }
+        // Never unlock — lock released when process exits
+    }
+
     var body: some Scene {
         // Menu bar presence — stateful compact label, no dock icon
         MenuBarExtra {

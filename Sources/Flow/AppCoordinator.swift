@@ -40,6 +40,22 @@ final class AppCoordinator: ObservableObject {
     // MARK: - Startup
 
     private func checkPermissionsAndAuth() {
+        // Headless/builder mode: skip everything, go straight to idle
+        // Detected via FLOW_HEADLESS env var OR running from a CloseLoop job worktree
+        let env = ProcessInfo.processInfo.environment
+        let isHeadless = env["FLOW_HEADLESS"] == "1"
+            || Bundle.main.bundlePath.contains("CloseLoop")
+            || Bundle.main.bundlePath.contains("closeloop")
+            || Bundle.main.executablePath.contains("CloseLoop")
+
+        if isHeadless {
+            print("🤖 Headless mode — skipping onboarding & permissions")
+            showOnboarding = false
+            authState = .signedIn(email: "headless@flow.dev", plan: "Builder")
+            activateDictation()
+            return
+        }
+
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         let permStatus = permissions.checkAll()
 

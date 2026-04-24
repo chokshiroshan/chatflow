@@ -56,6 +56,7 @@ struct TextInjector {
         let pb = NSPasteboard.general
 
         // Step 1: Save current clipboard state
+        let savedTypes = pb.types ?? []
         let savedChangeCount = pb.changeCount
         var savedData: [NSPasteboard.PasteboardType: Data] = [:]
         for type in savedTypes {
@@ -80,26 +81,15 @@ struct TextInjector {
         // Step 3: Simulate Cmd+V
         simulatePaste()
 
-        // Step 4: Failed paste detection with timer
-        // Check if pasteboard was consumed — this is the WisprFlow "Delayed clipboard timeout" pattern
-        let maxChecks = 25  // 25 * 20ms = 500ms total
-        for _ in 0..<maxChecks {
-            Thread.sleep(forTimeInterval: 0.02)
-
-            if pb.changeCount != savedChangeCount + 1 {
-                // Pasteboard was read by target app — paste succeeded
-                // (Actually, changeCount only changes on clearContents/write, not on read)
-                // For now, assume paste works and restore after delay
-                pasteSucceeded = true
-                break
-            }
-        }
-
-        // If we couldn't confirm success, try the accessibility fallback
+        // Step 4: Determine paste success
+        // WisprFlow uses a failed-paste timer — we check for a focused element as a proxy
         var pasteSucceeded = false
         var failureReason: String?
 
-        // Check if there's a focused editable element
+        // Brief wait for paste to propagate
+        Thread.sleep(forTimeInterval: 0.05)
+
+        // Check if there's a focused editable element (paste likely went there)
         let systemWide = AXUIElementCreateSystemWide()
         var focused: AnyObject?
         if AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused) == .success {

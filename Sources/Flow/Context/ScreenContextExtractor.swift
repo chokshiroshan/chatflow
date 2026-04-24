@@ -107,15 +107,22 @@ final class ScreenContextExtractor {
         return data.base64EncodedString()
     }
 
-    // MARK: - Vision API
+    // MARK: - Vision API (ChatGPT backend-api)
 
+    /// Uses the ChatGPT subscription token via backend-api for vision.
+    /// The standard api.openai.com/v1/chat/completions rejects subscription tokens,
+    /// so we use chatgpt.com/backend-api/conversation which accepts them.
     private func callVisionAPI(base64: String, token: String) async throws -> String? {
-        let url = URL(string: "https://api.openai.com/v1/chat/completions")!
+        // Step 1: Upload image to ChatGPT's file service
+        let fileID = try await uploadImage(base64: base64, token: token)
+
+        // Step 2: Send conversation with image
+        let url = URL(string: "https://chatgpt.com/backend-api/conversation")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 10
+        request.timeoutInterval = 15
 
         let prompt = """
         Look at this screenshot. Extract ONLY information that would help accurately transcribe someone's speech. Focus on:
@@ -129,23 +136,27 @@ final class ScreenContextExtractor {
         """
 
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "action": "next",
             "messages": [
                 [
-                    "role": "user",
+                    "id": UUID().uuidString,
+                    "author": ["role": "user"],
                     "content": [
-                        ["type": "text", "text": prompt],
-                        [
-                            "type": "image_url",
-                            "image_url": [
-                                "url": "data:image/png;base64,\(base64)",
-                                "detail": "low"
-                            ]
+                        "content_type": "multimodal_text",
+                        "parts": [
+                            [
+                                "content_type": "image_asset_pointer",
+                                "asset_pointer": "file-service://\(fileID)",
+                                "height": -1,
+                                "width": -1
+                            ],
+                            prompt
                         ]
                     ]
                 ]
             ],
-            "max_tokens": 200
+            "model": "auto",
+            "timezone_offset_min": -300
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -162,10 +173,78 @@ final class ScreenContextExtractor {
             throw ScreenContextError.apiError(httpResp.statusCode)
         }
 
+        // Parse SSE stream — find the final text response
+        let text = parseSSEResponse(data: data)
+        return text
+    }
+
+    /// Upload image to ChatGPT's file service and return the file_id.
+    private func uploadImage(base64: String, token: String) async throws -> String {
+        guard let imageData = Data(base64Encoded: base64) else {
+            throw ScreenContextError.invalidResponse
+        }
+
+        let url = URL(string: "https://chatgpt.com/backend-api/files")!
+        let boundary = UUID().uuidString
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 10
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"screenshot.png\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/png\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"purpose\"\r\n\r\n".data(using: .utf8)!)
+        body.append("multimodal\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let body = String(data: data, encoding: .utf8) ?? "unknown"
+            print("📸 File upload error (\(statusCode)): \(body.prefix(200))")
+            throw ScreenContextError.apiError(statusCode)
+        }
+
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-        let choices = json["choices"] as? [[String: Any]] ?? []
-        let message = choices.first?["message"] as? [String: Any]
-        return message?["content"] as? String
+        let fileID = json["file_id"] as? String ?? ""
+        if fileID.isEmpty {
+            print("📸 No file_id in upload response: \(json)")
+            throw ScreenContextError.invalidResponse
+        }
+        return fileID
+    }
+
+    /// Parse the SSE response stream from ChatGPT backend-api.
+    private func parseSSEResponse(data: Data) -> String? {
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+
+        // Find the last message with text content
+        var lastText = ""
+        for line in text.components(separatedBy: "\n") {
+            guard line.hasPrefix("data: "), let jsonStr = line.dropFirst(6).data(using: .utf8) else { continue }
+            guard let json = try? JSONSerialization.jsonObject(with: jsonStr) as? [String: Any] else { continue }
+
+            let message = json["message"] as? [String: Any]
+            let content = message?["content"] as? [String: Any]
+            let parts = content?["parts"] as? [Any] ?? []
+
+            for part in parts {
+                if let textPart = part as? String, !textPart.isEmpty {
+                    lastText = textPart
+                }
+            }
+        }
+
+        return lastText.isEmpty ? nil : lastText
     }
 }
 

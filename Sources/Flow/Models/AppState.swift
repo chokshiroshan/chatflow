@@ -91,7 +91,7 @@ struct FlowConfig: Codable {
     var language: String = "en"
     var realtimeModel: String = "gpt-realtime"
     var injectMethod: InjectMethod = .clipboard
-    var soundEffectsEnabled: Bool = true
+    var soundEffectsEnabled: Bool = false
     var autoPasteEnabled: Bool = true
     var appearance: String = "system"
     var selectedMicDeviceUID: String? = nil

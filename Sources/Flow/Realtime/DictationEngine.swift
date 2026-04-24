@@ -64,13 +64,19 @@ final class DictationEngine {
     // MARK: - Pre-connect
 
     private func preConnect() async {
-        guard !isConnected else { return }
+        guard !isConnected, !isReconnecting, !isConnecting else { return }
+        isConnecting = true
+        defer { isConnecting = false }
 
         do {
             guard let token = await auth.ensureValidToken() else {
                 print("⚠️ No valid token for pre-connect")
                 return
             }
+
+            // Disconnect any stale connection before creating a new one
+            client?.disconnect()
+            client = nil
 
             let client = RealtimeClient()
             wireCallbacks(client)
@@ -120,6 +126,10 @@ final class DictationEngine {
                         onStateChanged?(.error("Session expired. Please sign in again."))
                         return
                     }
+
+                    // Disconnect any stale connection first
+                    client?.disconnect()
+                    client = nil
 
                     let client = RealtimeClient()
                     wireCallbacks(client)
@@ -290,6 +300,7 @@ final class DictationEngine {
 
     private var reconnectAttempts = 0
     private var isReconnecting = false
+    private var isConnecting = false  // Guard against concurrent connections
 
     private func reconnect() {
         client?.disconnect()

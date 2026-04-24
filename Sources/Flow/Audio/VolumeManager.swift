@@ -172,15 +172,16 @@ final class VolumeManager {
             mElement: kAudioObjectPropertyElementMain
         )
 
-        // Check if the property is writable
-        var writable: DarwinBoolean = false
+        // Check if the property is accessible by trying to read it
+        var currentMute: UInt32 = 0
+        var currentSize = UInt32(MemoryLayout<UInt32>.size)
         let propInfoStatus = AudioObjectGetPropertyData(
             deviceID,
             &address,
             0,
             nil,
-            &dataSize,
-            &muteValue  // read current value first
+            &currentSize,
+            &currentMute
         )
         guard propInfoStatus == noErr else {
             print("[VolumeManager] Mute property not accessible for device \(deviceID)")

@@ -91,7 +91,7 @@ final class RealtimeClient {
                     "input_audio_format": "pcm16",
                     "output_audio_format": "pcm16",
                     "input_audio_transcription": {
-                        "model": "gpt-4o-mini-transcribe",
+                        "model": "gpt-4o-transcribe",
                         "language": "\(lang)"
                     },
                     "turn_detection": null,
@@ -138,7 +138,7 @@ final class RealtimeClient {
         let instructions = ContextManager.shared.buildInstructions()
 
         var transConfig = """
-        {"model":"gpt-4o-mini-transcribe","language":"\(language)"
+        {"model":"gpt-4o-transcribe","language":"\(language)"
         """
         if let prompt = transcriptionPrompt, !prompt.isEmpty {
             transConfig += ",\"prompt\":\"\(prompt.escapingJSON)\""

@@ -138,8 +138,6 @@ final class DictationEngine {
         dictationTextContext = EditedTextManager.shared.getTextContext()
 
         // Refresh instructions with current active app + build transcription prompt
-        let transcriptionPrompt = EditedTextManager.shared.buildTranscriptionPrompt(from: dictationTextContext)
-        client?.refreshInstructions(language: config.language, transcriptionPrompt: transcriptionPrompt)
 
         isRecording = true
         isFinishing = false
@@ -152,7 +150,6 @@ final class DictationEngine {
         // Log full context for debugging
         print("📝 ═══ CONTEXT DEBUG ═══")
         print("📝 Text field context: \(dictationTextContext?.debugDescription ?? "nil")")
-        print("📝 Transcription prompt: \(transcriptionPrompt ?? "nil")")
         print("📝 Full instructions: \(ContextManager.shared.buildInstructions())")
         print("📝 ══════════════════")
 

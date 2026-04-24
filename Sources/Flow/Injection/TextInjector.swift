@@ -56,7 +56,6 @@ struct TextInjector {
         let pb = NSPasteboard.general
 
         // Step 1: Save current clipboard state
-        let savedTypes = pb.types ?? []
         let savedChangeCount = pb.changeCount
         var savedData: [NSPasteboard.PasteboardType: Data] = [:]
         for type in savedTypes {
@@ -82,15 +81,9 @@ struct TextInjector {
         simulatePaste()
 
         // Step 4: Failed paste detection with timer
-        let pasteStartTime = Date()
-        let pasteTimeout: TimeInterval = 0.5  // WisprFlow uses similar timeout
-        var pasteSucceeded = false
-        var failureReason: String?
-
-        // Check if pasteboard was consumed (changeCount changed = app requested data)
-        // This is the WisprFlow "Delayed clipboard timeout" pattern
+        // Check if pasteboard was consumed — this is the WisprFlow "Delayed clipboard timeout" pattern
         let maxChecks = 25  // 25 * 20ms = 500ms total
-        for i in 0..<maxChecks {
+        for _ in 0..<maxChecks {
             Thread.sleep(forTimeInterval: 0.02)
 
             if pb.changeCount != savedChangeCount + 1 {
@@ -103,31 +96,32 @@ struct TextInjector {
         }
 
         // If we couldn't confirm success, try the accessibility fallback
-        if !pasteSucceeded {
-            // Check if there's a focused editable element
-            let systemWide = AXUIElementCreateSystemWide()
-            var focused: AnyObject?
-            if AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused) == .success {
-                // There IS a focused element — paste likely went there
-                pasteSucceeded = true
+        var pasteSucceeded = false
+        var failureReason: String?
+
+        // Check if there's a focused editable element
+        let systemWide = AXUIElementCreateSystemWide()
+        var focused: AnyObject?
+        if AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused) == .success {
+            // There IS a focused element — paste likely went there
+            pasteSucceeded = true
+        } else {
+            // No focused element — try app activation then paste again (WisprFlow's last resort)
+            print("⚠️ No focused element — attempting fallback paste after app activation")
+            if let app = NSWorkspace.shared.frontmostApplication {
+                app.activate()
+                Thread.sleep(forTimeInterval: 0.05)
+                simulatePaste()
+                pasteSucceeded = true  // Optimistic
+                failureReason = "fallback_activation_paste"
             } else {
-                // No focused element — try app activation then paste again (WisprFlow's last resort)
-                print("⚠️ No focused element — attempting fallback paste after app activation")
-                if let app = NSWorkspace.shared.frontmostApplication {
-                    app.activate()
-                    Thread.sleep(forTimeInterval: 0.05)
-                    simulatePaste()
-                    pasteSucceeded = true  // Optimistic
-                    failureReason = "fallback_activation_paste"
-                } else {
-                    failureReason = "no_focused_element"
-                }
+                failureReason = "no_focused_element"
             }
         }
 
         // Step 5: Restore clipboard after a delay (background, non-blocking)
         let restorationDelay: TimeInterval = 0.3
-        DispatchQueue.main.asyncAfter(deadline: .now() + restorationDelay) { [savedString, savedData, savedTypes] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + restorationDelay) { [savedString, savedData] in
             let currentPB = NSPasteboard.general
             currentPB.clearContents()
 

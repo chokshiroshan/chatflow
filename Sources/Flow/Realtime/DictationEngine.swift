@@ -153,7 +153,7 @@ final class DictationEngine {
                 guard let token = await auth.ensureValidToken() else { return }
                 if let screenContext = await ScreenContextExtractor.shared.extractContext(token: token) {
                     // Inject screen context into the live session
-                    await injectScreenContext(screenContext)
+                    injectScreenContext(screenContext)
                 }
             }
         }

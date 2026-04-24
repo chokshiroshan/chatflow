@@ -251,6 +251,7 @@ final class VolumeManager {
 
     /// Set the scalar volume (0.0 - 1.0) of an output device.
     private func setDeviceVolume(volume: Float32, deviceID: AudioDeviceID) -> Bool {
+        var volume = volume
         let dataSize = UInt32(MemoryLayout<Float32>.size)
 
         var address = AudioObjectPropertyAddress(

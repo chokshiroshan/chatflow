@@ -125,43 +125,49 @@ final class DictatedTextEditWatcher {
 
         // Skip if unchanged since last poll
         guard currentContents != lastSeenContent else { return }
-        lastSeenContent = currentContents
 
         // First poll — just record the current state (paste might not have propagated yet)
         if lastSeenContent.isEmpty {
+            print("📖 First poll: recording initial content (\(currentContents.count) chars)")
             lastSeenContent = currentContents
             return
         }
 
+        print("📖 Content changed: \(currentContents.count) chars")
+        lastSeenContent = currentContents
+
         // Extract just the dictated portion from the current content
-        // The full content = beforeCursor + transcript + afterCursor
-        // We need to find and isolate the transcript portion
         guard let editedTranscript = extractDictatedPortion(from: currentContents) else {
-            // Can't locate the dictated text — probably user switched fields
+            print("📖 Could not locate dictated portion in current content")
             return
         }
+
+        print("📖 Extracted dictated portion: '\(editedTranscript)'")
 
         // Skip if it's identical to original
         let normalizedOriginal = normalizeForComparison(originalTranscript)
         let normalizedEdited = normalizeForComparison(editedTranscript)
 
-        guard normalizedEdited != normalizedOriginal else { return }
+        guard normalizedEdited != normalizedOriginal else {
+            print("📖 No significant changes detected")
+            return
+        }
 
         // Already fired for this content? Skip
         if firedForCurrentContent { return }
 
         // Diff the words
         let changes = computeWordChanges(original: originalTranscript, edited: editedTranscript)
-        guard !changes.isEmpty else { return }
+        guard !changes.isEmpty else {
+            print("📖 Word diff found no significant changes")
+            return
+        }
 
         firedForCurrentContent = true
         print("📖 Detected \(changes.count) word edit(s): \(changes.map { "\($0.original)→\($0.corrected)" })")
 
         // Fire callback
         onEditsDetected?(changes, originalTranscript)
-
-        // Don't stop watching — user might make more edits
-        // But we do stop if they already saw the popup
     }
 
     /// Read the current focused text field contents via AX.

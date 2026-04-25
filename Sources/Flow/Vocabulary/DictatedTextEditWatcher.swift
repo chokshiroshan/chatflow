@@ -245,6 +245,11 @@ final class DictatedTextEditWatcher {
         let originalWords = tokenize(original)
         let editedWords = tokenize(edited)
 
+        // Guard against empty arrays — LCS would crash on 1...0 range
+        guard !originalWords.isEmpty, !editedWords.isEmpty else {
+            return []
+        }
+
         var changes: [EditDiff.WordChange] = []
 
         // Use LCS (Longest Common Subsequence) to align words
@@ -307,6 +312,14 @@ final class DictatedTextEditWatcher {
     private func alignWords(_ original: [String], _ edited: [String]) -> ([String?], [String?]) {
         let m = original.count
         let n = edited.count
+
+        // Defensive: handle edge cases
+        if m == 0 {
+            return ([String?](repeating: nil, count: n), edited.map { Optional($0) })
+        }
+        if n == 0 {
+            return (original.map { Optional($0) }, [String?](repeating: nil, count: m))
+        }
 
         // LCS DP table
         var dp = [[Int]](

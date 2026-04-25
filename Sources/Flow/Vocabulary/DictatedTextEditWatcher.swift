@@ -202,13 +202,28 @@ final class DictatedTextEditWatcher {
     /// The content is: beforeCursor + [DICTATED TEXT] + afterCursor
     /// We need to find and return just the [DICTATED TEXT] part.
     private func extractDictatedPortion(from currentContents: String) -> String? {
+        let contentLen = currentContents.count
+        print("📖 extractDictated: content=\(contentLen) chars, before='\(originalBeforeCursor.debugDescription)' (\(originalBeforeCursor.count)), after='\(originalAfterCursor.debugDescription)' (\(originalAfterCursor.count)), transcript=\(originalTranscript.count) chars")
+
+        // Guard against reading a completely wrong field (terminal, huge document)
+        // If content is way longer than expected, we're probably reading the wrong element
+        let expectedMaxLen = originalBeforeCursor.count + originalTranscript.count + originalAfterCursor.count + 50
+        if contentLen > expectedMaxLen * 3 {
+            print("📖 extractDictated: content too large (\(contentLen) > \(expectedMaxLen * 3)), likely wrong field")
+            return nil
+        }
+
         // Strategy 1: Exact match with before/after anchors
         if !originalBeforeCursor.isEmpty && currentContents.hasPrefix(originalBeforeCursor) {
             let afterDictated = currentContents.dropFirst(originalBeforeCursor.count)
             if originalAfterCursor.isEmpty {
-                return String(afterDictated)
+                let result = String(afterDictated)
+                print("📖 Strategy 1a (before anchor only): '\(result)'")
+                return result
             } else if let afterRange = afterDictated.range(of: originalAfterCursor) {
-                return String(afterDictated[..<afterRange.lowerBound])
+                let result = String(afterDictated[..<afterRange.lowerBound])
+                print("📖 Strategy 1b (both anchors): '\(result)'")
+                return result
             }
         }
 
@@ -216,30 +231,54 @@ final class DictatedTextEditWatcher {
         if !originalAfterCursor.isEmpty, let afterRange = currentContents.range(of: originalAfterCursor) {
             let beforeAfter = String(currentContents[..<afterRange.lowerBound])
             if !originalBeforeCursor.isEmpty && beforeAfter.hasSuffix(originalBeforeCursor) {
-                return String(beforeAfter.dropFirst(originalBeforeCursor.count))
+                let result = String(beforeAfter.dropFirst(originalBeforeCursor.count))
+                print("📖 Strategy 2 (after anchor, suffix match): '\(result)'")
+                return result
             }
             // No beforeCursor anchor — return everything before afterCursor
-            // This might include non-dictated text, but it's the best we can do
-            return beforeAfter
+            let result = beforeAfter
+            print("📖 Strategy 2 (after anchor only): '\(result)'")
+            return result
         }
 
-        // Strategy 3: No anchors — look for the original transcript in the current content
-        // If we find a partial match, the text has been edited but partially remains
+        // Strategy 3: Search for longest common substring between original and current
+        // This handles cases where anchors shifted or were removed during editing
         let normalizedCurrent = currentContents.lowercased()
         let normalizedOriginal = originalTranscript.lowercased()
-        let searchLength = max(normalizedOriginal.count / 2, 1)
-        let searchStr = String(normalizedOriginal.prefix(searchLength))
-        if normalizedCurrent.contains(searchStr) {
-            // Found a partial match — the text has been edited but partially remains
-            // Return the whole content as the edited version
-            return currentContents
+
+        // Try multiple search windows from the original
+        let searchWindows = [
+            normalizedOriginal.suffix(max(normalizedOriginal.count / 2, 3)),
+            normalizedOriginal.prefix(max(normalizedOriginal.count / 2, 3))
+        ]
+        for window in searchWindows {
+            let searchStr = String(window)
+            if !searchStr.isEmpty && normalizedCurrent.contains(searchStr) {
+                print("📖 Strategy 3 (substring match: '\(searchStr.prefix(20))...'): returning full content")
+                // Found a partial match — extract the best guess
+                // For chat inputs, the whole content minus leading/trailing whitespace is close enough
+                let trimmed = currentContents.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed
+            }
         }
 
-        // Strategy 4: Fallback — if before/after are both empty, the entire content IS the transcript
+        // Strategy 4: Short field with trivial anchors (whitespace only)
+        // In a chat input, the whole field IS essentially the transcript
+        let beforeIsTrivial = originalBeforeCursor.allSatisfy { $0.isWhitespace }
+        let afterIsTrivial = originalAfterCursor.allSatisfy { $0.isWhitespace }
+        if beforeIsTrivial && afterIsTrivial && contentLen <= expectedMaxLen * 2 {
+            let trimmed = currentContents.trimmingCharacters(in: .whitespacesAndNewlines)
+            print("📖 Strategy 4 (trivial anchors, short field): '\(trimmed)'")
+            return trimmed
+        }
+
+        // Strategy 5: Both anchors empty
         if originalBeforeCursor.isEmpty && originalAfterCursor.isEmpty {
+            print("📖 Strategy 5 (no anchors): returning full content")
             return currentContents
         }
 
+        print("📖 All strategies failed")
         return nil
     }
 

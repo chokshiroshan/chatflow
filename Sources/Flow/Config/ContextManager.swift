@@ -76,6 +76,11 @@ final class ContextManager {
             parts.append("User context (use this to correctly transcribe names, terms, and abbreviations):\(context)")
         }
 
+        // Add vocabulary corrections
+        if let vocabSnippet = VocabularyManager.shared.buildPromptSnippet() {
+            parts.append(vocabSnippet)
+        }
+
         // Add active app context (what the user is currently looking at)
         if let app = Self.frontmostApp() {
             parts.append("The user is currently in \(app). Use this to interpret ambiguous words.")

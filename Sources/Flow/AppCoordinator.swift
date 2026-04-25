@@ -16,6 +16,7 @@ final class AppCoordinator: ObservableObject {
     private let auth = ChatGPTAuth.shared
     private var dictationEngine: DictationEngine?
     private let floatingPill = FloatingPillWindowController()
+    private let vocabPopup = VocabSuggestionWindowController()
     private let sounds = SoundManager.shared
     private let volumeManager = VolumeManager.shared
     private let permissions = PermissionsManager.shared
@@ -156,6 +157,15 @@ final class AppCoordinator: ObservableObject {
         engine.activate()
         self.dictationEngine = engine
         floatingPill.show(coordinator: self)
+
+        // Wire vocabulary edit watcher
+        DictatedTextEditWatcher.shared.onEditsDetected = { [weak self] changes, originalText in
+            Task { @MainActor in
+                self?.vocabPopup.show(changes: changes) { change in
+                    print("📖 Vocabulary saved: \(change.original) → \(change.corrected)")
+                }
+            }
+        }
     }
 
     // MARK: - State Changes + Sound Effects
@@ -209,6 +219,8 @@ final class AppCoordinator: ObservableObject {
         dictationEngine?.deactivate()
         dictationEngine = nil
         floatingPill.hide()
+        vocabPopup.close()
+        DictatedTextEditWatcher.shared.stopWatching()
         state = .idle
     }
 }

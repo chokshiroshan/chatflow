@@ -108,6 +108,9 @@ final class DictationEngine {
 
         // Connect if not pre-connected
         if !isConnected {
+            // Stop any running edit watcher — new dictation starting
+            DictatedTextEditWatcher.shared.stopWatching()
+
             // If reconnecting in background, just wait briefly for it
             if isReconnecting {
                 print("⏳ Waiting for reconnect to complete...")
@@ -286,6 +289,16 @@ final class DictationEngine {
         case .success:
             print("✅ Text injected successfully")
             onStateChanged?(.idle)
+
+            // Start watching for edits to detect vocabulary corrections
+            let before = dictationTextContext?.beforeCursor ?? ""
+            let after = dictationTextContext?.afterCursor ?? ""
+            DictatedTextEditWatcher.shared.startWatching(
+                transcript: cleaned,
+                beforeCursor: before,
+                afterCursor: after
+            )
+
         case .failed(let reason):
             print("❌ Text injection failed: \(reason)")
             onStateChanged?(.error("Text injection failed: \(reason)"))

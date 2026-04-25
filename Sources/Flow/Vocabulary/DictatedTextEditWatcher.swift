@@ -218,10 +218,12 @@ final class DictatedTextEditWatcher {
         }
 
         // Strategy 3: No anchors — look for the original transcript in the current content
-        // If we find it, compare surroundings
+        // If we find a partial match, the text has been edited but partially remains
         let normalizedCurrent = currentContents.lowercased()
         let normalizedOriginal = originalTranscript.lowercased()
-        if let range = normalizedCurrent.range(of: String(normalizedOriginal.prefix(normalizedOriginal.count / 2))) {
+        let searchLength = max(normalizedOriginal.count / 2, 1)
+        let searchStr = String(normalizedOriginal.prefix(searchLength))
+        if normalizedCurrent.contains(searchStr) {
             // Found a partial match — the text has been edited but partially remains
             // Return the whole content as the edited version
             return currentContents

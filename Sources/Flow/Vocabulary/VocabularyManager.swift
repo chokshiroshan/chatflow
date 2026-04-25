@@ -5,7 +5,7 @@ struct VocabEntry: Codable, Equatable {
     /// What the STT model produced (the "wrong" word)
     let original: String
     /// What the user corrected it to (the "right" word)
-    let correction: String
+    var correction: String
     /// When this entry was created
     let createdAt: Date
     /// How many times this correction has been applied/suggested
@@ -133,8 +133,9 @@ final class VocabularyManager {
     /// Filters out trivial changes like case-only differences, punctuation,
     /// very short words, and words that are too similar.
     func isSignificantCorrection(original: String, corrected: String) -> Bool {
-        let orig = original.trimmingCharacters(in: .whitespacesAndPunctuation)
-        let corr = corrected.trimmingCharacters(in: .whitespacesAndPunctuation)
+        let punctuation = CharacterSet.punctuationCharacters.union(.whitespaces)
+        let orig = original.trimmingCharacters(in: punctuation)
+        let corr = corrected.trimmingCharacters(in: punctuation)
 
         // Skip empty
         guard !orig.isEmpty, !corr.isEmpty else { return false }

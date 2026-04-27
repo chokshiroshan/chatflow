@@ -53,10 +53,21 @@ final class DictatedTextEditWatcher {
     private var originalAfterCursor: String = ""
     private var startTime: Date = .distantPast
     private var lastSeenContent: String = ""
+    /// Watch the pinned AX element for content changes after dictation.
+    ///
+    /// Inspired by WisprFlow's EditedTextManager approach:
+    /// 1. When dictation starts, PIN the focused AX element
+    /// 2. On each poll, re-read the SAME element (not the system-wide focused one)
+    /// 3. Compare contents using before/after cursor anchors
+    /// 4. Detect boundary edits and run word-level diff
+    ///
+    /// This avoids the browser problem where re-querying the focused element
+    /// returns the entire page DOM instead of the text input.
+
+    /// The AX element pinned when dictation started — we re-read this same element
+    private var pinnedElement: AXUIElement?
     private var firedForCurrentContent = false  // Prevent duplicate fires
     private var lastExtractionFailure = ""       // Suppress repeated failure logs
-    private var cachedInputElement: AXUIElement?  // Cache the text input element for re-reading
-    private var elementSearchDone = false         // Only search for element once
 
     private init() {}
 
@@ -83,11 +94,14 @@ final class DictatedTextEditWatcher {
         lastSeenContent = ""
         firedForCurrentContent = false
         lastExtractionFailure = ""
-        cachedInputElement = nil
-        elementSearchDone = false
+        pinnedElement = nil
         startTime = Date()
         isWatching = true
         onStateChanged?(true)
+
+        // Pin the focused AX element NOW — before the user clicks away
+        // This is the key insight from WisprFlow's EditedTextManager
+        pinCurrentElement()
 
         print("📖 Started watching for edits (\(Int(watchDuration))s window)")
 
@@ -181,23 +195,70 @@ final class DictatedTextEditWatcher {
         onEditsDetected?(changes, originalTranscript)
     }
 
-    /// Read the current focused text field contents via AX.
+    /// Pin the focused AX element at dictation time.
     ///
-    /// Strategy:
-    /// 1. If we cached a text input element, re-read it directly
-    /// 2. Otherwise, get the focused element and check its role
-    /// 3. For browser/web areas, search the AX tree for an element containing our transcript
-    /// 4. Cache the found element for subsequent polls
-    private func readCurrentTextField() -> String? {
-        // Fast path: re-read cached element
-        if let cached = cachedInputElement {
-            if let value = readAXValue(cached) {
-                return value
-            }
-            // Element gone (user switched apps) — clear cache
-            cachedInputElement = nil
+    /// WisprFlow's approach: save a reference to the exact AXUIElement
+    /// that was focused when dictation started. Then re-read THAT element
+    /// on every poll, instead of re-querying the system-wide focus.
+    ///
+    /// This solves the browser problem where re-querying returns the
+    /// entire page DOM instead of the text input.
+    private func pinCurrentElement() {
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedElement: AnyObject?
+        guard AXUIElementCopyAttributeValue(
+            systemWide,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedElement
+        ) == .success else {
+            print("📖 Could not pin element — no focused element")
+            return
         }
 
+        let element = focusedElement as! AXUIElement
+
+        // Log what we pinned
+        var role: AnyObject?
+        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
+        let roleStr = (role as? String) ?? "unknown"
+
+        // Check if it has text content
+        if let value = readAXValue(element) {
+            print("📖 Pinned AX element: role=\(roleStr), value=\(value.count) chars")
+            pinnedElement = element
+        } else {
+            // Element doesn't have a text value — might be a container
+            // Try to find a text input child
+            let searchKey = String(originalTranscript.prefix(min(20, originalTranscript.count)))
+            if !searchKey.isEmpty, let found = findSmallestElementContaining(in: element, searchKey: searchKey, maxDepth: 6) {
+                if let foundValue = readAXValue(found) {
+                    print("📖 Pinned child element containing transcript: \(foundValue.count) chars")
+                    pinnedElement = found
+                }
+            } else {
+                print("📖 Could not find text input — pinning focused element anyway (role=\(roleStr))")
+                pinnedElement = element
+            }
+        }
+    }
+
+    /// Read the current text field contents.
+    ///
+    /// WisprFlow approach: re-read the PINNED element, not the system focus.
+    /// This ensures we always read the same text input, even in browsers
+    /// where the system focus would return the page container.
+    private func readCurrentTextField() -> String? {
+        // Read from pinned element
+        if let pinned = pinnedElement {
+            if let value = readAXValue(pinned) {
+                return value
+            }
+            // Element gone
+            print("📖 Pinned element no longer accessible")
+            return nil
+        }
+
+        // No pinned element — shouldn't happen, but fallback
         let systemWide = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?
         guard AXUIElementCopyAttributeValue(
@@ -208,49 +269,7 @@ final class DictatedTextEditWatcher {
             return nil
         }
 
-        let element = focusedElement as! AXUIElement
-
-        // Check the role and log it
-        var role: AnyObject?
-        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
-        let roleStr = (role as? String) ?? "unknown"
-        var subrole: AnyObject?
-        AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole)
-        let subroleStr = (subrole as? String) ?? ""
-        print("📖 AX focused element: role=\(roleStr) subrole=\(subroleStr)")
-
-        let nativeTextRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox"]
-        if nativeTextRoles.contains(roleStr) {
-            // Native text input — read value directly
-            let value = readAXValue(element)
-            print("📖 Native text input value: \(value?.count ?? 0) chars")
-            // Only cache if it actually contains meaningful content
-            if let v = value, v.count > 2 {
-                cachedInputElement = element
-                return v
-            }
-            // Empty/nearly empty native field — don't trust it, try browser search
-            print("📖 Native field too short — trying browser search")
-        }
-
-        // Browser/Electron app — the focused element is the web area, not the text input.
-        // Search the AX tree for an element that contains our transcript.
-        if !elementSearchDone, !originalTranscript.isEmpty {
-            elementSearchDone = true
-            let searchKey = String(originalTranscript.prefix(min(30, originalTranscript.count)))
-            print("📖 Searching AX tree for element containing '\(searchKey)' (depth 8)...")
-            if let found = findElementContainingText(in: element, searchKey: searchKey, maxDepth: 8) {
-                if let value = readAXValue(found) {
-                    print("📖 Found text input element via content search: \(value.count) chars")
-                    cachedInputElement = found
-                    return value
-                }
-            }
-            print("📖 Could not find text input element in AX tree")
-        }
-
-        // Fallback: read the focused element's value
-        return readAXValue(element)
+        return readAXValue(focusedElement as! AXUIElement)
     }
 
     /// Read the AXValue attribute from an element.
@@ -266,7 +285,7 @@ final class DictatedTextEditWatcher {
             if let attr = value as? NSAttributedString { return attr.string }
         }
 
-        // Fallback: try AXSelectedText (some contenteditable divs expose text this way)
+        // Fallback: try AXSelectedText (some contenteditable divs)
         var selectedText: AnyObject?
         if AXUIElementCopyAttributeValue(
             element,
@@ -279,10 +298,9 @@ final class DictatedTextEditWatcher {
         return nil
     }
 
-    /// Recursively search the AX tree for an element whose value contains the search key.
-    /// This finds the actual text input even if it has an unexpected role.
-    /// Returns the SMALLEST element (by content length) that contains the key.
-    private func findElementContainingText(in element: AXUIElement, searchKey: String, maxDepth: Int) -> AXUIElement? {
+    /// Find the SMALLEST AX element (by content length) containing the search key.
+    /// This finds the actual text input instead of the page container.
+    private func findSmallestElementContaining(in element: AXUIElement, searchKey: String, maxDepth: Int) -> AXUIElement? {
         guard maxDepth > 0 else { return nil }
 
         var children: AnyObject?
@@ -301,14 +319,13 @@ final class DictatedTextEditWatcher {
             // Check if this element's value contains our text
             if let value = readAXValue(child),
                value.contains(searchKey) {
-                // Prefer smaller elements (the actual input, not the page container)
                 if bestMatch == nil || value.count < bestMatch!.contentLen {
                     bestMatch = (child, value.count)
                 }
             }
 
-            // Recurse — but also check recursive results
-            if let found = findElementContainingText(in: child, searchKey: searchKey, maxDepth: maxDepth - 1) {
+            // Recurse
+            if let found = findSmallestElementContaining(in: child, searchKey: searchKey, maxDepth: maxDepth - 1) {
                 if let foundValue = readAXValue(found) {
                     if bestMatch == nil || foundValue.count < bestMatch!.contentLen {
                         bestMatch = (found, foundValue.count)

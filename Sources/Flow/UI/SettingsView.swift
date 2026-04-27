@@ -191,9 +191,17 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 24) {
             // Model selection
             settingsSection("Model") {
+                settingsPickerRow("Realtime Model", selection: $coordinator.config.realtimeModel) {
+                    Text("GPT Realtime 1.5 (Best)").tag("gpt-realtime-1.5")
+                    Text("GPT Realtime (Stable)").tag("gpt-realtime")
+                }
+                .onChange(of: coordinator.config.realtimeModel) { _, _ in coordinator.config.save() }
+
                 settingsPickerRow("Transcription Model", selection: $coordinator.config.transcriptionModel, isLast: true) {
                     Text("GPT-4o Transcribe (Best)").tag("gpt-4o-transcribe")
-                    Text("Whisper (Fast)").tag("whisper-1")
+                    Text("GPT-4o Transcribe Diarize").tag("gpt-4o-transcribe-diarize")
+                    Text("GPT-4o Mini Transcribe").tag("gpt-4o-mini-transcribe")
+                    Text("Whisper 1 (Fast)").tag("whisper-1")
                 }
                 .onChange(of: coordinator.config.transcriptionModel) { _, _ in coordinator.config.save() }
             }
@@ -325,10 +333,8 @@ struct SettingsView: View {
             settingsSection("Context") {
                 settingsToggleRow("Include active app name", isOn: $coordinator.config.includeAppContext)
                     .onChange(of: coordinator.config.includeAppContext) { _, _ in coordinator.config.save() }
-                settingsToggleRow("Include saved vocabulary", isOn: $coordinator.config.includeVocabulary)
+                settingsToggleRow("Include saved vocabulary", isOn: $coordinator.config.includeVocabulary, isLast: true)
                     .onChange(of: coordinator.config.includeVocabulary) { _, _ in coordinator.config.save() }
-                settingsToggleRow("Include user context file (~/.flow/context.md)", isOn: $coordinator.config.includeUserContext, isLast: true)
-                    .onChange(of: coordinator.config.includeUserContext) { _, _ in coordinator.config.save() }
             }
         }
         .onAppear {

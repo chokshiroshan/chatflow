@@ -65,17 +65,8 @@ final class ContextManager {
     }
 
     /// Build the full instructions string with context injected.
-    /// Reloads context from file at most every 5 seconds (cached).
-    func buildInstructions(basePrompt: String? = nil, screenContext: String? = nil, textContext: String? = nil, config: FlowConfig = FlowConfig.load()) -> String {
-        load() // Cached — only hits disk if >5s since last read
-
-        let prompt = basePrompt ?? config.systemInstructions
-        var parts = [prompt]
-
-        // Add user context if available
-        if config.includeUserContext && !context.isEmpty {
-            parts.append("User context (use this to correctly transcribe names, terms, and abbreviations):\(context)")
-        }
+    func buildInstructions(config: FlowConfig = FlowConfig.load()) -> String {
+        var parts = [config.systemInstructions]
 
         // Add vocabulary corrections
         if config.includeVocabulary, let vocabSnippet = VocabularyManager.shared.buildPromptSnippet() {

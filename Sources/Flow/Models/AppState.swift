@@ -89,7 +89,6 @@ struct FlowConfig: Codable {
     var hotkey: String = "ctrl+space"
     var hotkeyMode: HotkeyMode = .hold
     var language: String = "en"
-    var realtimeModel: String = "gpt-realtime"
     var injectMethod: InjectMethod = .clipboard
     var soundEffectsEnabled: Bool = false
     var shouldMuteAudio: Bool = true
@@ -97,14 +96,19 @@ struct FlowConfig: Codable {
     var appearance: String = "system"
     var selectedMicDeviceUID: String? = nil
 
-    // MARK: - Transcription Quality Settings
+    // MARK: - Realtime API Session Parameters
+    // Full control over everything sent to session.update
 
-    /// Which STT model to use for transcription. Options: "gpt-4o-transcribe", "whisper-1"
+    /// The realtime model to use for the WebSocket connection.
+    var realtimeModel: String = "gpt-realtime-1.5"
+
+    /// Which STT model to use for input_audio_transcription.
+    /// Options: "gpt-4o-transcribe", "gpt-4o-transcribe-diarize", "gpt-4o-mini-transcribe", "whisper-1"
     var transcriptionModel: String = "gpt-4o-transcribe"
 
-    /// Custom system instructions injected into every session.
-    /// This is the main lever for improving transcription quality.
-    /// Default: focused on verbatim transcription.
+    /// System instructions — the main prompt controlling transcription behavior.
+    /// This is the single place for all instructions: base behavior + user context + vocabulary.
+    /// Templates in settings UI replace this entirely.
     var systemInstructions: String = "Transcribe exactly what was said. Output only the spoken words. Do not correct, interpret, or rephrase anything. Preserve the speaker's exact wording including informal speech, pauses as commas, and natural sentence structure. If there is no clear speech, output nothing."
 
     /// Whether to include active app context (e.g. "The user is currently in Discord")
@@ -113,8 +117,19 @@ struct FlowConfig: Codable {
     /// Whether to include vocabulary from ~/.flow/vocabulary.json
     var includeVocabulary: Bool = true
 
-    /// Whether to include user context from ~/.flow/context.md
-    var includeUserContext: Bool = true
+    /// The transcription prompt field (input_audio_transcription.prompt).
+    /// For whisper-1, this is a list of keywords. For gpt-4o-transcribe, it's free text.
+    /// Set to nil/empty to omit.
+    var transcriptionPrompt: String? = nil
+
+    /// Max response output tokens. Default 1024.
+    var maxResponseOutputTokens: Int = 1024
+
+    /// Input audio format. Default "pcm16".
+    var inputAudioFormat: String = "pcm16"
+
+    /// Output audio format. Default "pcm16".
+    var outputAudioFormat: String = "pcm16"
 
     enum HotkeyMode: String, Codable, CaseIterable {
         case hold

@@ -33,7 +33,7 @@ final class RealtimeClient {
         case dictation(language: String)
     }
 
-    func connect(accessToken: String, model: String = "gpt-realtime", mode: ConnectionMode, backendMode: Bool = false) async throws {
+    func connect(accessToken: String, model: String = FlowConfig.load().realtimeModel, mode: ConnectionMode, backendMode: Bool = false) async throws {
         let urlString = "wss://api.openai.com/v1/realtime?model=\(model)"
 
         guard let url = URL(string: urlString) else {
@@ -83,20 +83,26 @@ final class RealtimeClient {
         case .dictation(let lang):
             let config = FlowConfig.load()
             let instructions = ContextManager.shared.buildInstructions(config: config)
+
+            var transConfig = """
+            {"model":"\(config.transcriptionModel)","language":"\(lang)"
+            """
+            if let prompt = config.transcriptionPrompt, !prompt.isEmpty {
+                transConfig += ",\"prompt\":\"\(prompt.escapingJSON)\""
+            }
+            transConfig += "}"
+
             sessionConfig = """
             {
                 "type": "session.update",
                 "session": {
                     "modalities": ["text"],
                     "instructions": "\(instructions.escapingJSON)",
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
-                    "input_audio_transcription": {
-                        "model": "\(config.transcriptionModel)",
-                        "language": "\(lang)"
-                    },
+                    "input_audio_format": "\(config.inputAudioFormat)",
+                    "output_audio_format": "\(config.outputAudioFormat)",
+                    "input_audio_transcription": \(transConfig),
                     "turn_detection": null,
-                    "max_response_output_tokens": 1024
+                    "max_response_output_tokens": \(config.maxResponseOutputTokens)
                 }
             }
             """
@@ -139,10 +145,13 @@ final class RealtimeClient {
         let config = FlowConfig.load()
         let instructions = ContextManager.shared.buildInstructions(config: config)
 
+        // Use config-level transcription prompt unless overridden
+        let effectivePrompt = transcriptionPrompt ?? config.transcriptionPrompt
+
         var transConfig = """
         {"model":"\(config.transcriptionModel)","language":"\(language)"
         """
-        if let prompt = transcriptionPrompt, !prompt.isEmpty {
+        if let prompt = effectivePrompt, !prompt.isEmpty {
             transConfig += ",\"prompt\":\"\(prompt.escapingJSON)\""
         }
         transConfig += "}"

@@ -146,8 +146,45 @@ final class VocabularyManager {
         // Skip very short words (< 3 chars) — too likely to be noise
         guard orig.count >= 3, corr.count >= 3 else { return false }
 
+        // Skip common English words — these aren't vocabulary corrections
+        let commonWords: Set<String> = [
+            "the", "and", "but", "for", "not", "you", "all", "can", "had",
+            "her", "was", "one", "our", "out", "are", "has", "have",
+            "this", "that", "with", "from", "they", "been", "said", "each",
+            "which", "their", "would", "there", "could", "other", "about",
+            "many", "then", "them", "these", "some", "would", "make",
+            "like", "time", "very", "when", "what", "your", "there",
+            "into", "just", "know", "take", "come", "could", "than",
+            "look", "only", "came", "over", "also", "back", "after",
+            "work", "first", "well", "even", "want", "because", "these",
+            "give", "most", "find", "here", "thing", "think", "help",
+            "edit", "catch", "tell", "ask", "try", "leave", "call",
+            "keep", "let", "begin", "seem", "help", "show", "hear",
+            "play", "run", "move", "live", "believe", "bring", "happen",
+            "write", "provide", "sit", "stand", "lose", "pay", "meet",
+            "include", "continue", "set", "learn", "change", "lead",
+            "understand", "watch", "follow", "stop", "create", "speak",
+            "read", "allow", "add", "spend", "grow", "open", "walk",
+            "win", "offer", "remember", "love", "consider", "appear",
+            "buy", "wait", "serve", "die", "send", "expect", "build",
+            "stay", "fall", "cut", "reach", "kill", "remain",
+            "going", "doing", "being", "having", "getting", "making",
+            "saying", "knowing", "taking", "coming", "seeing", "wanting",
+            "using", "finding", "giving", "telling", "working", "calling",
+            "trying", "asking", "leaving", "putting", "meaning",
+            "becoming", "keeping", "beginning", "seeming", "helping",
+            "showing", "hearing", "playing", "running", "moving",
+            "living", "believing", "bringing", "happening",
+            "should", "could", "would", "might", "shall", "must",
+            "really", "things", "something", "anything", "everything",
+            "nothing", "every", "some", "much", "more", "most",
+            "still", "already", "always", "never", "often", "sometimes"
+        ]
+        if commonWords.contains(orig.lowercased()) || commonWords.contains(corr.lowercased()) {
+            return false
+        }
+
         // Skip if edit distance is too small relative to word length
-        // (e.g., "cats" → "cat's" is not a meaningful vocabulary correction)
         let distance = Self.levenshtein(orig.lowercased(), corr.lowercased())
         let maxLen = max(orig.count, corr.count)
         let normalizedDistance = Double(distance) / Double(maxLen)
@@ -155,7 +192,7 @@ final class VocabularyManager {
         // Skip if > 80% of the word changed — probably a full rewrite, not a correction
         guard normalizedDistance < 0.8 else { return false }
 
-        // Skip if edit distance is 0 (case-only change) — already handled above but safety check
+        // Skip if edit distance is 0 (case-only change)
         guard distance > 0 else { return false }
 
         return true

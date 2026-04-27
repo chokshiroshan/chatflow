@@ -55,6 +55,8 @@ final class DictatedTextEditWatcher {
     private var lastSeenContent: String = ""
     private var firedForCurrentContent = false  // Prevent duplicate fires
     private var lastExtractionFailure = ""       // Suppress repeated failure logs
+    private var cachedInputElement: AXUIElement?  // Cache the text input element for re-reading
+    private var elementSearchDone = false         // Only search for element once
 
     private init() {}
 
@@ -81,6 +83,8 @@ final class DictatedTextEditWatcher {
         lastSeenContent = ""
         firedForCurrentContent = false
         lastExtractionFailure = ""
+        cachedInputElement = nil
+        elementSearchDone = false
         startTime = Date()
         isWatching = true
         onStateChanged?(true)
@@ -179,9 +183,21 @@ final class DictatedTextEditWatcher {
 
     /// Read the current focused text field contents via AX.
     ///
-    /// For native text fields, reads directly. For browser/web areas,
-    /// tries to find the actual text input element within the AX tree.
+    /// Strategy:
+    /// 1. If we cached a text input element, re-read it directly
+    /// 2. Otherwise, get the focused element and check its role
+    /// 3. For browser/web areas, search the AX tree for an element containing our transcript
+    /// 4. Cache the found element for subsequent polls
     private func readCurrentTextField() -> String? {
+        // Fast path: re-read cached element
+        if let cached = cachedInputElement {
+            if let value = readAXValue(cached) {
+                return value
+            }
+            // Element gone (user switched apps) — clear cache
+            cachedInputElement = nil
+        }
+
         let systemWide = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?
         guard AXUIElementCopyAttributeValue(
@@ -194,28 +210,34 @@ final class DictatedTextEditWatcher {
 
         let element = focusedElement as! AXUIElement
 
-        // Check the role — native text inputs have the right role
+        // Check the role
         var role: AnyObject?
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
         let roleStr = (role as? String) ?? ""
 
-        let nativeTextRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox", "AXStaticText"]
+        let nativeTextRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox"]
         if nativeTextRoles.contains(roleStr) {
             // Native text input — read value directly
-            return readAXValue(element)
-        }
-
-        // Non-text role (AXWebArea, AXScrollArea, AXGroup, etc.)
-        // This is a browser/Electron app — try to find the actual text input
-        if let textInput = findFocusedTextInput(in: element, maxDepth: 6) {
-            if let value = readAXValue(textInput) {
-                print("📖 Found text input in AX tree (role: \(roleStr))")
+            if let value = readAXValue(element) {
+                cachedInputElement = element
                 return value
             }
         }
 
-        // Fallback: read the element's value anyway
-        // If it's huge, the extractor will handle it with the browser strategy
+        // Browser/Electron app — the focused element is the web area, not the text input.
+        // Search the AX tree for an element that contains our transcript.
+        if !elementSearchDone, !originalTranscript.isEmpty {
+            elementSearchDone = true
+            let searchKey = String(originalTranscript.prefix(min(30, originalTranscript.count)))
+            if let found = findElementContainingText(in: element, searchKey: searchKey, maxDepth: 8) {
+                print("📖 Found text input element via content search (parent role: \(roleStr))")
+                cachedInputElement = found
+                return readAXValue(found)
+            }
+            print("📖 Could not find text input element in AX tree — using full page fallback")
+        }
+
+        // Fallback: read the focused element's value
         return readAXValue(element)
     }
 
@@ -234,9 +256,10 @@ final class DictatedTextEditWatcher {
         return nil
     }
 
-    /// Recursively search the AX tree for a focused text input element.
-    /// Limited depth to avoid traversing huge DOM trees.
-    private func findFocusedTextInput(in element: AXUIElement, maxDepth: Int) -> AXUIElement? {
+    /// Recursively search the AX tree for an element whose value contains the search key.
+    /// This finds the actual text input even if it has an unexpected role.
+    /// Returns the SMALLEST element (by content length) that contains the key.
+    private func findElementContainingText(in element: AXUIElement, searchKey: String, maxDepth: Int) -> AXUIElement? {
         guard maxDepth > 0 else { return nil }
 
         var children: AnyObject?
@@ -249,29 +272,29 @@ final class DictatedTextEditWatcher {
             return nil
         }
 
-        let textInputRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox"]
+        var bestMatch: (element: AXUIElement, contentLen: Int)?
 
         for child in childArray {
-            var role: AnyObject?
-            AXUIElementCopyAttributeValue(child, kAXRoleAttribute as CFString, &role)
-            let roleStr = (role as? String) ?? ""
-
-            // If it's a text input, check if it's focused
-            if textInputRoles.contains(roleStr) {
-                var focused: AnyObject?
-                if AXUIElementCopyAttributeValue(child, kAXFocusedAttribute as CFString, &focused) == .success,
-                   let isFocused = focused as? Bool, isFocused {
-                    return child
+            // Check if this element's value contains our text
+            if let value = readAXValue(child),
+               value.contains(searchKey) {
+                // Prefer smaller elements (the actual input, not the page container)
+                if bestMatch == nil || value.count < bestMatch!.contentLen {
+                    bestMatch = (child, value.count)
                 }
             }
 
-            // Recurse into children
-            if let result = findFocusedTextInput(in: child, maxDepth: maxDepth - 1) {
-                return result
+            // Recurse — but also check recursive results
+            if let found = findElementContainingText(in: child, searchKey: searchKey, maxDepth: maxDepth - 1) {
+                if let foundValue = readAXValue(found) {
+                    if bestMatch == nil || foundValue.count < bestMatch!.contentLen {
+                        bestMatch = (found, foundValue.count)
+                    }
+                }
             }
         }
 
-        return nil
+        return bestMatch?.element
     }
 
     /// Extract the dictated portion from the current text field content.

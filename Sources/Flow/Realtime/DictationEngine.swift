@@ -284,6 +284,10 @@ final class DictationEngine {
         print("📝 Transcript: \"\(cleaned)\"")
         onStateChanged?(.injecting)
 
+        // Pin the AX element BEFORE paste — once we paste, the focus may shift
+        // or the text may auto-submit (browser chat apps)
+        DictatedTextEditWatcher.shared.prePinElement()
+
         let result = TextInjector.injectWithResult(cleaned)
         switch result {
         case .success:

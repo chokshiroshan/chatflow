@@ -73,6 +73,14 @@ final class DictatedTextEditWatcher {
 
     // MARK: - Public API
 
+    /// Pin the focused AX element BEFORE text is pasted.
+    /// Call this right before TextInjector.injectWithResult() so we capture
+    /// the actual text input while it's still focused.
+    func prePinElement() {
+        guard AXIsProcessTrusted() else { return }
+        pinCurrentElement()
+    }
+
     /// Start watching for edits after dictation completes.
     ///
     /// - Parameters:
@@ -99,9 +107,11 @@ final class DictatedTextEditWatcher {
         isWatching = true
         onStateChanged?(true)
 
-        // Pin the focused AX element NOW — before the user clicks away
-        // This is the key insight from WisprFlow's EditedTextManager
-        pinCurrentElement()
+        // Element should already be pinned via prePinElement() before paste.
+        // If not (e.g. first run), try pinning now as fallback.
+        if pinnedElement == nil {
+            pinCurrentElement()
+        }
 
         print("📖 Started watching for edits (\(Int(watchDuration))s window)")
 
@@ -514,9 +524,10 @@ final class DictatedTextEditWatcher {
         // Use first 30 chars as a search key (fast, unique enough)
         let searchPrefix = String(transcript.prefix(min(30, transcript.count)))
         if let range = content.range(of: searchPrefix, options: .caseInsensitive) {
-            // Found the start — extract roughly the transcript length
-            let endOffset = min(transcript.count + 30, content.count - content.distance(from: content.startIndex, to: range.lowerBound))
-            let endIdx = content.index(range.lowerBound, offsetBy: endOffset, limitedBy: content.endIndex) ?? content.endIndex
+            // Found the start — extract transcript length + generous buffer
+            let availableAfter = content.distance(from: range.lowerBound, to: content.endIndex)
+            let extractLen = min(transcript.count + 50, availableAfter)
+            let endIdx = content.index(range.lowerBound, offsetBy: extractLen, limitedBy: content.endIndex) ?? content.endIndex
             let extracted = String(content[range.lowerBound..<endIdx])
             // Trim to a reasonable sentence boundary
             let trimmed = extractSentenceBoundary(from: extracted, targetLength: transcript.count)
@@ -564,11 +575,12 @@ final class DictatedTextEditWatcher {
 
     /// Trim extracted text to a sentence boundary near the target length.
     private func extractSentenceBoundary(from text: String, targetLength: Int) -> String {
-        guard text.count > targetLength + 20 else { return text }
-        // Find the sentence boundary closest to targetLength
-        let targetIdx = text.index(text.startIndex, offsetBy: targetLength, limitedBy: text.endIndex) ?? text.endIndex
+        guard text.count > targetLength + 50 else { return text }
+        // Find the sentence boundary closest to targetLength + some buffer
+        let bufferLen = targetLength + 10
+        let targetIdx = text.index(text.startIndex, offsetBy: min(bufferLen, text.count), limitedBy: text.endIndex) ?? text.endIndex
         let searchStart = text.index(text.startIndex, offsetBy: max(0, targetLength - 20), limitedBy: text.endIndex) ?? text.startIndex
-        let searchEnd = text.index(text.startIndex, offsetBy: min(text.count, targetLength + 20), limitedBy: text.endIndex) ?? text.endIndex
+        let searchEnd = text.index(text.startIndex, offsetBy: min(text.count, bufferLen + 30), limitedBy: text.endIndex) ?? text.endIndex
         let searchRange = text[searchStart..<searchEnd]
         // Look for sentence-ending punctuation
         let boundaries = [".", "!", "?"]

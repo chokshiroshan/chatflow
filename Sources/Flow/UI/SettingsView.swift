@@ -21,6 +21,7 @@ struct SettingsView: View {
 
     private let settingsItems: [(String, String, String)] = [
         ("general", "General", "gearshape"),
+        ("transcription", "Transcription", "waveform"),
         ("shortcut", "Shortcut", "keyboard"),
         ("mic", "Microphone", "mic.fill"),
         ("privacy", "Privacy", "shield.fill"),
@@ -79,6 +80,7 @@ struct SettingsView: View {
 
                 switch selectedTab {
                 case "general": settingsGeneral
+                case "transcription": settingsTranscription
                 case "shortcut": settingsShortcut
                 case "mic": settingsMic
                 case "privacy": settingsPrivacy
@@ -136,6 +138,202 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Transcription Settings
+
+    /// Preset instruction templates users can pick from.
+    private struct InstructionTemplate {
+        let name: String
+        let icon: String
+        let description: String
+        let instructions: String
+    }
+
+    private let instructionTemplates: [InstructionTemplate] = [
+        InstructionTemplate(
+            name: "Verbatim",
+            icon: "text.quote",
+            description: "Exact words, no corrections",
+            instructions: "Transcribe exactly what was said. Output only the spoken words. Do not correct, interpret, or rephrase anything. Preserve the speaker's exact wording including informal speech, pauses as commas, and natural sentence structure. If there is no clear speech, output nothing."
+        ),
+        InstructionTemplate(
+            name: "Clean & Formal",
+            icon: "sparkles",
+            description: "Grammar fixes, polished output",
+            instructions: "Transcribe the user's speech and output clean, well-formed text. Fix grammar mistakes, remove filler words (um, uh, like), add proper punctuation, and format the result as polished written text. Preserve the original meaning but improve readability."
+        ),
+        InstructionTemplate(
+            name: "Overly Eager",
+            icon: "bolt.fill",
+            description: "Expands abbreviations, adds context",
+            instructions: "Transcribe and enhance the user's speech. Expand abbreviations to their full form, add missing context, format lists and structures clearly. If the user says something ambiguous, choose the most likely intended meaning. Be helpful and interpret generously."
+        ),
+        InstructionTemplate(
+            name: "Code Friendly",
+            icon: "chevron.left.forwardslash.chevron.right",
+            description: "Optimized for technical terms",
+            instructions: "Transcribe speech with technical accuracy. Properly capitalize and format programming terms, API names, variable names, and technical jargon. Use camelCase, PascalCase, or snake_case where appropriate for code terms. Format code snippets on separate lines."
+        ),
+        InstructionTemplate(
+            name: "Minimal",
+            icon: "minus",
+            description: "Just the words, nothing else",
+            instructions: "Output only the spoken words. No punctuation correction, no formatting, no interpretation. Raw transcription only."
+        ),
+    ]
+
+    @State private var selectedTemplateIndex: Int? = nil
+    @State private var showCustomEditor: Bool = false
+
+    private var settingsTranscription: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Model selection
+            settingsSection("Model") {
+                settingsPickerRow("Transcription Model", selection: $coordinator.config.transcriptionModel, isLast: true) {
+                    Text("GPT-4o Transcribe (Best)").tag("gpt-4o-transcribe")
+                    Text("Whisper (Fast)").tag("whisper-1")
+                }
+                .onChange(of: coordinator.config.transcriptionModel) { _, _ in coordinator.config.save() }
+            }
+
+            // Instruction templates
+            settingsSection("Behavior") {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Template grid
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10)
+                    ], spacing: 10) {
+                        ForEach(Array(instructionTemplates.enumerated()), id: \.offset) { index, template in
+                            Button(action: {
+                                selectedTemplateIndex = index
+                                coordinator.config.systemInstructions = template.instructions
+                                coordinator.config.save()
+                            }) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {                                        Image(systemName: template.icon)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(selectedTemplateIndex == index ? FlowColors.accent : FlowColors.textTertiary)
+                                        Spacer()
+                                        if selectedTemplateIndex == index {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(FlowColors.accent)
+                                        }
+                                    }
+                                    Text(template.name)
+                                        .font(FlowTypography.bodyMedium)
+                                        .foregroundColor(selectedTemplateIndex == index ? FlowColors.textPrimary : FlowColors.textSecondary)
+                                        .lineLimit(1)
+                                    Text(template.description)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(FlowColors.textTertiary)
+                                        .lineLimit(1)
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: FlowRadii.md)
+                                        .fill(selectedTemplateIndex == index ? FlowColors.accent.opacity(0.1) : FlowColors.card)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: FlowRadii.md)
+                                        .stroke(selectedTemplateIndex == index ? FlowColors.accent.opacity(0.4) : FlowColors.border, lineWidth: selectedTemplateIndex == index ? 1.5 : 0.5)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        // Custom option
+                        Button(action: { showCustomEditor = true }) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {                                    Image(systemName: "pencil.line")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(FlowColors.accentPurple)
+                                    Spacer()
+                                }
+                                Text("Custom")
+                                    .font(FlowTypography.bodyMedium)
+                                    .foregroundColor(FlowColors.textSecondary)
+                                    .lineLimit(1)
+                                Text("Write your own")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(FlowColors.textTertiary)
+                                    .lineLimit(1)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: FlowRadii.md)
+                                    .fill(selectedTemplateIndex == nil && !showCustomEditor ? FlowColors.accentPurple.opacity(0.1) : FlowColors.card)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: FlowRadii.md)
+                                    .stroke(FlowColors.accentPurple.opacity(0.4), lineWidth: 0.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 12)
+            }
+
+            // Custom instructions editor (always visible)
+            settingsSection("System Instructions") {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextEditor(text: $coordinator.config.systemInstructions)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(FlowColors.textPrimary)
+                        .scrollContentBackground(.hidden)
+                        .background(FlowColors.background)
+                        .frame(height: 100)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                                .fill(FlowColors.background)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                                .stroke(FlowColors.border, lineWidth: 0.5)
+                        )
+                        .onChange(of: coordinator.config.systemInstructions) { _, newValue in
+                            // Deselect template if user edits manually
+                            if let idx = selectedTemplateIndex,
+                               instructionTemplates[idx].instructions != newValue {
+                                selectedTemplateIndex = nil
+                            }
+                            coordinator.config.save()
+                        }
+
+                    HStack {
+                        Text("This is sent to the transcription model on every session. Edit freely.")
+                            .font(.system(size: 10))
+                            .foregroundColor(FlowColors.textTertiary)
+                        Spacer()
+                        Text("\(coordinator.config.systemInstructions.count) chars")
+                            .font(.system(size: 10))
+                            .foregroundColor(FlowColors.textTertiary)
+                    }
+                }
+                .padding(.vertical, 12)
+            }
+
+            // Context toggles
+            settingsSection("Context") {
+                settingsToggleRow("Include active app name", isOn: $coordinator.config.includeAppContext)
+                    .onChange(of: coordinator.config.includeAppContext) { _, _ in coordinator.config.save() }
+                settingsToggleRow("Include saved vocabulary", isOn: $coordinator.config.includeVocabulary)
+                    .onChange(of: coordinator.config.includeVocabulary) { _, _ in coordinator.config.save() }
+                settingsToggleRow("Include user context file (~/.flow/context.md)", isOn: $coordinator.config.includeUserContext, isLast: true)
+                    .onChange(of: coordinator.config.includeUserContext) { _, _ in coordinator.config.save() }
+            }
+        }
+        .onAppear {
+            // Match current instructions to a template if possible
+            selectedTemplateIndex = instructionTemplates.firstIndex(where: { $0.instructions == coordinator.config.systemInstructions })
         }
     }
 

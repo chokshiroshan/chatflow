@@ -298,7 +298,43 @@ final class DictatedTextEditWatcher {
         var changes: [EditDiff.WordChange] = []
 
         // Use LCS (Longest Common Subsequence) to align words
-        let (origAligned, editAligned) = alignWords(originalWords, editedWords)
+        let (rawOrigAligned, rawEditAligned) = alignWords(originalWords, editedWords)
+
+        // Post-process: merge adjacent (word, nil) + (nil, word) into (word, word) substitutions.
+        // LCS treats a word change as deletion + insertion — we need to pair them for comparison.
+        var origAligned: [String?] = []
+        var editAligned: [String?] = []
+        var i = 0
+        while i < rawOrigAligned.count {
+            let o = rawOrigAligned[i]
+            let e = rawEditAligned[i]
+
+            if o != nil && e == nil && i + 1 < rawOrigAligned.count {
+                let nextO = rawOrigAligned[i + 1]
+                let nextE = rawEditAligned[i + 1]
+                // Pattern: (word, nil) followed by (nil, word) → merge into (word, word)
+                if nextO == nil && nextE != nil {
+                    origAligned.append(o)
+                    editAligned.append(nextE)
+                    i += 2
+                    continue
+                }
+            } else if o == nil && e != nil && i + 1 < rawOrigAligned.count {
+                let nextO = rawOrigAligned[i + 1]
+                let nextE = rawEditAligned[i + 1]
+                // Pattern: (nil, word) followed by (word, nil) → merge into (word, word)
+                if nextO != nil && nextE == nil {
+                    origAligned.append(nextO)
+                    editAligned.append(e)
+                    i += 2
+                    continue
+                }
+            }
+
+            origAligned.append(o)
+            editAligned.append(e)
+            i += 1
+        }
 
         for (i, (orig, edit)) in zip(origAligned, editAligned).enumerated() {
             guard let o = orig, let e = edit else { continue }

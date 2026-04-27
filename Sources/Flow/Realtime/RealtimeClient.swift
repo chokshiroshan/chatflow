@@ -81,7 +81,8 @@ final class RealtimeClient {
 
         switch mode {
         case .dictation(let lang):
-            let instructions = ContextManager.shared.buildInstructions()
+            let config = FlowConfig.load()
+            let instructions = ContextManager.shared.buildInstructions(config: config)
             sessionConfig = """
             {
                 "type": "session.update",
@@ -91,7 +92,7 @@ final class RealtimeClient {
                     "input_audio_format": "pcm16",
                     "output_audio_format": "pcm16",
                     "input_audio_transcription": {
-                        "model": "gpt-4o-transcribe",
+                        "model": "\(config.transcriptionModel)",
                         "language": "\(lang)"
                     },
                     "turn_detection": null,
@@ -135,10 +136,11 @@ final class RealtimeClient {
     ///        transcription prompt = text field context (for the STT model specifically)
     func refreshInstructions(language: String, transcriptionPrompt: String? = nil) {
         guard isConnected else { return }
-        let instructions = ContextManager.shared.buildInstructions()
+        let config = FlowConfig.load()
+        let instructions = ContextManager.shared.buildInstructions(config: config)
 
         var transConfig = """
-        {"model":"gpt-4o-transcribe","language":"\(language)"
+        {"model":"\(config.transcriptionModel)","language":"\(language)"
         """
         if let prompt = transcriptionPrompt, !prompt.isEmpty {
             transConfig += ",\"prompt\":\"\(prompt.escapingJSON)\""

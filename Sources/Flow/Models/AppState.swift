@@ -97,6 +97,25 @@ struct FlowConfig: Codable {
     var appearance: String = "system"
     var selectedMicDeviceUID: String? = nil
 
+    // MARK: - Transcription Quality Settings
+
+    /// Which STT model to use for transcription. Options: "gpt-4o-transcribe", "whisper-1"
+    var transcriptionModel: String = "gpt-4o-transcribe"
+
+    /// Custom system instructions injected into every session.
+    /// This is the main lever for improving transcription quality.
+    /// Default: focused on verbatim transcription.
+    var systemInstructions: String = "Transcribe exactly what was said. Output only the spoken words. Do not correct, interpret, or rephrase anything. Preserve the speaker's exact wording including informal speech, pauses as commas, and natural sentence structure. If there is no clear speech, output nothing."
+
+    /// Whether to include active app context (e.g. "The user is currently in Discord")
+    var includeAppContext: Bool = true
+
+    /// Whether to include vocabulary from ~/.flow/vocabulary.json
+    var includeVocabulary: Bool = true
+
+    /// Whether to include user context from ~/.flow/context.md
+    var includeUserContext: Bool = true
+
     enum HotkeyMode: String, Codable, CaseIterable {
         case hold
         case toggle

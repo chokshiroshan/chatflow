@@ -329,6 +329,36 @@ struct SettingsView: View {
                 .padding(.vertical, 12)
             }
 
+            // User context — personal names/terms that survive template switches
+            settingsSection("Your Context") {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextEditor(text: $coordinator.config.userContext)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(FlowColors.textPrimary)
+                        .scrollContentBackground(.hidden)
+                        .background(FlowColors.background)
+                        .frame(height: 60)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                                .fill(FlowColors.background)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                                .stroke(FlowColors.border, lineWidth: 0.5)
+                        )
+                        .onChange(of: coordinator.config.userContext) { _, _ in coordinator.config.save() }
+
+                    HStack {
+                        Text("Names, terms, projects — anything you say often. Survives template switches.")
+                            .font(.system(size: 10))
+                            .foregroundColor(FlowColors.textTertiary)
+                        Spacer()
+                    }
+                }
+                .padding(.vertical, 12)
+            }
+
             // Context toggles
             settingsSection("Context") {
                 settingsToggleRow("Include active app name", isOn: $coordinator.config.includeAppContext)

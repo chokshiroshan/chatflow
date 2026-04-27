@@ -106,10 +106,14 @@ struct FlowConfig: Codable {
     /// Options: "gpt-4o-transcribe", "gpt-4o-transcribe-diarize", "gpt-4o-mini-transcribe", "whisper-1"
     var transcriptionModel: String = "gpt-4o-transcribe"
 
-    /// System instructions — the main prompt controlling transcription behavior.
-    /// This is the single place for all instructions: base behavior + user context + vocabulary.
-    /// Templates in settings UI replace this entirely.
+    /// System instructions — behavior template (templates swap this entirely).
+    /// Controls HOW the model transcribes (verbatim, clean, code-friendly, etc.).
     var systemInstructions: String = "Transcribe exactly what was said. Output only the spoken words. Do not correct, interpret, or rephrase anything. Preserve the speaker's exact wording including informal speech, pauses as commas, and natural sentence structure. If there is no clear speech, output nothing."
+
+    /// User context — personal names, terms, projects, abbreviations.
+    /// Survives template switches. Appended to systemInstructions every session.
+    /// Plain text, e.g. "Names: Roshan, Alice. Projects: ChatFlow, OpenClaw. Apps: Discord, VS Code."
+    var userContext: String = ""
 
     /// Whether to include active app context (e.g. "The user is currently in Discord")
     var includeAppContext: Bool = true

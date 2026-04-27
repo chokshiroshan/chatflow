@@ -68,12 +68,17 @@ final class ContextManager {
     func buildInstructions(config: FlowConfig = FlowConfig.load()) -> String {
         var parts = [config.systemInstructions]
 
+        // Add user context (survives template switches)
+        if !config.userContext.isEmpty {
+            parts.append("User context (use this to correctly transcribe names, terms, and abbreviations): \(config.userContext)")
+        }
+
         // Add vocabulary corrections
         if config.includeVocabulary, let vocabSnippet = VocabularyManager.shared.buildPromptSnippet() {
             parts.append(vocabSnippet)
         }
 
-        // Add active app context (what the user is currently looking at)
+        // Add active app context
         if config.includeAppContext, let app = Self.frontmostApp() {
             parts.append("The user is currently in \(app). Use this to interpret ambiguous words.")
         }

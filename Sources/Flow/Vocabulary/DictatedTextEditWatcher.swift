@@ -54,6 +54,7 @@ final class DictatedTextEditWatcher {
     private var startTime: Date = .distantPast
     private var lastSeenContent: String = ""
     private var firedForCurrentContent = false  // Prevent duplicate fires
+    private var lastExtractionFailure = ""       // Suppress repeated failure logs
 
     private init() {}
 
@@ -79,6 +80,7 @@ final class DictatedTextEditWatcher {
         originalAfterCursor = afterCursor
         lastSeenContent = ""
         firedForCurrentContent = false
+        lastExtractionFailure = ""
         startTime = Date()
         isWatching = true
         onStateChanged?(true)
@@ -138,9 +140,14 @@ final class DictatedTextEditWatcher {
 
         // Extract just the dictated portion from the current content
         guard let editedTranscript = extractDictatedPortion(from: currentContents) else {
-            print("📖 Could not locate dictated portion in current content")
+            let failMsg = "no-match-\(currentContents.count)"
+            if failMsg != lastExtractionFailure {
+                print("📖 Could not locate dictated portion in current content")
+                lastExtractionFailure = failMsg
+            }
             return
         }
+        lastExtractionFailure = ""
 
         print("📖 Extracted dictated portion: '\(editedTranscript)'")
 
@@ -171,6 +178,9 @@ final class DictatedTextEditWatcher {
     }
 
     /// Read the current focused text field contents via AX.
+    ///
+    /// For native text fields, reads directly. For browser/web areas,
+    /// tries to find the actual text input element within the AX tree.
     private func readCurrentTextField() -> String? {
         let systemWide = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?
@@ -183,6 +193,34 @@ final class DictatedTextEditWatcher {
         }
 
         let element = focusedElement as! AXUIElement
+
+        // Check the role — native text inputs have the right role
+        var role: AnyObject?
+        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
+        let roleStr = (role as? String) ?? ""
+
+        let nativeTextRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox", "AXStaticText"]
+        if nativeTextRoles.contains(roleStr) {
+            // Native text input — read value directly
+            return readAXValue(element)
+        }
+
+        // Non-text role (AXWebArea, AXScrollArea, AXGroup, etc.)
+        // This is a browser/Electron app — try to find the actual text input
+        if let textInput = findFocusedTextInput(in: element, maxDepth: 6) {
+            if let value = readAXValue(textInput) {
+                print("📖 Found text input in AX tree (role: \(roleStr))")
+                return value
+            }
+        }
+
+        // Fallback: read the element's value anyway
+        // If it's huge, the extractor will handle it with the browser strategy
+        return readAXValue(element)
+    }
+
+    /// Read the AXValue attribute from an element.
+    private func readAXValue(_ element: AXUIElement) -> String? {
         var value: AnyObject?
         guard AXUIElementCopyAttributeValue(
             element,
@@ -191,9 +229,48 @@ final class DictatedTextEditWatcher {
         ) == .success else {
             return nil
         }
-
         if let str = value as? String { return str }
         if let attr = value as? NSAttributedString { return attr.string }
+        return nil
+    }
+
+    /// Recursively search the AX tree for a focused text input element.
+    /// Limited depth to avoid traversing huge DOM trees.
+    private func findFocusedTextInput(in element: AXUIElement, maxDepth: Int) -> AXUIElement? {
+        guard maxDepth > 0 else { return nil }
+
+        var children: AnyObject?
+        guard AXUIElementCopyAttributeValue(
+            element,
+            kAXChildrenAttribute as CFString,
+            &children
+        ) == .success,
+              let childArray = children as? [AXUIElement] else {
+            return nil
+        }
+
+        let textInputRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox"]
+
+        for child in childArray {
+            var role: AnyObject?
+            AXUIElementCopyAttributeValue(child, kAXRoleAttribute as CFString, &role)
+            let roleStr = (role as? String) ?? ""
+
+            // If it's a text input, check if it's focused
+            if textInputRoles.contains(roleStr) {
+                var focused: AnyObject?
+                if AXUIElementCopyAttributeValue(child, kAXFocusedAttribute as CFString, &focused) == .success,
+                   let isFocused = focused as? Bool, isFocused {
+                    return child
+                }
+            }
+
+            // Recurse into children
+            if let result = findFocusedTextInput(in: child, maxDepth: maxDepth - 1) {
+                return result
+            }
+        }
+
         return nil
     }
 
@@ -206,11 +283,13 @@ final class DictatedTextEditWatcher {
         print("📖 extractDictated: content=\(contentLen) chars, before='\(originalBeforeCursor.debugDescription)' (\(originalBeforeCursor.count)), after='\(originalAfterCursor.debugDescription)' (\(originalAfterCursor.count)), transcript=\(originalTranscript.count) chars")
 
         // Guard against reading a completely wrong field (terminal, huge document)
-        // If content is way longer than expected, we're probably reading the wrong element
         let expectedMaxLen = originalBeforeCursor.count + originalTranscript.count + originalAfterCursor.count + 50
-        if contentLen > expectedMaxLen * 3 {
-            print("📖 extractDictated: content too large (\(contentLen) > \(expectedMaxLen * 3)), likely wrong field")
-            return nil
+        let isLargeContent = contentLen > expectedMaxLen * 3
+
+        if isLargeContent {
+            // Don't give up — try to find our transcript within the large content
+            // (browser pages, Electron apps)
+            return extractFromLargeContent(currentContents)
         }
 
         // Strategy 1: Exact match with before/after anchors
@@ -355,6 +434,87 @@ final class DictatedTextEditWatcher {
         }
 
         return changes
+    }
+
+    // MARK: - Browser/Large Content Extraction
+
+    /// Extract dictated text from large content (browser pages, Electron apps).
+    ///
+    /// When AX returns the entire page content instead of just the text input,
+    /// we search for our transcript within it. Works by finding a unique prefix
+    /// or set of words from the original transcript.
+    private func extractFromLargeContent(_ content: String) -> String? {
+        let transcript = originalTranscript
+        let words = transcript.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+
+        // Strategy A: Find the full transcript in the content
+        // Use first 30 chars as a search key (fast, unique enough)
+        let searchPrefix = String(transcript.prefix(min(30, transcript.count)))
+        if let range = content.range(of: searchPrefix, options: .caseInsensitive) {
+            // Found the start — extract roughly the transcript length
+            let endOffset = min(transcript.count + 30, content.count - content.distance(from: content.startIndex, to: range.lowerBound))
+            let endIdx = content.index(range.lowerBound, offsetBy: endOffset, limitedBy: content.endIndex) ?? content.endIndex
+            let extracted = String(content[range.lowerBound..<endIdx])
+            // Trim to a reasonable sentence boundary
+            let trimmed = extractSentenceBoundary(from: extracted, targetLength: transcript.count)
+            print("📖 Strategy browser-A (prefix search): found in \(content.count) chars → '\(trimmed)'")
+            return trimmed
+        }
+
+        // Strategy B: Search for the last 3 words (handles cases where user edited the beginning)
+        if words.count >= 3 {
+            let lastWords = words.suffix(3).joined(separator: " ")
+            if let range = content.range(of: lastWords, options: .caseInsensitive) {
+                // Extract backwards from this match to find the start
+                let matchEnd = range.upperBound
+                let matchStartOffset = max(0, content.distance(from: content.startIndex, to: range.lowerBound) - transcript.count)
+                let startIdx = content.index(content.startIndex, offsetBy: matchStartOffset)
+                let extracted = String(content[startIdx..<matchEnd])
+                let trimmed = extractSentenceBoundary(from: extracted, targetLength: transcript.count)
+                print("📖 Strategy browser-B (last words search): found → '\(trimmed)'")
+                return trimmed
+            }
+        }
+
+        // Strategy C: Fuzzy match — search for the first word and build from there
+        if let firstWord = words.first, firstWord.count >= 3 {
+            if let range = content.range(of: firstWord, options: .caseInsensitive) {
+                // Read forward from this match
+                let endOffset = min(transcript.count + 30, content.count - content.distance(from: content.startIndex, to: range.lowerBound))
+                let endIdx = content.index(range.lowerBound, offsetBy: endOffset, limitedBy: content.endIndex) ?? content.endIndex
+                let extracted = String(content[range.lowerBound..<endIdx])
+                // Verify it's a reasonable match by checking word overlap
+                let extractedWords = Set(extracted.lowercased().components(separatedBy: .whitespacesAndNewlines))
+                let originalWords = Set(transcript.lowercased().components(separatedBy: .whitespacesAndNewlines))
+                let overlap = extractedWords.intersection(originalWords).count
+                if overlap >= max(2, originalWords.count / 2) {
+                    let trimmed = extractSentenceBoundary(from: extracted, targetLength: transcript.count)
+                    print("📖 Strategy browser-C (first word fuzzy): overlap=\(overlap)/\(originalWords.count) → '\(trimmed)'")
+                    return trimmed
+                }
+            }
+        }
+
+        print("📖 Browser extraction failed — could not find transcript in \(content.count) chars")
+        return nil
+    }
+
+    /// Trim extracted text to a sentence boundary near the target length.
+    private func extractSentenceBoundary(from text: String, targetLength: Int) -> String {
+        guard text.count > targetLength + 20 else { return text }
+        // Find the sentence boundary closest to targetLength
+        let targetIdx = text.index(text.startIndex, offsetBy: targetLength, limitedBy: text.endIndex) ?? text.endIndex
+        let searchRange = text[text.index(text.startIndex, offsetBy: max(0, targetLength - 20), limitedBy: text.endIndex)..<text.index(text.startIndex, offsetBy: min(text.count, targetLength + 20), limitedBy: text.endIndex)]
+        // Look for sentence-ending punctuation
+        let boundaries = [".", "!", "?"]
+        var bestIdx: String.Index = targetIdx
+        for boundary in boundaries {
+            if let found = searchRange.range(of: boundary) {
+                bestIdx = found.upperBound
+                break
+            }
+        }
+        return String(text[text.startIndex..<bestIdx])
     }
 
     // MARK: - Tokenization & Normalization

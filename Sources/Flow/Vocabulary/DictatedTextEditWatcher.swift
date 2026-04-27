@@ -210,18 +210,27 @@ final class DictatedTextEditWatcher {
 
         let element = focusedElement as! AXUIElement
 
-        // Check the role
+        // Check the role and log it
         var role: AnyObject?
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
-        let roleStr = (role as? String) ?? ""
+        let roleStr = (role as? String) ?? "unknown"
+        var subrole: AnyObject?
+        AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole)
+        let subroleStr = (subrole as? String) ?? ""
+        print("📖 AX focused element: role=\(roleStr) subrole=\(subroleStr)")
 
         let nativeTextRoles: Set<String> = ["AXTextArea", "AXTextField", "AXComboBox"]
         if nativeTextRoles.contains(roleStr) {
             // Native text input — read value directly
-            if let value = readAXValue(element) {
+            let value = readAXValue(element)
+            print("📖 Native text input value: \(value?.count ?? 0) chars")
+            // Only cache if it actually contains meaningful content
+            if let v = value, v.count > 2 {
                 cachedInputElement = element
-                return value
+                return v
             }
+            // Empty/nearly empty native field — don't trust it, try browser search
+            print("📖 Native field too short — trying browser search")
         }
 
         // Browser/Electron app — the focused element is the web area, not the text input.
@@ -229,12 +238,15 @@ final class DictatedTextEditWatcher {
         if !elementSearchDone, !originalTranscript.isEmpty {
             elementSearchDone = true
             let searchKey = String(originalTranscript.prefix(min(30, originalTranscript.count)))
+            print("📖 Searching AX tree for element containing '\(searchKey)' (depth 8)...")
             if let found = findElementContainingText(in: element, searchKey: searchKey, maxDepth: 8) {
-                print("📖 Found text input element via content search (parent role: \(roleStr))")
-                cachedInputElement = found
-                return readAXValue(found)
+                if let value = readAXValue(found) {
+                    print("📖 Found text input element via content search: \(value.count) chars")
+                    cachedInputElement = found
+                    return value
+                }
             }
-            print("📖 Could not find text input element in AX tree — using full page fallback")
+            print("📖 Could not find text input element in AX tree")
         }
 
         // Fallback: read the focused element's value
@@ -242,17 +254,28 @@ final class DictatedTextEditWatcher {
     }
 
     /// Read the AXValue attribute from an element.
+    /// Falls back to AXSelectedText for contenteditable divs.
     private func readAXValue(_ element: AXUIElement) -> String? {
         var value: AnyObject?
-        guard AXUIElementCopyAttributeValue(
+        if AXUIElementCopyAttributeValue(
             element,
             kAXValueAttribute as CFString,
             &value
-        ) == .success else {
-            return nil
+        ) == .success {
+            if let str = value as? String { return str }
+            if let attr = value as? NSAttributedString { return attr.string }
         }
-        if let str = value as? String { return str }
-        if let attr = value as? NSAttributedString { return attr.string }
+
+        // Fallback: try AXSelectedText (some contenteditable divs expose text this way)
+        var selectedText: AnyObject?
+        if AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            &selectedText
+        ) == .success, let str = selectedText as? String, !str.isEmpty {
+            return str
+        }
+
         return nil
     }
 

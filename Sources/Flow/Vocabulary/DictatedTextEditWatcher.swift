@@ -504,7 +504,9 @@ final class DictatedTextEditWatcher {
         guard text.count > targetLength + 20 else { return text }
         // Find the sentence boundary closest to targetLength
         let targetIdx = text.index(text.startIndex, offsetBy: targetLength, limitedBy: text.endIndex) ?? text.endIndex
-        let searchRange = text[text.index(text.startIndex, offsetBy: max(0, targetLength - 20), limitedBy: text.endIndex)..<text.index(text.startIndex, offsetBy: min(text.count, targetLength + 20), limitedBy: text.endIndex)]
+        let searchStart = text.index(text.startIndex, offsetBy: max(0, targetLength - 20), limitedBy: text.endIndex) ?? text.startIndex
+        let searchEnd = text.index(text.startIndex, offsetBy: min(text.count, targetLength + 20), limitedBy: text.endIndex) ?? text.endIndex
+        let searchRange = text[searchStart..<searchEnd]
         // Look for sentence-ending punctuation
         let boundaries = [".", "!", "?"]
         var bestIdx: String.Index = targetIdx

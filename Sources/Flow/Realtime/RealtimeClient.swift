@@ -114,6 +114,17 @@ final class RealtimeClient {
             """
         }
 
+        print("📋 ═══ INITIAL SESSION CONFIG ═══")
+        print("📋 model: \(config.realtimeModel)")
+        print("📋 transcription_model: \(config.transcriptionModel)")
+        print("📋 temperature: \(config.temperature)")
+        print("📋 max_tokens: \(config.maxResponseOutputTokens)")
+        print("📋 audio_format: \(config.inputAudioFormat)")
+        print("📋 noise_reduction: \(config.inputAudioNoiseReduction?.description ?? "off")")
+        print("📋 transcription_prompt: \(config.transcriptionPrompt?.description ?? "nil")")
+        print("📋 instructions (first 200): \(instructions.prefix(200))\(instructions.count > 200 ? "..." : "")")
+        print("📋 ═══════════════════════════")
+
         try send(sessionConfig)
     }
 
@@ -167,9 +178,11 @@ final class RealtimeClient {
         """
 
         // Log the full context being sent
-        print("📋 ═══ SESSION UPDATE ═══")
-        print("📋 instructions: \(instructions.prefix(300))\(instructions.count > 300 ? "..." : "")")
-        print("📋 transcription prompt: \(transcriptionPrompt ?? "nil")")
+        print("📋 ═══ SESSION REFRESH ═══")
+        print("📋 transcription_model: \(config.transcriptionModel)")
+        print("📋 temperature: \(config.temperature)")
+        print("📋 transcription_prompt: \(effectivePrompt?.description ?? "nil")")
+        print("📋 instructions (first 300): \(instructions.prefix(300))\(instructions.count > 300 ? "..." : "")")
         print("📋 ═══════════════════")
 
         try? send(event)
@@ -241,7 +254,26 @@ final class RealtimeClient {
             print("  ✅ Session created")
 
         case "session.updated":
-            print("  ✅ Session configured")
+            // Log what the server confirmed — proves our params were accepted
+            if let session = obj["session"] as? [String: Any] {
+                print("  ✅ Session configured (server confirmed):")
+                print("    📋 model: \(session["model"]?.description ?? "?")")
+                if let trans = session["input_audio_transcription"] as? [String: Any] {
+                    print("    📋 transcription_model: \(trans["model"]?.description ?? "?")")
+                    print("    📋 transcription_language: \(trans["language"]?.description ?? "?")")
+                }
+                print("    📋 temperature: \(session["temperature"]?.description ?? "?")")
+                print("    📋 max_tokens: \(session["max_response_output_tokens"]?.description ?? "?")")
+                print("    📋 modalities: \(session["modalities"]?.description ?? "?")")
+                if let nr = session["input_audio_noise_reduction"] as? [String: Any] {
+                    print("    📋 noise_reduction: \(nr["type"]?.description ?? "?")")
+                } else {
+                    print("    📋 noise_reduction: off")
+                }
+                print("    📋 instructions (first 100): \(session["instructions"]?.description?.prefix(100) ?? "?")...")
+            } else {
+                print("  ✅ Session configured")
+            }
 
         // Input audio transcription (gpt-4o-transcribe — primary STT)
         // This is the server-side transcription of what was actually spoken.

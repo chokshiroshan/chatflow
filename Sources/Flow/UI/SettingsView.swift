@@ -242,7 +242,7 @@ struct SettingsView: View {
                                         .lineLimit(1)
                                 }
                                 .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
                                 .background(
                                     RoundedRectangle(cornerRadius: FlowRadii.md)
                                         .fill(selectedTemplateIndex == index ? FlowColors.accent.opacity(0.1) : FlowColors.card)
@@ -365,6 +365,70 @@ struct SettingsView: View {
                     .onChange(of: coordinator.config.includeAppContext) { _, _ in coordinator.config.save() }
                 settingsToggleRow("Include saved vocabulary", isOn: $coordinator.config.includeVocabulary, isLast: true)
                     .onChange(of: coordinator.config.includeVocabulary) { _, _ in coordinator.config.save() }
+            }
+
+            // Advanced parameters
+            settingsSection("Advanced") {
+                // Temperature slider
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Temperature")
+                            .font(FlowTypography.bodyMedium)
+                            .foregroundColor(FlowColors.textPrimary)
+                        Spacer()
+                        Text(String(format: "%.2f", coordinator.config.temperature))
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(FlowColors.accent)
+                    }
+                    Slider(value: $coordinator.config.temperature, in: 0.6...1.2, step: 0.05)
+                        .tint(FlowColors.accent)
+                        .onChange(of: coordinator.config.temperature) { _, _ in coordinator.config.save() }
+                    Text("Lower = more deterministic. 0.8 recommended.")
+                        .font(.system(size: 10))
+                        .foregroundColor(FlowColors.textTertiary)
+                }
+                .padding(.vertical, 8)
+
+                // Max response tokens
+                HStack {
+                    Text("Max Output Tokens")
+                        .font(FlowTypography.bodyMedium)
+                        .foregroundColor(FlowColors.textPrimary)
+                    Spacer()
+                    TextField("", value: $coordinator.config.maxResponseOutputTokens, format: .number)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(FlowColors.textPrimary)
+                        .textFieldStyle(.plain)
+                        .frame(width: 60)
+                        .padding(4)
+                        .background(FlowColors.background)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: FlowRadii.sm)
+                                .stroke(FlowColors.border, lineWidth: 0.5)
+                        )
+                        .onChange(of: coordinator.config.maxResponseOutputTokens) { _, _ in coordinator.config.save() }
+                }
+
+                // Noise reduction
+                settingsPickerRow("Noise Reduction", selection: Binding(
+                    get: { coordinator.config.inputAudioNoiseReduction ?? "off" },
+                    set: { coordinator.config.inputAudioNoiseReduction = ($0 == "off" ? nil : $0); coordinator.config.save() }
+                ), isLast: true) {
+                    Text("Off").tag("off")
+                    Text("Near Field").tag("near_field")
+                    Text("Far Field").tag("far_field")
+                }
+
+                // Audio format
+                settingsPickerRow("Audio Format", selection: $coordinator.config.inputAudioFormat, isLast: true) {
+                    Text("PCM 16-bit").tag("pcm16")
+                    Text("G.711 μ-law").tag("g711_ulaw")
+                    Text("G.711 A-law").tag("g711_alaw")
+                }
+                .onChange(of: coordinator.config.inputAudioFormat) { _, newValue in
+                    coordinator.config.outputAudioFormat = newValue
+                    coordinator.config.save()
+                }
             }
         }
         .onAppear {

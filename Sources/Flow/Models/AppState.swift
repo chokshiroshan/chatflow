@@ -135,6 +135,13 @@ struct FlowConfig: Codable {
     /// Output audio format. Default "pcm16".
     var outputAudioFormat: String = "pcm16"
 
+    /// Sampling temperature for the model, limited to [0.6, 1.2].
+    /// Recommended 0.8 for best performance. Lower = more deterministic.
+    var temperature: Double = 0.8
+
+    /// Noise reduction for input audio. Options: nil (disabled), "near_field", "far_field".
+    var inputAudioNoiseReduction: String? = nil
+
     enum HotkeyMode: String, Codable, CaseIterable {
         case hold
         case toggle

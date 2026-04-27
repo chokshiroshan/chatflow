@@ -92,6 +92,11 @@ final class RealtimeClient {
             }
             transConfig += "}"
 
+            var noiseReductionConfig = ""
+            if let nr = config.inputAudioNoiseReduction {
+                noiseReductionConfig = ",\"input_audio_noise_reduction\":{\"type\":\"\(nr)\"}"
+            }
+
             sessionConfig = """
             {
                 "type": "session.update",
@@ -102,7 +107,8 @@ final class RealtimeClient {
                     "output_audio_format": "\(config.outputAudioFormat)",
                     "input_audio_transcription": \(transConfig),
                     "turn_detection": null,
-                    "max_response_output_tokens": \(config.maxResponseOutputTokens)
+                    "max_response_output_tokens": \(config.maxResponseOutputTokens),
+                    "temperature": \(config.temperature)\(noiseReductionConfig)
                 }
             }
             """
@@ -157,7 +163,7 @@ final class RealtimeClient {
         transConfig += "}"
 
         let event = """
-        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":\(transConfig)}}
+        {"type":"session.update","session":{"instructions":"\(instructions.escapingJSON)","input_audio_transcription":\(transConfig),"temperature":\(config.temperature)}}
         """
 
         // Log the full context being sent

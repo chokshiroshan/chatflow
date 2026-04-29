@@ -96,7 +96,7 @@ final class VolumeManager {
             return
         }
 
-        // Delay unmute by 300ms to let codec stabilize (WisprFlow pattern)
+        // Capture state before clearing
         let deviceID = mutedDeviceID
         let volumeBeforeMute = savedVolume
         isCurrentlyMuted = false
@@ -104,33 +104,32 @@ final class VolumeManager {
         mutedDeviceID = nil
         savedVolume = nil
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self else { return }
-            var restored = false
+        // Unmute immediately — don't delay
+        var restored = false
+        if let deviceID {
+            restored = self.setMuteState(muted: false, deviceID: deviceID)
+        }
+        if !restored, let fallbackID = self.getDefaultOutputDeviceID() {
+            restored = self.setMuteState(muted: false, deviceID: fallbackID)
+        }
 
-            if let deviceID = deviceID {
-                restored = self.setMuteState(muted: false, deviceID: deviceID)
-            }
-
-            if !restored, let fallbackID = self.getDefaultOutputDeviceID() {
-                restored = self.setMuteState(muted: false, deviceID: fallbackID)
-            }
-
-            // Check if volume got zeroed out — restore if we have a saved value
-            if let currentDevice = deviceID ?? self.getDefaultOutputDeviceID() {
-                let currentVol = self.getDeviceVolume(deviceID: currentDevice)
-                if let saved = volumeBeforeMute, saved > 0, (currentVol ?? 0) < 0.01 {
+        // Then restore volume after a short delay (BT devices need this)
+        if let targetDevice = deviceID ?? self.getDefaultOutputDeviceID(),
+           let saved = volumeBeforeMute, saved > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self else { return }
+                let currentVol = self.getDeviceVolume(deviceID: targetDevice)
+                if let current = currentVol, current < 0.01 {
                     print("[VolumeManager] Volume dropped to zero — restoring to \(saved)")
-                    self.setDeviceVolume(volume: saved, deviceID: currentDevice)
-                    restored = true
+                    _ = self.setDeviceVolume(volume: saved, deviceID: targetDevice)
                 }
             }
+        }
 
-            if restored {
-                print("[VolumeManager] Restored audio")
-            } else {
-                print("[VolumeManager] Could not restore audio — user may need to unmute manually")
-            }
+        if restored {
+            print("[VolumeManager] Restored audio")
+        } else {
+            print("[VolumeManager] Could not restore audio — user may need to unmute manually")
         }
     }
 

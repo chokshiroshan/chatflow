@@ -30,6 +30,16 @@ struct FlowApp: App {
         Settings {
             SettingsView(coordinator: coordinator)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    // Move settings window to the active screen (not always main display)
+                    if let window = NSApp.windows.first(where: { $0.title == "ChatFlow Settings" || String(describing: $0.contentView).contains("SettingsView") }) {
+                        let mouseScreen = NSScreen.screenWithMouse ?? NSScreen.main!
+                        window.setFrameOrigin(NSPoint(
+                            x: mouseScreen.visibleFrame.midX - window.frame.width / 2,
+                            y: mouseScreen.visibleFrame.midY + window.frame.height / 2
+                        ))
+                    }
+                }
         }
         .windowStyle(.hiddenTitleBar)
     }

@@ -221,6 +221,18 @@ struct MenuView: View {
             }
             .buttonStyle(.plain)
 
+            // Vocabulary count
+            let vocabCount = VocabularyManager.shared.entries.count
+            if vocabCount > 0 {
+                HStack(spacing: 3) {
+                    Image(systemName: "text.book.closed")
+                        .font(.system(size: 10))
+                    Text("\(vocabCount)")
+                        .font(.system(size: 11))
+                }
+                .foregroundColor(FlowColors.textSecondary)
+            }
+
             Button {
                 coordinator.reopenOnboarding()
             } label: {

@@ -52,16 +52,26 @@ final class ScreenContextExtractor {
 
     /// Capture the display that currently has the mouse cursor.
     private func captureActiveDisplay() -> CGImage? {
-        guard let screen = NSScreen.screenWithMouse ?? NSScreen.main else { return nil }
+        guard let screen = NSScreen.screenWithMouse ?? NSScreen.main else {
+            print("📸 No screen found (screenWithMouse=nil, main=nil)")
+            return nil
+        }
 
         // Get the CGDirectDisplayID from the screen's device description
         guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32 else {
+            print("📸 No display ID found in screen device description")
             return nil
         }
 
         // Capture the full screen (not just visibleFrame — we want menu bar, dock area context too)
         let rect = screen.frame
         let image = CGDisplayCreateImage(displayID, rect: rect)
+
+        if image == nil {
+            // CGDisplayCreateImage returns nil when screen recording permission is denied
+            print("📸 CGDisplayCreateImage returned nil — screen recording permission may be missing or not yet effective")
+            print("📸   displayID=\(displayID), rect=\(rect)")
+        }
 
         return image
     }

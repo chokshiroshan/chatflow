@@ -280,13 +280,25 @@ struct SettingsView: View {
                         }
 
                     HStack {
-                        Text("This is sent to the transcription model on every session. Edit freely.")
+                        Text("Edit freely. Click a template above to reset.")
                             .font(.system(size: 10))
                             .foregroundColor(FlowColors.textTertiary)
                         Spacer()
-                        Text("\(coordinator.config.systemInstructions.count) chars")
-                            .font(.system(size: 10))
-                            .foregroundColor(FlowColors.textTertiary)
+                        Button {
+                            // Reset to Smart default
+                            selectedTemplateIndex = 0
+                            coordinator.config.systemInstructions = instructionTemplates[0].instructions
+                            coordinator.config.save()
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 9))
+                                Text("Reset")
+                                    .font(.system(size: 10))
+                            }
+                            .foregroundColor(FlowColors.accent)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.vertical, 12)
@@ -328,6 +340,55 @@ struct SettingsView: View {
                     .onChange(of: coordinator.config.includeAppContext) { _, _ in coordinator.config.save() }
                 settingsToggleRow("Include saved vocabulary", isOn: $coordinator.config.includeVocabulary, isLast: true)
                     .onChange(of: coordinator.config.includeVocabulary) { _, _ in coordinator.config.save() }
+            }
+
+            // Vocabulary corrections
+            settingsSection("Vocabulary") {
+                VStack(alignment: .leading, spacing: 8) {
+                    let entries = VocabularyManager.shared.entries
+                    if entries.isEmpty {
+                        Text("No corrections yet. Edit a dictated transcript to add one.")
+                            .font(.system(size: 11))
+                            .foregroundColor(FlowColors.textTertiary)
+                            .padding(.vertical, 4)
+                    } else {
+                        ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                            HStack(spacing: 8) {
+                                Text(entry.original)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(FlowColors.textTertiary)
+                                    .strikethrough()
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(FlowColors.textTertiary)
+                                Text(entry.correction)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(FlowColors.textPrimary)
+                                Spacer()
+                                Text("\(entry.hitCount)x")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(FlowColors.textTertiary)
+                                Button {
+                                    VocabularyManager.shared.removeEntry(original: entry.original)
+                                    coordinator.config.save()  // Trigger view refresh
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(FlowColors.textTertiary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                    HStack {
+                        Text("\(entries.count) correction\(entries.count == 1 ? "" : "s") learned from your edits")
+                            .font(.system(size: 10))
+                            .foregroundColor(FlowColors.textTertiary)
+                        Spacer()
+                    }
+                }
+                .padding(.vertical, 12)
             }
 
             // Advanced parameters

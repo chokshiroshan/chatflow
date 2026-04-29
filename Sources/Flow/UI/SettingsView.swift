@@ -179,7 +179,6 @@ struct SettingsView: View {
     ]
 
     @State private var selectedTemplateIndex: Int? = nil
-    @State private var showCustomEditor: Bool = false
 
     private var settingsTranscription: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -203,7 +202,7 @@ struct SettingsView: View {
             // Instruction templates
             settingsSection("Behavior") {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Template grid
+                    // Template grid (2x2)
                     LazyVGrid(columns: [
                         GridItem(.flexible(), spacing: 10),
                         GridItem(.flexible(), spacing: 10)
@@ -215,7 +214,8 @@ struct SettingsView: View {
                                 coordinator.config.save()
                             }) {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    HStack {                                        Image(systemName: template.icon)
+                                    HStack {
+                                        Image(systemName: template.icon)
                                             .font(.system(size: 14))
                                             .foregroundColor(selectedTemplateIndex == index ? FlowColors.accent : FlowColors.textTertiary)
                                         Spacer()
@@ -247,36 +247,6 @@ struct SettingsView: View {
                             }
                             .buttonStyle(.plain)
                         }
-
-                        // Custom option
-                        Button(action: { showCustomEditor = true }) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack {                                    Image(systemName: "pencil.line")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(FlowColors.accentPurple)
-                                    Spacer()
-                                }
-                                Text("Custom")
-                                    .font(FlowTypography.bodyMedium)
-                                    .foregroundColor(FlowColors.textSecondary)
-                                    .lineLimit(1)
-                                Text("Write your own")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(FlowColors.textTertiary)
-                                    .lineLimit(1)
-                            }
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: FlowRadii.md)
-                                    .fill(selectedTemplateIndex == nil && !showCustomEditor ? FlowColors.accentPurple.opacity(0.1) : FlowColors.card)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: FlowRadii.md)
-                                    .stroke(FlowColors.accentPurple.opacity(0.4), lineWidth: 0.5)
-                            )
-                        }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.vertical, 12)

@@ -161,9 +161,25 @@ struct FlowConfig: Codable {
 
     static func load() -> FlowConfig {
         guard let data = try? Data(contentsOf: configPath),
-              let config = try? JSONDecoder().decode(FlowConfig.self, from: data) else {
+              var config = try? JSONDecoder().decode(FlowConfig.self, from: data) else {
             return FlowConfig()
         }
+
+        // Config migration: auto-upgrade old "Overly Eager" or old "Clean & Formal" prompts to Smart
+        let oldPrompts = [
+            "Transcribe and enhance the user's speech. Expand abbreviations",
+            "Transcribe the user's speech and output clean, well-formed text. Fix grammar",
+            "Transcribe exactly what was said. Output only the spoken words. Do not correct"
+        ]
+        for old in oldPrompts {
+            if config.systemInstructions.hasPrefix(old) {
+                config.systemInstructions = FlowConfig().systemInstructions
+                config.save()
+                print("📋 Migrated old prompt to Smart template")
+                break
+            }
+        }
+
         return config
     }
 

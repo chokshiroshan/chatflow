@@ -37,8 +37,9 @@ final class VolumeManager {
 
     /// Mute the default output device before recording starts.
     ///
-    /// Records whether the device was already muted so we don't
-    /// accidentally unmute something the user muted on purpose.
+    /// Uses volume ducking instead of hardware mute — more reliable across
+    /// different audio devices (Mac mini, BT speakers, etc). Saves current
+    /// volume and sets to 0. On restore, sets back to saved volume.
     func muteForRecording() {
         guard shouldMuteAudio else {
             print("[VolumeManager] Skipping mute — disabled in config")
@@ -55,81 +56,53 @@ final class VolumeManager {
             return
         }
 
-        // Save current volume as backup for restore
-        savedVolume = getDeviceVolume(deviceID: deviceID)
-
-        // Check current mute state before touching it
-        let currentlyMuted = isDeviceMuted(deviceID: deviceID)
-        wasPreviouslyMuted = currentlyMuted
-
-        if currentlyMuted {
-            print("[VolumeManager] System already muted — nothing to do")
-            isCurrentlyMuted = false  // We didn't mute it
+        // Save current volume
+        let currentVolume = getDeviceVolume(deviceID: deviceID)
+        guard let volume = currentVolume, volume > 0.01 else {
+            print("[VolumeManager] Volume already zero or unreadable — skipping")
             return
         }
 
-        // Attempt to mute
-        if setMuteState(muted: true, deviceID: deviceID) {
-            mutedDeviceID = deviceID
+        savedVolume = volume
+        mutedDeviceID = deviceID
+
+        // Duck volume to 0 instead of using mute (more reliable)
+        if setDeviceVolume(volume: 0.0, deviceID: deviceID) {
             isCurrentlyMuted = true
-            print("[VolumeManager] Playing dictation start sound and muting")
+            print("[VolumeManager] Ducked audio to zero (was \(volume))")
         } else {
-            print("[VolumeManager] Failed to mute output device — skipping")
+            print("[VolumeManager] Failed to duck volume — skipping")
         }
     }
 
-    /// Restore the previous mute state after recording stops.
-    ///
-    /// Only unmutes if *we* muted it and the user hadn't already muted
-    /// before recording started. Adds a short delay to let the audio
-    /// codec stabilize (AirPods/BT devices need this).
+    /// Restore the previous volume after recording stops.
     func restoreAfterRecording() {
         guard isCurrentlyMuted else {
-            // Not muted by us — nothing to restore
             return
         }
 
-        guard !wasPreviouslyMuted else {
-            print("[VolumeManager] Was previously muted by user — leaving muted")
-            isCurrentlyMuted = false
-            mutedDeviceID = nil
-            return
-        }
-
-        // Capture state before clearing
         let deviceID = mutedDeviceID
-        let volumeBeforeMute = savedVolume
+        let volumeToRestore = savedVolume
         isCurrentlyMuted = false
         wasPreviouslyMuted = false
         mutedDeviceID = nil
         savedVolume = nil
 
-        // Unmute immediately — don't delay
+        // Restore volume immediately
         var restored = false
-        if let deviceID {
-            restored = self.setMuteState(muted: false, deviceID: deviceID)
-        }
-        if !restored, let fallbackID = self.getDefaultOutputDeviceID() {
-            restored = self.setMuteState(muted: false, deviceID: fallbackID)
+        if let deviceID, let volumeToRestore {
+            restored = setDeviceVolume(volume: volumeToRestore, deviceID: deviceID)
         }
 
-        // Then restore volume after a short delay (BT devices need this)
-        if let targetDevice = deviceID ?? self.getDefaultOutputDeviceID(),
-           let saved = volumeBeforeMute, saved > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                guard let self else { return }
-                let currentVol = self.getDeviceVolume(deviceID: targetDevice)
-                if let current = currentVol, current < 0.01 {
-                    print("[VolumeManager] Volume dropped to zero — restoring to \(saved)")
-                    _ = self.setDeviceVolume(volume: saved, deviceID: targetDevice)
-                }
-            }
+        // Fallback: try current default device
+        if !restored, let fallbackID = getDefaultOutputDeviceID(), let vol = volumeToRestore {
+            restored = setDeviceVolume(volume: vol, deviceID: fallbackID)
         }
 
         if restored {
             print("[VolumeManager] Restored audio")
         } else {
-            print("[VolumeManager] Could not restore audio — user may need to unmute manually")
+            print("[VolumeManager] Could not restore audio")
         }
     }
 

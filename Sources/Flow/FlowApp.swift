@@ -31,11 +31,16 @@ struct FlowApp: App {
             SettingsView(coordinator: coordinator)
                 .preferredColorScheme(.dark)
                 .onAppear {
-                    // Native behavior: bring settings window to front and switch to its space
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        if let window = NSApp.windows.first(where: { $0.title.contains("Settings") || $0.title.contains("ChatFlow") }) {
-                            window.makeKeyAndOrderFront(nil)
-                            NSApp.activate(ignoringOtherApps: true)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        // Find the settings window and move it to the active space
+                        for window in NSApp.windows {
+                            if window.isVisible, window.level == .normal, !window.title.isEmpty, window.canBecomeKey {
+                                // This is likely the settings window
+                                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+                                window.makeKeyAndOrderFront(nil)
+                                NSApp.activate(ignoringOtherApps: true)
+                                break
+                            }
                         }
                     }
                 }

@@ -50,32 +50,27 @@ final class ScreenContextExtractor {
 
     // MARK: - Screen Capture
 
-    /// Capture the display that currently has the mouse cursor.
+    /// Capture the screen using CGWindowListCreateImage.
+    /// This only requires Accessibility permission (already granted for hotkey),
+    /// NOT Screen Recording permission. Works out of the box — no manual setup.
     private func captureActiveDisplay() -> CGImage? {
         guard let screen = NSScreen.screenWithMouse ?? NSScreen.main else {
             print("📸 No screen found (screenWithMouse=nil, main=nil)")
             return nil
         }
 
-        // Get the CGDirectDisplayID from the screen's device description
-        guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32 else {
-            print("📸 No display ID found in screen device description")
-            return nil
-        }
-
-        // Capture the full screen
         let rect = screen.frame
-        let image = CGDisplayCreateImage(displayID, rect: rect)
 
-        if image == nil {
-            print("📸 CGDisplayCreateImage returned nil — screen recording permission required")
-            print("📸   displayID=\(displayID), rect=\(rect)")
-            // Open System Settings > Screen Recording so user can grant permission
-            // CGPreflightScreenCaptureAccess/CGRequestScreenCaptureAccess don't reliably open settings
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                NSWorkspace.shared.open(url)
-                print("📸 Opened System Settings > Screen Recording")
-            }
+        // CGWindowListCreateImage captures visible windows without Screen Recording permission.
+        // Only needs Accessibility (which we already require for the hotkey).
+        guard let image = CGWindowListCreateImage(
+            rect,
+            .optionOnScreenOnly,
+            kCGNullWindowID,
+            .bestResolution
+        ) else {
+            print("📸 CGWindowListCreateImage returned nil — Accessibility permission may be missing")
+            return nil
         }
 
         return image

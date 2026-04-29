@@ -30,20 +30,6 @@ struct FlowApp: App {
         Settings {
             SettingsView(coordinator: coordinator)
                 .preferredColorScheme(.dark)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        // Find the settings window and move it to the active space
-                        for window in NSApp.windows {
-                            if window.isVisible, window.level == .normal, !window.title.isEmpty, window.canBecomeKey {
-                                // This is likely the settings window
-                                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                                window.makeKeyAndOrderFront(nil)
-                                NSApp.activate(ignoringOtherApps: true)
-                                break
-                            }
-                        }
-                    }
-                }
         }
         .windowStyle(.hiddenTitleBar)
     }

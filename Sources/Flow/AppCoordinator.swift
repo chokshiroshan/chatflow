@@ -18,7 +18,7 @@ final class AppCoordinator: ObservableObject {
     private let floatingPill = FloatingPillWindowController()
     private let vocabPopup = VocabSuggestionWindowController()
     private let sounds = SoundManager.shared
-    private let volumeManager = VolumeManager.shared
+    private let sounds = SoundManager()
     private let permissions = PermissionsManager.shared
     private var cancellables = Set<AnyCancellable>()
     private var sessionStartTime: Date?
@@ -42,7 +42,6 @@ final class AppCoordinator: ObservableObject {
     // MARK: - Startup
 
     private func checkPermissionsAndAuth() {
-        volumeManager.shouldMuteAudio = config.shouldMuteAudio
         // Headless/builder mode: skip everything, go straight to idle
         // Detected via FLOW_HEADLESS env var OR running from a CloseLoop job worktree
         let env = ProcessInfo.processInfo.environment
@@ -174,7 +173,6 @@ final class AppCoordinator: ObservableObject {
         switch newState {
         case .recording:
             sessionStartTime = Date()
-            volumeManager.muteForRecording()
             if config.soundEffectsEnabled { sounds.play(.startRecording) }
         case .processing, .injecting:
             if let start = sessionStartTime {
@@ -182,7 +180,6 @@ final class AppCoordinator: ObservableObject {
                 usageDisplay = UsageTracker.shared.stats.monthMinutesDisplay
                 sessionStartTime = nil
             }
-            volumeManager.restoreAfterRecording()
             if config.soundEffectsEnabled { sounds.play(.stopRecording) }
         case .idle:
             if previousState == .injecting {
@@ -190,7 +187,6 @@ final class AppCoordinator: ObservableObject {
             }
         case .error:
             sessionStartTime = nil
-            volumeManager.restoreAfterRecording()
             if config.soundEffectsEnabled { sounds.play(.error) }
         default: break
         }

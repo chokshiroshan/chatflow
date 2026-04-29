@@ -101,11 +101,6 @@ struct SettingsView: View {
                     .onChange(of: autoStartEnabled) { _, _ in try? AutoStartManager.shared.toggle() }
                 settingsToggleRow("Sound effects", isOn: $coordinator.config.soundEffectsEnabled)
                     .onChange(of: coordinator.config.soundEffectsEnabled) { _, _ in coordinator.config.save() }
-                settingsToggleRow("Mute system audio while recording", isOn: $coordinator.config.shouldMuteAudio)
-                    .onChange(of: coordinator.config.shouldMuteAudio) { _, newValue in
-                        coordinator.config.save()
-                        VolumeManager.shared.shouldMuteAudio = newValue
-                    }
                 settingsToggleRow("Auto-paste after transcription", isOn: $coordinator.config.autoPasteEnabled, isLast: true)
                     .onChange(of: coordinator.config.autoPasteEnabled) { _, _ in coordinator.config.save() }
             }

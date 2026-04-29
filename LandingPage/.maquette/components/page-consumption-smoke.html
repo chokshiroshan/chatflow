@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maquette Page Consumption Smoke</title>
+  <link rel="stylesheet" href="./css/components.css">
+  <style>
+    body { margin: 0; padding: 24px; font-family: system-ui, sans-serif; }
+    main { display: grid; gap: 24px; max-width: 1120px; margin: 0 auto; }
+    section { display: grid; gap: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section data-component="Button">
+  <h2>Button</h2>
+  <a class="btn btn--primary btn--lg" href="#">clone it</a>
+</section>
+<section data-component="Proof Label Primitives">
+  <h2>Proof Label Primitives</h2>
+  <span class="chip chip--signal"><span class="status-dot"></span>token valid</span>
+</section>
+<section data-component="ResponsiveNav">
+  <h2>ResponsiveNav</h2>
+  <nav class="site-nav" data-open="false" aria-label="Primary">...</nav>
+</section>
+<section data-component="Layout Shell">
+  <h2>Layout Shell</h2>
+  <main class="layout-shell"><div class="layout-grid">...</div></main>
+</section>
+<section data-component="ProofPanel">
+  <h2>ProofPanel</h2>
+  <article class="proof-panel proof-panel--signal">...</article>
+</section>
+<section data-component="FlowCard">
+  <h2>FlowCard</h2>
+  <article class="flow-card"><span class="flow-card__step">01 OAuth</span>...</article>
+</section>
+<section data-component="Landing Utility Composites">
+  <h2>Landing Utility Composites</h2>
+  <aside class="disclaimer-card">Independent project...</aside>
+</section>
+  </main>
+  <script src="./js/components.js"></script>
+</body>
+</html>

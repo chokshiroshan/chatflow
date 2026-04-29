@@ -28,19 +28,69 @@ struct StressTestConfig: Sendable {
     let model: String = "gpt-realtime"
     let language: String = "en"
     /// Total test duration in seconds (0 = unlimited until failure)
-    let maxDurationSeconds: Double = 0
+    var maxDurationSeconds: Double = 0
     /// How long each "utterance" lasts (seconds of audio per commit)
-    let utteranceDurationSeconds: Double = 8.0
+    var utteranceDurationSeconds: Double = 8.0
     /// Gap between utterances (seconds)
-    let interUtteranceGap: Double = 2.0
+    var interUtteranceGap: Double = 2.0
     /// Generate tone bursts instead of silence (better for testing transcription)
-    let useToneBursts: Bool = true
+    var useToneBursts: Bool = true
+    /// Tier label ("free", "plus", or "" for untagged) — used in output filenames
+    var tier: String = ""
+    /// Worker index (0 = solo run; >0 disambiguates parallel processes)
+    var workerIndex: Int = 0
     /// Log file path
     let logPath: String
 
-    static let defaultLogPath = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".flow/stress-test-\(ISO8601DateFormatter().string(from: Date()).prefix(19)).log")
-        .path
+    /// Build a tier+worker-aware suffix, e.g. "-free", "-plus-w2", or ""
+    var fileSuffix: String {
+        var s = ""
+        if !tier.isEmpty { s += "-\(tier)" }
+        if workerIndex > 0 { s += "-w\(workerIndex)" }
+        return s
+    }
+
+    /// Output paths
+    var resultsPath: String {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".flow/stress-test-results\(fileSuffix).json")
+            .path
+    }
+
+    static func defaultLogPath(suffix: String = "") -> String {
+        let ts = ISO8601DateFormatter().string(from: Date()).prefix(19)
+            .replacingOccurrences(of: ":", with: "-")
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".flow/stress-test\(suffix)-\(ts).log")
+            .path
+    }
+
+    /// Build a config from environment variables (used by both swift test + standalone runner).
+    static func fromEnv(token: String) -> StressTestConfig {
+        let env = ProcessInfo.processInfo.environment
+        let tier = env["FLOW_STRESS_TIER"] ?? ""
+        let worker = Int(env["FLOW_STRESS_WORKER"] ?? "0") ?? 0
+        let aggressive = (env["FLOW_STRESS_AGGRESSIVE"] ?? "0") == "1"
+        let duration = Double(env["FLOW_STRESS_DURATION"] ?? "0") ?? 0
+        var cfg = StressTestConfig(
+            accessToken: token,
+            logPath: defaultLogPath(suffix: {
+                var s = ""
+                if !tier.isEmpty { s += "-\(tier)" }
+                if worker > 0 { s += "-w\(worker)" }
+                return s
+            }())
+        )
+        cfg.tier = tier
+        cfg.workerIndex = worker
+        cfg.maxDurationSeconds = duration
+        if aggressive {
+            // Hammer mode: longer utterances, no gap.
+            cfg.utteranceDurationSeconds = 15.0
+            cfg.interUtteranceGap = 0.0
+        }
+        return cfg
+    }
 }
 
 // MARK: - Rate Limit Event
@@ -174,12 +224,13 @@ final class StressTestClient {
         self.results = StressTestResults(startedAt: Date())
 
         // Open log file
+        let logURL = URL(fileURLWithPath: config.logPath)
         try? FileManager.default.createDirectory(
-            at: config.logPath.deletingLastPathComponent,
+            at: logURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
         FileManager.default.createFile(atPath: config.logPath, contents: nil)
-        self.logFile = try? FileHandle(forWritingTo: URL(fileURLWithPath: config.logPath))
+        self.logFile = try? FileHandle(forWritingTo: logURL)
     }
 
     // MARK: - Logging
@@ -530,8 +581,7 @@ final class StressTestClient {
     }
 
     private func saveResults() {
-        let resultsDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".flow")
-        let resultsURL = resultsDir.appendingPathComponent("stress-test-results.json")
+        let resultsURL = URL(fileURLWithPath: config.resultsPath)
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -564,18 +614,13 @@ final class StressTestClient {
 struct RealtimeStressTest {
 
     @Test("Run stress test with 60s duration")
+    @MainActor
     func testSixtySecondBlast() async throws {
         // Get token from keychain (must be signed in via Flow app)
         let token = try getAccessToken()
 
-        let config = StressTestConfig(
-            accessToken: token,
-            maxDurationSeconds: 60,
-            utteranceDurationSeconds: 8.0,
-            interUtteranceGap: 2.0,
-            useToneBursts: true,
-            logPath: StressTestConfig.defaultLogPath
-        )
+        var config = StressTestConfig.fromEnv(token: token)
+        if config.maxDurationSeconds == 0 { config.maxDurationSeconds = 60 }
 
         let client = StressTestClient(config: config)
         let results = await client.runStressTest()
@@ -589,27 +634,34 @@ struct RealtimeStressTest {
     }
 
     @Test("Run stress test until failure (unlimited)")
+    @MainActor
     func testUntilFailure() async throws {
         let token = try getAccessToken()
+        let env = ProcessInfo.processInfo.environment
+        let parallel = max(1, Int(env["FLOW_STRESS_PARALLEL"] ?? "1") ?? 1)
 
-        let config = StressTestConfig(
-            accessToken: token,
-            maxDurationSeconds: 0, // unlimited
-            utteranceDurationSeconds: 8.0,
-            interUtteranceGap: 2.0,
-            useToneBursts: true,
-            logPath: StressTestConfig.defaultLogPath
-        )
+        print("🚀 Spawning \(parallel) concurrent worker(s)")
 
-        let client = StressTestClient(config: config)
-        let results = await client.runStressTest()
+        await withTaskGroup(of: (Int, StressTestResults).self) { group in
+            for i in 1...parallel {
+                group.addTask { @MainActor in
+                    var cfg = StressTestConfig.fromEnv(token: token)
+                    // Override worker index when parallel > 1 so each writes a unique file
+                    if parallel > 1 { cfg.workerIndex = i }
+                    let client = StressTestClient(config: cfg)
+                    let results = await client.runStressTest()
+                    return (i, results)
+                }
+            }
 
-        print(results.summary)
-
-        // Print rate limit progression
-        print("\n📊 Rate Limit Progression:")
-        for (i, snap) in results.rateLimitSnapshots.enumerated() {
-            print("  [\(i)] remaining_tokens=\(snap.remainingTokens ?? -1) total_tokens=\(snap.totalTokens ?? -1) remaining_requests=\(snap.remainingRequests ?? -1)")
+            for await (workerIdx, results) in group {
+                print("\n━━━ Worker #\(workerIdx) summary ━━━")
+                print(results.summary)
+                print("📊 Rate Limit Progression (worker #\(workerIdx)):")
+                for (i, snap) in results.rateLimitSnapshots.enumerated() {
+                    print("  [\(i)] remaining_tokens=\(snap.remainingTokens ?? -1) total_tokens=\(snap.totalTokens ?? -1) remaining_requests=\(snap.remainingRequests ?? -1)")
+                }
+            }
         }
     }
 
@@ -668,9 +720,10 @@ struct RealtimeStressTest {
     }
 }
 
-// MARK: - Standalone Runner (swift run RealtimeStressTest)
+// MARK: - Standalone Runner (legacy — kept for reference; @main removed because it
+// collides with the test runner's auto-generated main symbol when this file lives
+// inside a testTarget. To run: use `swift test --filter RealtimeStressTest/testUntilFailure`.)
 
-@main
 struct StressTestRunner {
     static func main() async {
         print("🧪 ChatFlow Realtime API Stress Test")
@@ -685,29 +738,27 @@ struct StressTestRunner {
             Foundation.exit(1)
         }
 
-        let config = StressTestConfig(
-            accessToken: token,
-            maxDurationSeconds: 0, // run until failure
-            utteranceDurationSeconds: 8.0,
-            interUtteranceGap: 2.0,
-            useToneBursts: true,
-            logPath: StressTestConfig.defaultLogPath
-        )
+        let config = StressTestConfig.fromEnv(token: token)
 
         print("📝 Log file: \(config.logPath)")
-        print("⏱️  Running until failure (Ctrl+C to stop)...\n")
+        print("🏷️  Tier: \(config.tier.isEmpty ? "(untagged)" : config.tier), worker: \(config.workerIndex)")
+        print("🔥 Aggressive: utterance=\(config.utteranceDurationSeconds)s gap=\(config.interUtteranceGap)s")
+        if config.maxDurationSeconds > 0 {
+            print("⏱️  Running for \(Int(config.maxDurationSeconds))s...\n")
+        } else {
+            print("⏱️  Running until failure (Ctrl+C to stop)...\n")
+        }
 
         let client = StressTestClient(config: config)
         let results = await client.runStressTest()
 
         print(results.summary)
 
-        // Save results
+        // Save tier-tagged results
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
-        let resultsURL = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".flow/stress-test-results.json")
+        let resultsURL = URL(fileURLWithPath: config.resultsPath)
         if let data = try? encoder.encode(results) {
             try? data.write(to: resultsURL)
             print("💾 Full results saved to \(resultsURL.path)")

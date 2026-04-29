@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "system_name": "ChatFlow Third-Party AI Surface Components",
+    "version": "0.1.0-navigation-layout",
+    "based_on_design_system_version": "0.2.0",
+    "status": "draft",
+    "notes": "Navigation and layout batch snapshot."
+  },
+  "tech": {
+    "html_strategy": "Static semantic nav and layout shell classes.",
+    "css_strategy": "Tokenized CSS with responsive nav media query.",
+    "js_strategy": "Minimal toggle syncs data-open and aria-expanded."
+  },
+  "assets": {
+    "tokens_css_path": ".maquette/brand/tokens.css",
+    "component_reference_html_path": ".maquette/components/navigation-layout.replica.html",
+    "component_sheet_path": ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png",
+    "component_contract_paths": [
+      ".maquette/components/contracts/navigation-layout.contract.css"
+    ]
+  },
+  "components": [
+    {
+      "name": "ResponsiveNav",
+      "source_required_component": "ResponsiveNav",
+      "files": [
+        ".maquette/components/navigation-layout.replica.html",
+        ".maquette/components/css/navigation-layout.components.css",
+        ".maquette/components/js/navigation-layout.components.js"
+      ],
+      "selectors": [
+        ".site-nav",
+        ".site-nav__inner",
+        ".site-nav__brand",
+        ".site-nav__mark",
+        ".site-nav__links",
+        ".site-nav__link",
+        ".site-nav__actions",
+        ".site-nav__toggle",
+        ".site-nav__toggle-icon",
+        ".site-nav__panel",
+        ".site-nav__panel-link",
+        ".site-nav[data-open=\"true\"] .site-nav__panel",
+        ".site-nav__link[aria-current=\"page\"]",
+        ".site-nav__link:hover",
+        ".site-nav__link:focus-visible",
+        ".site-nav__toggle:focus-visible"
+      ],
+      "implemented_variants": [
+        "desktop-inline",
+        "tablet-collapsed",
+        "mobile-collapsed",
+        "mobile-expanded",
+        "active",
+        "focus-visible"
+      ],
+      "implemented_sizes": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "open",
+        "selected"
+      ],
+      "api": {
+        "slots": [
+          "brand text",
+          "unofficial note",
+          "desktop links",
+          "desktop actions",
+          "mobile panel links"
+        ],
+        "required_attributes": [
+          "aria-label on nav",
+          "aria-controls on toggle",
+          "aria-expanded on toggle",
+          "data-open on .site-nav"
+        ],
+        "js_behavior": "Toggle button switches .site-nav data-open and aria-expanded; panel links close the drawer.",
+        "usage_examples": [
+          "<nav class=\"site-nav\" data-open=\"false\" aria-label=\"Primary\">...</nav>"
+        ]
+      },
+      "accessibility_notes": [
+        "Mobile toggle has a 44px hit target.",
+        "Opened panel is fixed and scrollable.",
+        "No official OpenAI mark or impersonating lockup is used."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png"
+        ],
+        "similarity_notes": "Implementation follows contract and corrects image-gen token spelling.",
+        "qa_notes": [
+          "Screenshot QA pending."
+        ]
+      },
+      "status": "reviewed"
+    },
+    {
+      "name": "Layout Shell",
+      "source_required_component": "ResponsiveNav",
+      "files": [
+        ".maquette/components/navigation-layout.replica.html",
+        ".maquette/components/css/navigation-layout.components.css"
+      ],
+      "selectors": [
+        ".layout-shell",
+        ".layout-grid"
+      ],
+      "implemented_variants": [
+        "standard",
+        "responsive single-column"
+      ],
+      "implemented_sizes": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "implemented_states": [
+        "default"
+      ],
+      "api": {
+        "slots": [
+          "page content",
+          "grid children"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<main class=\"layout-shell\"><div class=\"layout-grid\">...</div></main>"
+        ]
+      },
+      "accessibility_notes": [
+        "Layout classes do not alter semantics."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png"
+        ],
+        "similarity_notes": "Uses approved max width, gutters, and responsive collapse.",
+        "qa_notes": [
+          "Screenshot QA pending."
+        ]
+      },
+      "status": "reviewed"
+    }
+  ]
+}

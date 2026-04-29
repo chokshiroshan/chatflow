@@ -1,0 +1,416 @@
+{
+  "target": ".maquette/components/cards-composites.replica.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/cards-composites.replica.html",
+  "startedAt": "2026-04-29T09:32:36.874Z",
+  "finishedAt": "2026-04-29T09:32:40.309Z",
+  "allowDocumentOverflow": false,
+  "allowNavFailures": false,
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 1400
+      },
+      "screenshotPath": ".maquette/components/cards-composites-responsive/responsive-390.png",
+      "windowInnerWidth": 390,
+      "documentElementScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > article.proof-panel.proof-panel--signal > div.proof-panel__body:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 314,
+          "scrollWidth": 314,
+          "rectWidth": 316,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > aside.proof-panel.proof-panel--inverse > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 314,
+          "scrollWidth": 314,
+          "rectWidth": 316,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 253,
+          "scrollWidth": 253,
+          "rectWidth": 253.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.09,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.06,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 0,
+          "visibleNavControlCount": 0,
+          "hasPrimaryNav": false,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1400
+      },
+      "screenshotPath": ".maquette/components/cards-composites-responsive/responsive-768.png",
+      "windowInnerWidth": 768,
+      "documentElementScrollWidth": 768,
+      "bodyScrollWidth": 768,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > article.proof-panel.proof-panel--signal > div.proof-panel__body:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 692,
+          "scrollWidth": 692,
+          "rectWidth": 694,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > aside.proof-panel.proof-panel--inverse > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 692,
+          "scrollWidth": 692,
+          "rectWidth": 694,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 0,
+          "visibleNavControlCount": 0,
+          "hasPrimaryNav": false,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 1400
+      },
+      "screenshotPath": ".maquette/components/cards-composites-responsive/responsive-1024.png",
+      "windowInnerWidth": 1024,
+      "documentElementScrollWidth": 1024,
+      "bodyScrollWidth": 1024,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > article.proof-panel.proof-panel--signal > div.proof-panel__body:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 486,
+          "scrollWidth": 486,
+          "rectWidth": 488.19,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > aside.proof-panel.proof-panel--inverse > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "rectWidth": 391.81,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 0,
+          "visibleNavControlCount": 0,
+          "hasPrimaryNav": false,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 1400
+      },
+      "screenshotPath": ".maquette/components/cards-composites-responsive/responsive-1280.png",
+      "windowInnerWidth": 1280,
+      "documentElementScrollWidth": 1280,
+      "bodyScrollWidth": 1280,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > article.proof-panel.proof-panel--signal > div.proof-panel__body:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 594,
+          "scrollWidth": 594,
+          "rectWidth": 596,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > aside.proof-panel.proof-panel--inverse > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 478,
+          "scrollWidth": 478,
+          "rectWidth": 480,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": false,
+        "before": {
+          "compactExpected": false,
+          "navRootCount": 0,
+          "visibleNavControlCount": 0,
+          "hasPrimaryNav": false,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1400
+      },
+      "screenshotPath": ".maquette/components/cards-composites-responsive/responsive-1440.png",
+      "windowInnerWidth": 1440,
+      "documentElementScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > article.proof-panel.proof-panel--signal > div.proof-panel__body:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 594,
+          "scrollWidth": 594,
+          "rectWidth": 596,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(2) > aside.proof-panel.proof-panel--inverse > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 478,
+          "scrollWidth": 478,
+          "rectWidth": 480,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.cards-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": false,
+        "before": {
+          "compactExpected": false,
+          "navRootCount": 0,
+          "visibleNavControlCount": 0,
+          "hasPrimaryNav": false,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    }
+  ],
+  "pass": true
+}

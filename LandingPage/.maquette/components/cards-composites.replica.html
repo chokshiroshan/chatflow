@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cards Composites Contract Replica</title>
+    <link rel="stylesheet" href="../brand/tokens.css">
+    <link rel="stylesheet" href="css/core-primitives.components.css">
+    <link rel="stylesheet" href="css/cards-composites.components.css">
+  </head>
+  <body class="cards-proof">
+    <main class="cards-proof__wrap">
+      <header class="cards-proof__header">
+        <span class="chip chip--caution">unofficial / built outside the building</span>
+        <h1>Proof beats pitch.</h1>
+        <p>
+          These components carry the interesting part: OAuth breadcrumbs, a token trace,
+          realtime packets, and a small CYA note with its shoes still on.
+        </p>
+      </header>
+
+      <section class="cards-proof__grid" aria-label="OAuth flow cards">
+        <article class="flow-card" tabindex="0">
+          <span class="flow-card__step">01 OAuth</span>
+          <h2 class="flow-card__title">Follow the login path.</h2>
+          <div class="flow-card__body">
+            <p>We ride the authorization flow the way the client expects.</p>
+          </div>
+          <div class="flow-card__meta">
+            <span>/oauth/authorize</span>
+            <span>302</span>
+          </div>
+        </article>
+        <article class="flow-card" tabindex="0">
+          <span class="flow-card__step">02 Token</span>
+          <h2 class="flow-card__title">Exchange the code.</h2>
+          <div class="flow-card__body">
+            <p>The callback gives us enough rope to obtain a usable access token.</p>
+          </div>
+          <div class="flow-card__meta">
+            <span>access_token</span>
+            <span>200 OK</span>
+          </div>
+        </article>
+        <article class="flow-card flow-card--caution" tabindex="0">
+          <span class="flow-card__step">03 Realtime</span>
+          <h2 class="flow-card__title">Pipe it into inference.</h2>
+          <div class="flow-card__body">
+            <p>Now the demo talks to realtime Codex inference. Tiny miracle, visible seams.</p>
+          </div>
+          <div class="flow-card__meta">
+            <span>wss://...</span>
+            <span>live</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="cards-proof__panels" aria-label="Proof panels">
+        <article class="proof-panel proof-panel--signal">
+          <div class="proof-panel__header">
+            <h2 class="proof-panel__title">Codex token trace</h2>
+            <span class="proof-panel__meta">12:34:56.781</span>
+          </div>
+          <div class="proof-panel__body">
+            <pre class="proof-panel__code">POST /oauth/token
+grant_type=authorization_code
+code=sp1x...redacted
+
+200 OK
+access_token=ya29.a0...
+expires_in=3599</pre>
+            <div class="proof-panel__metric">
+              <span><span class="status-dot"></span> token valid</span>
+              <span>scope: profile email</span>
+            </div>
+          </div>
+        </article>
+
+        <aside class="proof-panel proof-panel--inverse">
+          <div class="proof-panel__header">
+            <h2 class="proof-panel__title">Realtime stream</h2>
+            <span class="proof-panel__meta">97%</span>
+          </div>
+          <div class="waveform" aria-hidden="true">
+            <span class="waveform__bar" style="height: 22px"></span>
+            <span class="waveform__bar" style="height: 38px"></span>
+            <span class="waveform__bar" style="height: 28px"></span>
+            <span class="waveform__bar" style="height: 46px"></span>
+            <span class="waveform__bar" style="height: 24px"></span>
+            <span class="waveform__bar" style="height: 34px"></span>
+          </div>
+          <pre class="proof-panel__code">{"type":"input_text","text":"ping"}
+{"type":"delta","text":"pong"}
+{"type":"done"}</pre>
+        </aside>
+      </section>
+
+      <section class="cards-proof__panels" aria-label="Quickstart and disclaimer">
+        <article class="proof-panel">
+          <div class="proof-panel__header">
+            <h2 class="proof-panel__title">Quick start</h2>
+            <span class="proof-panel__meta">three-ish commands</span>
+          </div>
+          <div class="quickstart">
+            <div class="quickstart__command"><code>git clone github.com/you/chatflow</code><span>01</span></div>
+            <div class="quickstart__command"><code>pnpm install</code><span>02</span></div>
+            <div class="quickstart__command"><code>pnpm dev</code><span>03</span></div>
+          </div>
+        </article>
+        <aside class="disclaimer-card">
+          This is an independent project, unaffiliated with any model provider. It is a learning,
+          building, and shipping artifact. If the auth path changes, the duct tape goes back on the desk.
+        </aside>
+      </section>
+
+      <footer class="footer-cta">
+        <div>
+          <span class="kicker">ship small, leave receipts</span>
+          <p>Star it if weird auth paths make your morning coffee taste better.</p>
+        </div>
+        <div class="footer-cta__actions">
+          <a class="btn btn--primary btn--md" href="#">star it</a>
+          <a class="btn btn--secondary btn--md" href="#">read the code</a>
+        </div>
+      </footer>
+    </main>
+    <script src="js/cards-composites.components.js"></script>
+  </body>
+</html>

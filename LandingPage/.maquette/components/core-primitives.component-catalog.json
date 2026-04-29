@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "system_name": "ChatFlow Third-Party AI Surface Components",
+    "version": "0.1.0-core-primitives",
+    "based_on_design_system_version": "0.2.0",
+    "status": "draft",
+    "notes": "Core primitives batch snapshot."
+  },
+  "tech": {
+    "html_strategy": "Static semantic HTML with reusable classes and tokenized CSS.",
+    "css_strategy": "Component CSS consumes .maquette/brand/tokens.css variables.",
+    "js_strategy": "No behavior needed for this batch."
+  },
+  "assets": {
+    "tokens_css_path": ".maquette/brand/tokens.css",
+    "component_reference_html_path": ".maquette/components/core-primitives.replica.html",
+    "component_sheet_path": ".maquette/components/component-sheet-core-primitives-css-contract-v1.png",
+    "component_contract_paths": [
+      ".maquette/components/contracts/core-primitives.contract.css"
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "source_required_component": "Button",
+      "files": [
+        ".maquette/components/core-primitives.replica.html",
+        ".maquette/components/css/core-primitives.components.css"
+      ],
+      "selectors": [
+        ".btn",
+        ".btn__icon",
+        ".btn--primary",
+        ".btn--secondary",
+        ".btn--ghost",
+        ".btn--inverse",
+        ".btn--sm",
+        ".btn--md",
+        ".btn--lg",
+        ".btn[disabled]",
+        ".btn:focus-visible",
+        ".btn:hover",
+        ".btn:active"
+      ],
+      "implemented_variants": [
+        "primary",
+        "secondary",
+        "ghost",
+        "inverse"
+      ],
+      "implemented_sizes": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "active",
+        "disabled"
+      ],
+      "api": {
+        "slots": [
+          "label",
+          "optional .btn__icon"
+        ],
+        "required_attributes": [
+          "href for links or type for buttons"
+        ],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<a class=\"btn btn--primary btn--lg\" href=\"#\">clone it</a>"
+        ]
+      },
+      "accessibility_notes": [
+        "Use real links for navigation and real buttons for actions.",
+        "Focus-visible state has a high-contrast signal ring."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-core-primitives-css-contract-v1.png"
+        ],
+        "similarity_notes": "Tokenized implementation follows the poster contract with normalized brand tokens.",
+        "qa_notes": [
+          "Screenshot QA pending final gallery capture."
+        ]
+      },
+      "status": "reviewed"
+    },
+    {
+      "name": "Proof Label Primitives",
+      "source_required_component": "Button",
+      "files": [
+        ".maquette/components/core-primitives.replica.html",
+        ".maquette/components/css/core-primitives.components.css"
+      ],
+      "selectors": [
+        ".kicker",
+        ".chip",
+        ".chip--signal",
+        ".chip--caution",
+        ".chip--muted",
+        ".status-dot",
+        ".inline-link",
+        ".inline-link:hover",
+        ".inline-link:focus-visible"
+      ],
+      "implemented_variants": [
+        "kicker",
+        "signal chip",
+        "caution chip",
+        "muted chip",
+        "status dot",
+        "inline link"
+      ],
+      "implemented_sizes": [
+        "compact"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-visible"
+      ],
+      "api": {
+        "slots": [
+          "label",
+          "optional .status-dot"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<span class=\"chip chip--signal\"><span class=\"status-dot\"></span>token valid</span>"
+        ]
+      },
+      "accessibility_notes": [
+        "Do not rely on the dot alone for status; pair it with text."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-core-primitives-css-contract-v1.png"
+        ],
+        "similarity_notes": "Signal, caution, and muted chips are normalized to approved v2 color tokens.",
+        "qa_notes": [
+          "Screenshot QA pending final gallery capture."
+        ]
+      },
+      "status": "reviewed"
+    }
+  ]
+}

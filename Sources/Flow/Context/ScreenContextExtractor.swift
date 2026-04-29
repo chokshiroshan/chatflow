@@ -3,12 +3,12 @@ import CoreGraphics
 import ImageIO
 import AppKit
 
-/// Captures a screenshot and extracts transcription-relevant context via GPT-4o-mini vision.
+/// Captures a screenshot and extracts transcription-relevant context via vision.
 ///
 /// When the user triggers "enhanced dictation" (Ctrl+Shift+Space instead of Ctrl+Space):
 /// 1. Capture the active display (~2ms)
 /// 2. Downscale to 1280px wide for fast upload
-/// 3. Send to GPT-4o-mini vision API with a context extraction prompt
+/// 3. Upload the image to ChatGPT's file service and ask vision for context
 /// 4. Merge the extracted context into the Realtime API session instructions
 ///
 /// The vision call takes ~1-2s and runs in the background. Regular transcription
@@ -17,6 +17,15 @@ final class ScreenContextExtractor {
     static let shared = ScreenContextExtractor()
 
     private let maxImageWidth: CGFloat = 1280
+    private let visionModel = "auto"
+
+    private struct EncodedScreenshot {
+        let data: Data
+        let width: Int
+        let height: Int
+
+        var byteCount: Int { data.count }
+    }
 
     private init() {}
 
@@ -30,8 +39,7 @@ final class ScreenContextExtractor {
             return nil
         }
 
-        let base64 = downscaleAndEncode(image)
-        guard !base64.isEmpty else {
+        guard let screenshot = downscaleAndEncode(image) else {
             print("📸 Image encoding failed — skipping enhanced context")
             return nil
         }
@@ -39,7 +47,7 @@ final class ScreenContextExtractor {
         print("📸 Screenshot captured (\(image.width)x\(image.height)) → extracting context...")
 
         do {
-            let context = try await callVisionAPI(base64: base64, token: token)
+            let context = try await callVisionAPI(screenshot: screenshot, token: token)
             if let context, !context.isEmpty {
                 print("📸 Screen context: \(context.prefix(200))...")
                 return context
@@ -73,8 +81,8 @@ final class ScreenContextExtractor {
 
     // MARK: - Image Processing
 
-    /// Downscale the image and convert to base64 PNG.
-    private func downscaleAndEncode(_ image: CGImage) -> String {
+    /// Downscale the image and convert to PNG bytes + base64.
+    private func downscaleAndEncode(_ image: CGImage) -> EncodedScreenshot? {
         let srcWidth = CGFloat(image.width)
         let srcHeight = CGFloat(image.height)
 
@@ -91,32 +99,34 @@ final class ScreenContextExtractor {
             bytesPerRow: 0,
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return "" }
+        ) else { return nil }
 
         context.interpolationQuality = .high
         context.draw(image, in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
 
-        guard let resized = context.makeImage() else { return "" }
+        guard let resized = context.makeImage() else { return nil }
 
         // Encode as PNG
         let data = NSMutableData()
-        guard let dest = CGImageDestinationCreateWithData(data as CFMutableData, "public.png" as CFString, 1, nil) else { return "" }
+        guard let dest = CGImageDestinationCreateWithData(data as CFMutableData, "public.png" as CFString, 1, nil) else { return nil }
         CGImageDestinationAddImage(dest, resized, nil)
         CGImageDestinationFinalize(dest)
 
-        return data.base64EncodedString()
+        let pngData = data as Data
+        return EncodedScreenshot(
+            data: pngData,
+            width: newWidth,
+            height: newHeight
+        )
     }
 
-    // MARK: - Vision API (ChatGPT backend-api)
+    // MARK: - Vision API (ChatGPT backend)
 
-    /// Uses the ChatGPT subscription token via backend-api for vision.
-    /// The standard api.openai.com/v1/chat/completions rejects subscription tokens,
-    /// so we use chatgpt.com/backend-api/conversation which accepts them.
-    private func callVisionAPI(base64: String, token: String) async throws -> String? {
-        // Step 1: Upload image to ChatGPT's file service
-        let fileID = try await uploadImage(base64: base64, token: token)
+    /// Uses ChatGPT's backend because the OAuth token is a ChatGPT token, not a
+    /// normal API key with `api.responses.write`.
+    private func callVisionAPI(screenshot: EncodedScreenshot, token: String) async throws -> String? {
+        let fileID = try await uploadImage(screenshot: screenshot, token: token)
 
-        // Step 2: Send conversation with image
         let url = URL(string: "https://chatgpt.com/backend-api/conversation")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -147,15 +157,28 @@ final class ScreenContextExtractor {
                             [
                                 "content_type": "image_asset_pointer",
                                 "asset_pointer": "file-service://\(fileID)",
-                                "height": -1,
-                                "width": -1
+                                "size_bytes": screenshot.byteCount,
+                                "width": screenshot.width,
+                                "height": screenshot.height
                             ],
                             prompt
+                        ]
+                    ],
+                    "metadata": [
+                        "attachments": [
+                            [
+                                "id": fileID,
+                                "name": "screenshot.png",
+                                "size": screenshot.byteCount,
+                                "mime_type": "image/png",
+                                "width": screenshot.width,
+                                "height": screenshot.height
+                            ]
                         ]
                     ]
                 ]
             ],
-            "model": "auto",
+            "model": visionModel,
             "timezone_offset_min": -300
         ]
 
@@ -173,61 +196,104 @@ final class ScreenContextExtractor {
             throw ScreenContextError.apiError(httpResp.statusCode)
         }
 
-        // Parse SSE stream — find the final text response
-        let text = parseSSEResponse(data: data)
-        return text
+        return parseChatGPTSSEResponse(data: data)
     }
 
-    /// Upload image to ChatGPT's file service and return the file_id.
-    private func uploadImage(base64: String, token: String) async throws -> String {
-        guard let imageData = Data(base64Encoded: base64) else {
-            throw ScreenContextError.invalidResponse
-        }
+    /// Upload image to ChatGPT's file service and return the file ID.
+    private func uploadImage(screenshot: EncodedScreenshot, token: String) async throws -> String {
+        let initURL = URL(string: "https://chatgpt.com/backend-api/files")!
+        var initRequest = URLRequest(url: initURL)
+        initRequest.httpMethod = "POST"
+        initRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        initRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        initRequest.timeoutInterval = 10
 
-        let url = URL(string: "https://chatgpt.com/backend-api/files")!
-        let boundary = UUID().uuidString
+        let initBody: [String: Any] = [
+            "file_name": "screenshot.png",
+            "file_size": screenshot.byteCount,
+            "use_case": "multimodal",
+            "width": screenshot.width,
+            "height": screenshot.height
+        ]
+        initRequest.httpBody = try JSONSerialization.data(withJSONObject: initBody)
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 10
-
-        var body = Data()
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"screenshot.png\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/png\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"purpose\"\r\n\r\n".data(using: .utf8)!)
-        body.append("multimodal\r\n".data(using: .utf8)!)
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-
-        request.httpBody = body
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else {
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            let body = String(data: data, encoding: .utf8) ?? "unknown"
-            print("📸 File upload error (\(statusCode)): \(body.prefix(200))")
+        let (initData, initResponse) = try await URLSession.shared.data(for: initRequest)
+        guard let initHTTP = initResponse as? HTTPURLResponse, initHTTP.statusCode == 200 else {
+            let statusCode = (initResponse as? HTTPURLResponse)?.statusCode ?? 0
+            let body = String(data: initData, encoding: .utf8) ?? "unknown"
+            print("📸 File upload init error (\(statusCode)): \(body.prefix(200))")
             throw ScreenContextError.apiError(statusCode)
         }
 
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-        let fileID = json["file_id"] as? String ?? ""
-        if fileID.isEmpty {
-            print("📸 No file_id in upload response: \(json)")
+        let initJSON = try JSONSerialization.jsonObject(with: initData) as? [String: Any] ?? [:]
+        guard let fileID = initJSON["file_id"] as? String, !fileID.isEmpty,
+              let uploadURLString = initJSON["upload_url"] as? String,
+              let uploadURL = URL(string: uploadURLString) else {
+            print("📸 Invalid file upload init response: \(initJSON)")
             throw ScreenContextError.invalidResponse
         }
+
+        var uploadRequest = URLRequest(url: uploadURL)
+        uploadRequest.httpMethod = "PUT"
+        uploadRequest.setValue("image/png", forHTTPHeaderField: "Content-Type")
+        uploadRequest.setValue("BlockBlob", forHTTPHeaderField: "x-ms-blob-type")
+        uploadRequest.setValue("2020-04-08", forHTTPHeaderField: "x-ms-version")
+        if let uploadHeaders = initJSON["upload_headers"] as? [String: Any] {
+            for (header, value) in uploadHeaders {
+                guard let stringValue = value as? String else { continue }
+                uploadRequest.setValue(stringValue, forHTTPHeaderField: header)
+            }
+        }
+        uploadRequest.timeoutInterval = 15
+
+        let (uploadData, uploadResponse) = try await URLSession.shared.upload(for: uploadRequest, from: screenshot.data)
+        guard let uploadHTTP = uploadResponse as? HTTPURLResponse,
+              (200...299).contains(uploadHTTP.statusCode) else {
+            let statusCode = (uploadResponse as? HTTPURLResponse)?.statusCode ?? 0
+            let body = String(data: uploadData, encoding: .utf8) ?? "unknown"
+            print("📸 File bytes upload error (\(statusCode)): \(body.prefix(200))")
+            throw ScreenContextError.apiError(statusCode)
+        }
+
+        try await markUploadComplete(fileID: fileID, token: token)
         return fileID
     }
 
+    /// Notify ChatGPT that the pre-signed storage upload has finished.
+    private func markUploadComplete(fileID: String, token: String) async throws {
+        for suffix in ["upload-complete", "uploaded"] {
+            let url = URL(string: "https://chatgpt.com/backend-api/files/\(fileID)/\(suffix)")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = Data("{}".utf8)
+            request.timeoutInterval = 10
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResp = response as? HTTPURLResponse else {
+                throw ScreenContextError.invalidResponse
+            }
+
+            if (200...299).contains(httpResp.statusCode) {
+                return
+            }
+
+            // ChatGPT has used both endpoint names; only log the first failure
+            // if the fallback also fails below.
+            if suffix == "uploaded" {
+                let body = String(data: data, encoding: .utf8) ?? "unknown"
+                print("📸 File upload complete error (\(httpResp.statusCode)): \(body.prefix(200))")
+                throw ScreenContextError.apiError(httpResp.statusCode)
+            }
+        }
+    }
+
     /// Parse the SSE response stream from ChatGPT backend-api.
-    private func parseSSEResponse(data: Data) -> String? {
+    func parseChatGPTSSEResponse(data: Data) -> String? {
         guard let text = String(data: data, encoding: .utf8) else { return nil }
 
-        // Find the last message with text content
+        // Find the last message with text content.
         var lastText = ""
         for line in text.components(separatedBy: "\n") {
             guard line.hasPrefix("data: "), let jsonStr = line.dropFirst(6).data(using: .utf8) else { continue }

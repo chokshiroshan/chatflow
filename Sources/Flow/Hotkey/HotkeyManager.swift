@@ -124,6 +124,13 @@ final class HotkeyManager {
             var mods = Set<ModifierFlag>()
             var keyPart = string.lowercased().trimmingCharacters(in: .whitespaces)
 
+            // Normalize the human-readable labels emitted by onboarding before we
+            // peel off ordinary modifiers.
+            keyPart = keyPart.replacingOccurrences(of: "right+command", with: "rightcmd")
+            keyPart = keyPart.replacingOccurrences(of: "right+cmd", with: "rightcmd")
+            keyPart = keyPart.replacingOccurrences(of: "right+option", with: "rightopt")
+            keyPart = keyPart.replacingOccurrences(of: "right+opt", with: "rightopt")
+
             if keyPart.contains("ctrl+") || keyPart.contains("control+") {
                 mods.insert(.control)
                 keyPart = keyPart.replacingOccurrences(of: "ctrl+", with: "")
@@ -184,6 +191,17 @@ final class HotkeyManager {
         63,       // Fn
     ]
 
+    private static func flag(forModifierKeycode keyCode: CGKeyCode) -> CGEventFlags? {
+        switch keyCode {
+        case 55, 54: return .maskCommand
+        case 56, 60: return .maskShift
+        case 58, 61: return .maskAlternate
+        case 59, 62: return .maskControl
+        case 63:     return .maskSecondaryFn
+        default:     return nil
+        }
+    }
+
     init(key: String, mode: FlowConfig.HotkeyMode) {
         self.mode = mode
         self.keyCombo = KeyCombo.parse(key)
@@ -211,7 +229,8 @@ final class HotkeyManager {
 
     // MARK: - Public
 
-    func start() {
+    @discardableResult
+    func start() -> Bool {
         let eventMask: CGEventMask =
             (1 << CGEventType.keyDown.rawValue) |
             (1 << CGEventType.keyUp.rawValue) |
@@ -231,11 +250,16 @@ final class HotkeyManager {
             },
             userInfo: userInfo
         ) else {
-            print("⚠️ CGEventTap failed. Grant Input Monitoring in System Settings → Privacy & Security → Input Monitoring.")
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
-            let trusted = AXIsProcessTrustedWithOptions(options)
-            print("⚠️ Accessibility trusted: \(trusted)")
-            return
+            let accessibilityGranted = PermissionsManager.shared.checkAccessibility()
+            let inputMonitoringGranted = PermissionsManager.shared.checkInputMonitoring()
+            print("⚠️ CGEventTap failed. Accessibility: \(accessibilityGranted) | Input Monitoring: \(inputMonitoringGranted)")
+            if !accessibilityGranted {
+                print("⚠️ Grant Accessibility in System Settings → Privacy & Security → Accessibility.")
+            }
+            if !inputMonitoringGranted {
+                print("⚠️ Grant Input Monitoring in System Settings → Privacy & Security → Input Monitoring.")
+            }
+            return false
         }
 
         self.eventTap = tap
@@ -243,6 +267,7 @@ final class HotkeyManager {
         CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
         print("⌨️ Hotkey registered: \(keyCombo.displayName) (\(mode.rawValue) mode)")
+        return true
     }
 
     func stop() {
@@ -295,10 +320,10 @@ final class HotkeyManager {
                 modifierKeysDown.remove(code)
             }
         case .flagsChanged:
-            // Fn key and modifier keys fire as flagsChanged
-            // Track them in curKeysDown based on flag state
-            if code == 63 { // Fn key
-                if event.flags.contains(.maskSecondaryFn) {
+            // Modifier-only keys (including Fn) report via flagsChanged instead of
+            // ordinary keyDown/keyUp events, so we infer up/down from the current flags.
+            if let modifierFlag = Self.flag(forModifierKeycode: code) {
+                if event.flags.contains(modifierFlag) {
                     curKeysDown.insert(code)
                     modifierKeysDown.insert(code)
                 } else {
@@ -335,12 +360,10 @@ final class HotkeyManager {
         case .keyUp:
             down = false
         case .flagsChanged:
-            // Fn key fires as flagsChanged (keyCode 63)
-            if keyCombo.keyCode == 63 {
-                down = event.flags.contains(.maskSecondaryFn)
-            } else {
+            guard let modifierFlag = Self.flag(forModifierKeycode: code) else {
                 return Unmanaged.passUnretained(event)
             }
+            down = event.flags.contains(modifierFlag)
         default:
             return Unmanaged.passUnretained(event)
         }

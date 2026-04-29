@@ -1,0 +1,590 @@
+{
+  "meta": {
+    "system_name": "ChatFlow Third-Party AI Surface",
+    "platform": "web",
+    "version": "0.2.0",
+    "status": "approved",
+    "source_mode": "greenfield",
+    "created_at": "2026-04-29T08:53:53Z",
+    "last_updated_at": "2026-04-29T08:53:53Z",
+    "notes": "Derived from inspected brand-board-v2.png under unattended approval. Visual direction: OpenAI-adjacent product calm, clearly unofficial third-party framing, precise OAuth/realtime proof surfaces."
+  },
+  "brief": {
+    "product_summary": "A third-party ChatFlow landing page for a hack that follows the Codex OAuth flow, obtains a valid token, and pipes it into realtime inference.",
+    "audience": "Developers, AI tinkerers, indie builders, open-source enjoyers, Hacker News readers, and people who understand why an odd auth path is interesting.",
+    "tone": [
+      "calm",
+      "precise",
+      "technical",
+      "self-aware",
+      "third-party",
+      "builder-first"
+    ],
+    "keywords": [
+      "OAuth breadcrumbs",
+      "Codex token",
+      "realtime inference",
+      "unofficial",
+      "built outside the building",
+      "works until it does not"
+    ],
+    "constraints": [
+      "Do not use OpenAI logos, knot marks, official wordmarks, product lockups, or copied page layouts.",
+      "Make the page clearly third-party and unaffiliated.",
+      "Borrow broad qualities only: restraint, whitespace, research diagrams, crisp typography, and calm confidence.",
+      "Keep the hack visible and technically specific."
+    ],
+    "accessibility": {
+      "contrast_target": "AA",
+      "reduced_motion_support": true,
+      "focus_visibility": "high-contrast",
+      "min_hit_target_px": 44,
+      "notes": "The board uses ink on warm paper with signal green and caution rust accents. Keep all interactive states readable without relying on color alone."
+    }
+  },
+  "references": [
+    {
+      "kind": "brand-board",
+      "path": ".maquette/brand/brand-board-v2.png",
+      "role": "primary",
+      "notes": "Generated and inspected after user requested OpenAI-adjacent third-party styling. No OpenAI logo, mark, or copied official lockup present."
+    },
+    {
+      "kind": "brand-board",
+      "path": ".maquette/brand/brand-board-v1.png",
+      "role": "historical",
+      "notes": "Earlier terminal-zine direction superseded by v2."
+    }
+  ],
+  "tokens": {
+    "color": {
+      "palette": {
+        "brand": {
+          "50": "#EAF4EF",
+          "100": "#CDE5DB",
+          "200": "#9BCBBB",
+          "400": "#2F6F5E",
+          "500": "#275E50",
+          "700": "#1C453B",
+          "900": "#102A24"
+        },
+        "neutral": {
+          "50": "#F7F4EE",
+          "100": "#EFEADF",
+          "200": "#E8E5DD",
+          "400": "#C9C3B8",
+          "600": "#6D6A63",
+          "700": "#33312D",
+          "900": "#111111"
+        },
+        "accent": {
+          "50": "#EEF7F4",
+          "100": "#D9ECE6",
+          "200": "#B2D8CD",
+          "400": "#2F6F5E",
+          "500": "#245B4D",
+          "700": "#183F35",
+          "900": "#0E2822"
+        },
+        "success": {
+          "50": "#EEF7F4",
+          "100": "#D9ECE6",
+          "200": "#B2D8CD",
+          "400": "#2F6F5E",
+          "500": "#245B4D",
+          "700": "#183F35",
+          "900": "#0E2822"
+        },
+        "warning": {
+          "50": "#FAEFE7",
+          "100": "#F2D7C8",
+          "200": "#DCA681",
+          "400": "#B86B3B",
+          "500": "#9E562D",
+          "700": "#6F351A",
+          "900": "#37190B"
+        },
+        "danger": {
+          "50": "#FCEBE7",
+          "100": "#F6C8BF",
+          "200": "#E78D7B",
+          "400": "#C84432",
+          "500": "#A93627",
+          "700": "#742217",
+          "900": "#35100A"
+        },
+        "info": {
+          "50": "#EDF5F8",
+          "100": "#D4E8EE",
+          "200": "#A9D1DC",
+          "400": "#4B8FA1",
+          "500": "#34798B",
+          "700": "#245360",
+          "900": "#122B32"
+        }
+      },
+      "semantic": {
+        "background": {
+          "page": "#F7F4EE",
+          "surface": "#FCFAF4",
+          "surface_raised": "#FFFFFF",
+          "surface_subtle": "#E8E5DD",
+          "inverse": "#111111"
+        },
+        "text": {
+          "primary": "#111111",
+          "secondary": "#33312D",
+          "muted": "#6D6A63",
+          "inverse": "#F7F4EE",
+          "code": "#183F35"
+        },
+        "border": {
+          "subtle": "#E0DACE",
+          "default": "#C9C3B8",
+          "strong": "#111111",
+          "signal": "#2F6F5E"
+        },
+        "action": {
+          "primary": "#111111",
+          "primary_hover": "#33312D",
+          "secondary": "#2F6F5E",
+          "secondary_hover": "#245B4D",
+          "pressed": "#000000"
+        },
+        "feedback": {
+          "success": "#2F6F5E",
+          "info": "#4B8FA1",
+          "warning": "#B86B3B",
+          "danger": "#C84432",
+          "disabled": "#C9C3B8"
+        },
+        "state_overlay": {
+          "hover": "rgba(17, 17, 17, 0.04)",
+          "active": "rgba(47, 111, 94, 0.10)",
+          "selected": "rgba(47, 111, 94, 0.08)",
+          "disabled": "rgba(109, 106, 99, 0.14)",
+          "scrim": "rgba(17, 17, 17, 0.32)"
+        },
+        "focus_ring": {
+          "default": "#2F6F5E",
+          "danger": "#C84432"
+        }
+      }
+    },
+    "typography": {
+      "families": {
+        "body": "\"Geist\", \"IBM Plex Sans\", system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+        "heading": "\"Geist\", \"Space Grotesk\", \"IBM Plex Sans\", system-ui, sans-serif",
+        "mono": "\"JetBrains Mono\", \"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+      },
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "scale": {
+        "label": {
+          "font_size": "0.72rem",
+          "line_height": 1.35,
+          "letter_spacing": "0.12em",
+          "font_weight": 600
+        },
+        "body": {
+          "font_size": "1rem",
+          "line_height": 1.58,
+          "letter_spacing": "-0.01em",
+          "font_weight": 400
+        },
+        "code": {
+          "font_size": "0.875rem",
+          "line_height": 1.62,
+          "letter_spacing": "-0.02em",
+          "font_weight": 500
+        },
+        "h4": {
+          "font_size": "1rem",
+          "line_height": 1.22,
+          "letter_spacing": "-0.01em",
+          "font_weight": 600
+        },
+        "h3": {
+          "font_size": "1.35rem",
+          "line_height": 1.15,
+          "letter_spacing": "-0.035em",
+          "font_weight": 600
+        },
+        "h2": {
+          "font_size": "clamp(2rem, 3.4vw, 3.8rem)",
+          "line_height": 0.98,
+          "letter_spacing": "-0.065em",
+          "font_weight": 600
+        },
+        "h1": {
+          "font_size": "clamp(3.5rem, 9vw, 8.5rem)",
+          "line_height": 0.9,
+          "letter_spacing": "-0.085em",
+          "font_weight": 600
+        }
+      },
+      "usage": {
+        "body": "Geist or IBM Plex Sans for clear product prose with technical restraint.",
+        "label": "Small uppercase mono/sans labels for section numbers, proof tags, and status chips.",
+        "code": "JetBrains Mono for OAuth params, token traces, websocket packets, and command snippets.",
+        "h1": "Large quiet editorial sans; restrained, not shouty.",
+        "h2": "Crisp research-page section headings with tight tracking.",
+        "h3": "Compact card and flow headings.",
+        "h4": "Small technical labels and proof headers."
+      },
+      "font_strategy": {
+        "heading_personality": "OpenAI-adjacent editorial sans: calm, precise, compact, high-trust, not decorative.",
+        "body_personality": "Product documentation clarity with a third-party builder wink.",
+        "preferred_heading_fonts": "Geist first, Space Grotesk or IBM Plex Sans fallback.",
+        "preferred_body_fonts": "Geist first, IBM Plex Sans or system sans fallback.",
+        "css_fallback_stacks": "heading/body: \"Geist\", \"IBM Plex Sans\", system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; display accent may use \"Space Grotesk\"; mono: \"JetBrains Mono\", \"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace.",
+        "fallback_rationale": "The board asks for Suisse/ABC-like editorial clarity but approves open-source fallbacks. Geist and IBM Plex Sans preserve the calm product feel without copying an official brand identity.",
+        "avoid_fonts": "Avoid Impact, startup-gradient display faces, and anything that looks like an official OpenAI wordmark."
+      }
+    },
+    "space": {
+      "base": "4px",
+      "scale": {
+        "1": "4px",
+        "2": "8px",
+        "3": "12px",
+        "4": "16px",
+        "5": "20px",
+        "6": "24px",
+        "8": "32px",
+        "10": "40px",
+        "12": "48px",
+        "16": "64px",
+        "20": "80px",
+        "24": "96px"
+      }
+    },
+    "radius": {
+      "sharp": "0px",
+      "small": "2px",
+      "control": "6px",
+      "card": "12px",
+      "large": "20px",
+      "pill": "999px"
+    },
+    "border": {
+      "width": {
+        "hairline": "1px",
+        "focus": "2px",
+        "diagram": "1.5px"
+      },
+      "style": "Precise hairline borders in trace neutrals; signal borders only for focus, selection, and proof states.",
+      "focus_ring": {
+        "width": "2px",
+        "offset": "3px",
+        "radius_strategy": "Follow component radius; use signal green ring on paper surfaces and paper ring on inverse surfaces."
+      }
+    },
+    "shadow": {
+      "none": "none",
+      "quiet": "0 1px 2px rgba(17, 17, 17, 0.06), 0 12px 32px rgba(17, 17, 17, 0.06)",
+      "elevated": "0 1px 2px rgba(17, 17, 17, 0.08), 0 24px 56px rgba(17, 17, 17, 0.10)",
+      "inset": "inset 0 0 0 1px rgba(17, 17, 17, 0.06)"
+    },
+    "motion": {
+      "duration": {
+        "fast": "120ms",
+        "normal": "220ms",
+        "slow": "640ms"
+      },
+      "easing": {
+        "standard": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "soft": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "step": "steps(4, end)"
+      },
+      "reduced_motion": {
+        "enabled": true,
+        "strategy": "Disable waveform drift and packet-progress animation; keep layout and focus transitions instant."
+      }
+    },
+    "layout": {
+      "content_width": {
+        "narrow": "720px",
+        "standard": "1180px",
+        "wide": "1440px"
+      },
+      "grid": {
+        "columns": 12,
+        "gutter": "24px",
+        "margin_inline": "clamp(18px, 4vw, 56px)"
+      },
+      "breakpoints": {
+        "mobile": "390px",
+        "tablet": "768px",
+        "desktop": "1024px",
+        "wide": "1440px"
+      }
+    },
+    "opacity": {
+      "disabled": 0.45,
+      "muted": 0.66,
+      "overlay": 0.72,
+      "subtle": 0.18
+    }
+  },
+  "components_required": [
+    {
+      "name": "Button",
+      "category": "form",
+      "priority": "core",
+      "must_implement": true,
+      "variants": [
+        "primary",
+        "secondary",
+        "ghost",
+        "inverse"
+      ],
+      "sizes": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "active",
+        "disabled"
+      ],
+      "anatomy": [
+        "label",
+        "optional trailing arrow",
+        "quiet border or filled ink surface"
+      ],
+      "recipe": {
+        "height": {
+          "sm": "36px",
+          "md": "44px",
+          "lg": "52px"
+        },
+        "padding_inline": {
+          "sm": "14px",
+          "md": "18px",
+          "lg": "24px"
+        },
+        "radius": "{radius.pill}",
+        "border_width": "{border.width.hairline}",
+        "shadow": "{shadow.none}",
+        "transition": "{motion.duration.fast} {motion.easing.soft}",
+        "background": {
+          "primary": "{color.semantic.action.primary}",
+          "secondary": "{color.semantic.background.surface}",
+          "ghost": "transparent"
+        },
+        "text": {
+          "primary": "{color.semantic.text.inverse}",
+          "secondary": "{color.semantic.text.primary}",
+          "ghost": "{color.semantic.text.primary}"
+        },
+        "border": {
+          "primary": "{color.semantic.action.primary}",
+          "secondary": "{color.semantic.border.default}",
+          "ghost": "transparent"
+        },
+        "notes": "Use lowercase casual CTAs, but keep the shape and motion calm."
+      }
+    },
+    {
+      "name": "ProofPanel",
+      "category": "data-display",
+      "priority": "core",
+      "must_implement": true,
+      "variants": [
+        "oauth",
+        "token-trace",
+        "realtime-demo",
+        "inverse-code"
+      ],
+      "sizes": [
+        "md",
+        "lg"
+      ],
+      "states": [
+        "default",
+        "selected",
+        "focus-visible"
+      ],
+      "anatomy": [
+        "header label",
+        "monospace content",
+        "status dot",
+        "subtle metrics",
+        "optional waveform"
+      ],
+      "recipe": {
+        "height": {
+          "md": "auto",
+          "lg": "auto"
+        },
+        "padding_inline": {
+          "md": "20px",
+          "lg": "24px"
+        },
+        "radius": "{radius.card}",
+        "border_width": "{border.width.hairline}",
+        "shadow": "{shadow.quiet}",
+        "transition": "{motion.duration.normal} {motion.easing.standard}",
+        "background": {
+          "default": "{color.semantic.background.surface_raised}",
+          "inverse": "{color.semantic.background.inverse}"
+        },
+        "text": {
+          "default": "{color.semantic.text.primary}",
+          "inverse": "{color.semantic.text.inverse}"
+        },
+        "border": {
+          "default": "{color.semantic.border.subtle}",
+          "selected": "{color.semantic.border.signal}"
+        },
+        "notes": "Proof panels carry OAuth, token, and realtime API specifics."
+      }
+    },
+    {
+      "name": "FlowStepCard",
+      "category": "layout",
+      "priority": "core",
+      "must_implement": true,
+      "variants": [
+        "oauth",
+        "token",
+        "realtime",
+        "caution"
+      ],
+      "sizes": [
+        "md",
+        "lg"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "selected"
+      ],
+      "anatomy": [
+        "step number",
+        "heading",
+        "plain-English explanation",
+        "technical proof line",
+        "bottom-aligned meta"
+      ],
+      "recipe": {
+        "height": {
+          "md": "auto",
+          "lg": "auto"
+        },
+        "padding_inline": {
+          "md": "20px",
+          "lg": "24px"
+        },
+        "radius": "{radius.card}",
+        "border_width": "{border.width.hairline}",
+        "shadow": "{shadow.quiet}",
+        "transition": "{motion.duration.normal} {motion.easing.standard}",
+        "background": {
+          "default": "{color.semantic.background.surface}",
+          "caution": "{color.palette.warning.50}"
+        },
+        "text": {
+          "default": "{color.semantic.text.primary}",
+          "muted": "{color.semantic.text.muted}"
+        },
+        "border": {
+          "default": "{color.semantic.border.subtle}",
+          "selected": "{color.semantic.border.signal}"
+        },
+        "notes": "Cards should share anatomy and equal-height action/meta alignment."
+      }
+    },
+    {
+      "name": "ResponsiveNav",
+      "category": "navigation",
+      "priority": "core",
+      "must_implement": true,
+      "variants": [
+        "desktop-inline",
+        "tablet-collapsed",
+        "mobile-collapsed",
+        "mobile-expanded",
+        "active"
+      ],
+      "sizes": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "open",
+        "selected"
+      ],
+      "anatomy": [
+        "plain text identity",
+        "unofficial chip",
+        "nav links",
+        "GitHub action",
+        "menu toggle",
+        "mobile panel"
+      ],
+      "recipe": {
+        "height": {
+          "desktop": "64px",
+          "mobile": "56px"
+        },
+        "padding_inline": {
+          "desktop": "24px",
+          "mobile": "16px"
+        },
+        "radius": "{radius.pill}",
+        "border_width": "{border.width.hairline}",
+        "shadow": "{shadow.quiet}",
+        "transition": "{motion.duration.normal} {motion.easing.soft}",
+        "background": {
+          "default": "rgba(247, 244, 238, 0.86)"
+        },
+        "text": {
+          "default": "{color.semantic.text.primary}",
+          "active": "{color.semantic.action.secondary}"
+        },
+        "border": {
+          "default": "{color.semantic.border.subtle}",
+          "active": "{color.semantic.border.signal}"
+        },
+        "notes": "The identity must not imitate an official OpenAI mark. Mobile nav uses an accessible toggle."
+      }
+    }
+  ],
+  "board": {
+    "must_show": [
+      "Warm paper, ink, fog, trace, signal, and caution palette roles.",
+      "Editorial sans plus mono typography direction with Geist, IBM Plex Sans, Space Grotesk, and JetBrains Mono fallbacks.",
+      "4px spacing rhythm with airy section density.",
+      "Small-to-large intentional radius scale.",
+      "Matte paper panels, hairline borders, quiet shadows, and proof-oriented interaction states.",
+      "Visible third-party/unofficial disclaimer language."
+    ],
+    "spec_panel_sections": [
+      "Product Identity",
+      "Palette",
+      "Typography Direction",
+      "Spacing Rhythm",
+      "Radius Scale",
+      "Surface Language",
+      "Interaction Principles",
+      "End-to-End Flow",
+      "System Fragments",
+      "Disclaimer"
+    ],
+    "notes": "The inspected v2 board supersedes the terminal-heavy v1 board. It is approved provisionally because the user requested unattended execution with image workers."
+  }
+}

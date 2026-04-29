@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ChatFlow Component Gallery</title>
+    <link rel="stylesheet" href="../brand/tokens.css">
+    <link rel="stylesheet" href="css/components.css">
+  </head>
+  <body class="nav-proof">
+    <nav class="site-nav" aria-label="Primary">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="#">
+          <span class="site-nav__mark" aria-hidden="true"></span>
+          <span class="site-nav__brand-text">
+            <span class="site-nav__brand-name">ChatFlow</span>
+            <span class="site-nav__brand-note">unofficial</span>
+          </span>
+        </a>
+        <div class="site-nav__links">
+          <a class="site-nav__link is-active" href="#" aria-current="page">components</a>
+          <a class="site-nav__link" href="#">proof</a>
+          <a class="site-nav__link" href="#">quick start</a>
+        </div>
+        <div class="site-nav__actions">
+          <a class="btn btn--secondary btn--sm" href="#">read the code</a>
+          <a class="btn btn--primary btn--sm" href="#">star it</a>
+        </div>
+        <button class="site-nav__toggle" type="button" data-nav-toggle aria-controls="site-nav-panel" aria-expanded="false" aria-label="Open navigation">
+          <span class="site-nav__toggle-icon" aria-hidden="true"><span></span></span>
+        </button>
+      </div>
+      <div class="site-nav__panel" id="site-nav-panel">
+        <a class="site-nav__panel-link" href="#">components</a>
+        <a class="site-nav__panel-link" href="#">proof</a>
+        <a class="site-nav__panel-link" href="#">quick start</a>
+        <a class="site-nav__panel-link" href="#">read the code</a>
+        <a class="site-nav__panel-link" href="#">star it</a>
+      </div>
+    </nav>
+
+    <main class="cards-proof__wrap">
+      <header class="cards-proof__header">
+        <span class="chip chip--caution">third-party AI surface</span>
+        <h1>Reusable parts for an unofficial demo.</h1>
+        <p>
+          The landing page will consume these primitives and composites: calm OpenAI-adjacent
+          surfaces, clear proof panels, and no fake official costume.
+        </p>
+      </header>
+
+      <section class="component-proof__panel" aria-label="Actions and labels">
+        <h2>Actions and labels</h2>
+        <div class="component-proof__row">
+          <a class="btn btn--primary btn--lg" href="#">clone it</a>
+          <a class="btn btn--secondary btn--lg" href="#">read the code</a>
+          <button class="btn btn--ghost btn--lg" type="button">see the trick</button>
+          <span class="chip chip--signal"><span class="status-dot"></span>token valid</span>
+          <span class="chip chip--caution">unofficial</span>
+          <span class="chip chip--muted">works until it does not</span>
+          <input class="input" aria-label="Token input sample" value="access_token=ya29..." readonly>
+          <button class="icon-btn is-selected" type="button" aria-label="Selected proof sample">✓</button>
+        </div>
+      </section>
+
+      <nav class="site-nav nav--dark" aria-label="Dark contrast sample">
+        <div class="site-nav__inner">
+          <a class="site-nav__brand" href="#">
+            <span class="site-nav__mark" aria-hidden="true"></span>
+            <span class="site-nav__brand-text">
+              <span class="site-nav__brand-name">Dark sample</span>
+              <span class="site-nav__brand-note">contrast only</span>
+            </span>
+          </a>
+          <div class="site-nav__links">
+            <a class="site-nav__link is-active" href="#">active</a>
+            <a class="site-nav__link" href="#">default</a>
+          </div>
+        </div>
+      </nav>
+
+      <section class="cards-proof__grid" aria-label="Flow cards">
+        <article class="flow-card" tabindex="0">
+          <span class="flow-card__step">01 OAuth</span>
+          <h2 class="flow-card__title">Follow the login path.</h2>
+          <div class="flow-card__body">
+            <p>The user grants access through the normal-ish browser flow.</p>
+          </div>
+          <div class="flow-card__meta"><span>/oauth/authorize</span><span>302</span></div>
+        </article>
+        <article class="flow-card" tabindex="0">
+          <span class="flow-card__step">02 Token</span>
+          <h2 class="flow-card__title">Exchange the code.</h2>
+          <div class="flow-card__body">
+            <p>The callback becomes a token we can send into the realtime path.</p>
+          </div>
+          <div class="flow-card__meta"><span>access_token</span><span>200 OK</span></div>
+        </article>
+        <article class="flow-card flow-card--caution" tabindex="0">
+          <span class="flow-card__step">03 Realtime</span>
+          <h2 class="flow-card__title">Stream the result.</h2>
+          <div class="flow-card__body">
+            <p>Inference starts talking back. Duct tape visible. Receipts included.</p>
+          </div>
+          <div class="flow-card__meta"><span>realtime</span><span>live</span></div>
+        </article>
+      </section>
+
+      <section class="cards-proof__panels" aria-label="Proof panels">
+        <article class="proof-panel proof-panel--signal">
+          <div class="proof-panel__header">
+            <h2 class="proof-panel__title">OAuth token trace</h2>
+            <span class="proof-panel__meta">200 OK</span>
+          </div>
+          <pre class="proof-panel__code">POST /oauth/token
+grant_type=authorization_code
+code=sp1x...redacted
+
+access_token=ya29.a0...
+expires_in=3599</pre>
+        </article>
+        <article class="proof-panel proof-panel--inverse">
+          <div class="proof-panel__header">
+            <h2 class="proof-panel__title">Realtime stream</h2>
+            <span class="proof-panel__meta">97%</span>
+          </div>
+          <div class="waveform" aria-hidden="true">
+            <span class="waveform__bar" style="height: 22px"></span>
+            <span class="waveform__bar" style="height: 38px"></span>
+            <span class="waveform__bar" style="height: 28px"></span>
+            <span class="waveform__bar" style="height: 46px"></span>
+            <span class="waveform__bar" style="height: 24px"></span>
+          </div>
+          <pre class="proof-panel__code">{"type":"input_text","text":"ping"}
+{"type":"delta","text":"pong"}
+{"type":"done"}</pre>
+        </article>
+      </section>
+
+      <section class="cards-proof__panels" aria-label="Quickstart and disclaimer">
+        <article class="proof-panel">
+          <div class="proof-panel__header">
+            <h2 class="proof-panel__title">Quick start</h2>
+            <span class="proof-panel__meta">three commands</span>
+          </div>
+          <div class="quickstart">
+            <div class="quickstart__command"><code>git clone github.com/you/chatflow</code><span>01</span></div>
+            <div class="quickstart__command"><code>pnpm install</code><span>02</span></div>
+            <div class="quickstart__command"><code>pnpm dev</code><span>03</span></div>
+          </div>
+        </article>
+        <aside class="disclaimer-card">
+          Independent project. Not affiliated with or endorsed by any model provider.
+          Works until the breadcrumbs move.
+        </aside>
+      </section>
+
+      <footer class="footer-cta">
+        <div>
+          <span class="kicker">ship small, leave receipts</span>
+          <p>Star it if weird auth paths make your morning coffee taste better.</p>
+        </div>
+        <div class="footer-cta__actions">
+          <a class="btn btn--primary btn--md" href="#">star it</a>
+          <a class="btn btn--secondary btn--md" href="#">read the code</a>
+        </div>
+      </footer>
+    </main>
+    <script src="js/components.js"></script>
+  </body>
+</html>

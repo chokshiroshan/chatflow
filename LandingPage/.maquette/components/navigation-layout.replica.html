@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Navigation Layout Contract Replica</title>
+    <link rel="stylesheet" href="../brand/tokens.css">
+    <link rel="stylesheet" href="css/core-primitives.components.css">
+    <link rel="stylesheet" href="css/navigation-layout.components.css">
+  </head>
+  <body class="nav-proof">
+    <nav class="site-nav" aria-label="Primary">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="#">
+          <span class="site-nav__mark" aria-hidden="true"></span>
+          <span class="site-nav__brand-text">
+            <span class="site-nav__brand-name">ChatFlow</span>
+            <span class="site-nav__brand-note">unofficial</span>
+          </span>
+        </a>
+        <div class="site-nav__links">
+          <a class="site-nav__link" href="#" aria-current="page">the trick</a>
+          <a class="site-nav__link" href="#">quick start</a>
+          <a class="site-nav__link" href="#">cya</a>
+        </div>
+        <div class="site-nav__actions">
+          <a class="btn btn--secondary btn--sm" href="#">read the code</a>
+          <a class="btn btn--primary btn--sm" href="#">star it</a>
+        </div>
+        <button class="site-nav__toggle" type="button" data-nav-toggle aria-controls="site-nav-panel" aria-expanded="false" aria-label="Open navigation">
+          <span class="site-nav__toggle-icon" aria-hidden="true"><span></span></span>
+        </button>
+      </div>
+      <div class="site-nav__panel" id="site-nav-panel">
+        <a class="site-nav__panel-link" href="#">the trick</a>
+        <a class="site-nav__panel-link" href="#">quick start</a>
+        <a class="site-nav__panel-link" href="#">cya</a>
+        <a class="site-nav__panel-link" href="#">read the code</a>
+        <a class="site-nav__panel-link" href="#">star it</a>
+      </div>
+    </nav>
+
+    <main class="layout-shell nav-proof__hero">
+      <div class="layout-grid">
+        <article class="nav-proof__card">
+          <span class="chip chip--caution">built outside the building</span>
+          <h1>Calm nav. Zero impersonation.</h1>
+          <p>
+            The identity is plain text plus a simple square. No OpenAI mark, no official lockup,
+            no costume party.
+          </p>
+        </article>
+        <article class="nav-proof__card">
+          <span class="chip chip--signal"><span class="status-dot"></span>mobile-safe</span>
+          <h2>Toggle opens a real panel.</h2>
+          <p>
+            The mobile state uses <code>aria-expanded</code>, a fixed scrollable panel,
+            and no document-level horizontal overflow.
+          </p>
+        </article>
+      </div>
+    </main>
+    <script src="js/navigation-layout.components.js"></script>
+  </body>
+</html>

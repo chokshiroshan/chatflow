@@ -70,14 +70,19 @@ final class PermissionsManager {
     }
 
     /// Check input monitoring permission.
-    /// There's no direct API — we check if CGEventTap can be created.
+    /// There's no direct API, so we probe the exact tap style the hotkey system uses.
+    /// Using the same `.defaultTap` mode avoids false positives where onboarding says
+    /// permissions are fine but the real hotkey registration still fails.
     func checkInputMonitoring() -> Bool {
-        // Try to create a temporary event tap
-        let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
+        let eventMask: CGEventMask =
+            (1 << CGEventType.keyDown.rawValue) |
+            (1 << CGEventType.keyUp.rawValue) |
+            (1 << CGEventType.flagsChanged.rawValue)
+
         let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
-            options: .listenOnly,
+            options: .defaultTap,
             eventsOfInterest: eventMask,
             callback: { _, _, event, _ in return Unmanaged.passUnretained(event) },
             userInfo: nil
@@ -85,6 +90,7 @@ final class PermissionsManager {
 
         if let tap {
             CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
             return true
         }
         return false

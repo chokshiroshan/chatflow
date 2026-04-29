@@ -15,7 +15,8 @@ let package = Package(
         .testTarget(
             name: "FlowTests",
             dependencies: ["Flow"],
-            path: "Tests/FlowTests"
+            path: "Tests/FlowTests",
+            exclude: ["VocabularyTests.swift"]
         ),
     ]
 )

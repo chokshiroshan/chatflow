@@ -1,0 +1,14 @@
+{
+  "target": ".maquette/components/cards-composites.replica.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/cards-composites.replica.html",
+  "outputPath": ".maquette/components/cards-composites.replica.png",
+  "viewport": {
+    "width": 1440,
+    "height": 1800
+  },
+  "requestedMode": "full-page",
+  "captureMode": "full-page",
+  "clippedFallback": false,
+  "cleanup": "closed",
+  "error": null
+}

@@ -1,0 +1,180 @@
+/* Transcribed from component-sheet-core-primitives-css-contract-v1.png.
+   Raw poster colors were normalized to approved v2 design tokens. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-scale-2);
+  white-space: nowrap;
+  font-family: var(--typography-families-mono);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  border: var(--border-width-hairline) solid var(--color-semantic-border-default);
+  border-radius: var(--radius-pill);
+  padding: var(--space-scale-2) var(--space-scale-4);
+  line-height: 1;
+  transition:
+    color var(--motion-duration-fast) var(--motion-easing-soft),
+    background-color var(--motion-duration-fast) var(--motion-easing-soft),
+    border-color var(--motion-duration-fast) var(--motion-easing-soft),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-soft),
+    transform var(--motion-duration-fast) var(--motion-easing-soft);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn__icon {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 1em;
+  display: inline-block;
+}
+
+.btn--sm {
+  font-size: 0.75rem;
+  padding: var(--space-scale-1) var(--space-scale-3);
+}
+
+.btn--md {
+  font-size: 0.875rem;
+  padding: var(--space-scale-2) var(--space-scale-4);
+}
+
+.btn--lg {
+  font-size: 1rem;
+  padding: var(--space-scale-3) var(--space-scale-6);
+}
+
+.btn--primary {
+  color: var(--color-semantic-background-page);
+  background-color: var(--color-semantic-action-primary);
+  border-color: var(--color-semantic-action-primary);
+}
+
+.btn--secondary {
+  color: var(--color-semantic-text-primary);
+  background-color: var(--color-semantic-background-surface);
+  border-color: var(--color-semantic-border-default);
+}
+
+.btn--ghost {
+  color: var(--color-semantic-text-primary);
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.btn--inverse {
+  color: var(--color-semantic-background-page);
+  background-color: var(--color-semantic-text-primary);
+  border-color: var(--color-semantic-text-primary);
+}
+
+.btn:hover {
+  border-color: var(--color-semantic-text-primary);
+  filter: brightness(1.04);
+}
+
+.btn:active {
+  transform: translateY(1px);
+  filter: brightness(0.97);
+}
+
+.btn:focus-visible {
+  outline: var(--border-focus-ring-width) solid var(--color-semantic-action-secondary);
+  outline-offset: var(--border-focus-ring-offset);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-semantic-action-secondary) 22%, transparent);
+}
+
+.btn[disabled] {
+  color: color-mix(in srgb, var(--color-semantic-text-primary) 50%, transparent);
+  background-color: color-mix(in srgb, var(--color-semantic-text-primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-semantic-text-primary) 18%, transparent);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-scale-1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-semantic-text-primary) 70%, transparent);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-scale-1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: var(--space-scale-1) var(--space-scale-3);
+  border: var(--border-width-hairline) solid var(--color-semantic-border-default);
+  border-radius: var(--radius-pill);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.chip--signal {
+  color: var(--color-palette-brand-500);
+  border-color: color-mix(in srgb, var(--color-palette-brand-500) 40%, transparent);
+  background-color: color-mix(in srgb, var(--color-palette-brand-500) 12%, transparent);
+}
+
+.chip--caution {
+  color: var(--color-palette-warning-500);
+  border-color: color-mix(in srgb, var(--color-palette-warning-500) 40%, transparent);
+  background-color: color-mix(in srgb, var(--color-palette-warning-500) 12%, transparent);
+}
+
+.chip--muted {
+  color: color-mix(in srgb, var(--color-semantic-text-primary) 70%, transparent);
+  border-color: color-mix(in srgb, var(--color-semantic-text-primary) 20%, transparent);
+  background-color: color-mix(in srgb, var(--color-semantic-text-primary) 8%, transparent);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-palette-brand-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-palette-brand-500) 24%, transparent);
+}
+
+.inline-link {
+  color: var(--color-semantic-text-primary);
+  text-decoration: underline;
+  text-decoration-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.inline-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.inline-link:focus-visible {
+  outline: var(--border-focus-ring-width) solid var(--color-semantic-action-secondary);
+  outline-offset: 2px;
+  border-radius: var(--radius-small);
+}
+
+/* QA utility additions after gallery smoke: tokenized input and selected icon button. */
+.input {
+  min-height: 44px;
+  padding: var(--space-scale-2) var(--space-scale-4);
+  border: var(--border-width-hairline) solid var(--color-semantic-border-default);
+  border-radius: var(--radius-control);
+  font: 500 0.9rem/1.4 var(--typography-families-mono);
+}
+
+.icon-btn,
+.icon-btn.is-selected {
+  min-width: 44px;
+  min-height: 44px;
+}

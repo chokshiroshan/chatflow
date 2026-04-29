@@ -1,0 +1,14 @@
+{
+  "target": ".maquette/components/navigation-layout.replica.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/navigation-layout.replica.html",
+  "outputPath": ".maquette/components/navigation-layout.replica.png",
+  "viewport": {
+    "width": 1440,
+    "height": 1200
+  },
+  "requestedMode": "full-page",
+  "captureMode": "full-page",
+  "clippedFallback": false,
+  "cleanup": "closed",
+  "error": null
+}

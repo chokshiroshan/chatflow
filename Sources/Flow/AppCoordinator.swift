@@ -211,6 +211,14 @@ final class AppCoordinator: ObservableObject {
 
     func refreshPermissions() {
         permissionsStatus = permissions.checkAll()
+
+        guard permissionsStatus.allGranted else { return }
+        guard authState.isSignedIn else { return }
+
+        // Re-arm the hotkey immediately after the user finishes granting access.
+        if dictationEngine == nil || state.isError {
+            activateDictation()
+        }
     }
 
     // MARK: - Cleanup

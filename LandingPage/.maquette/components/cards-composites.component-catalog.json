@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "system_name": "ChatFlow Third-Party AI Surface Components",
+    "version": "0.1.0-cards-composites",
+    "based_on_design_system_version": "0.2.0",
+    "status": "draft",
+    "notes": "Cards, proof panels, quickstart, disclaimer, and footer CTA batch snapshot."
+  },
+  "tech": {
+    "html_strategy": "Semantic cards and proof regions with reusable component classes.",
+    "css_strategy": "Tokenized CSS with equal-height card anatomy and overflow-safe code panels.",
+    "js_strategy": "No behavior needed; waveform motion is CSS-only and reduced-motion-safe."
+  },
+  "assets": {
+    "tokens_css_path": ".maquette/brand/tokens.css",
+    "component_reference_html_path": ".maquette/components/cards-composites.replica.html",
+    "component_sheet_path": ".maquette/components/component-sheet-cards-composites-css-contract-v1.png",
+    "component_contract_paths": [
+      ".maquette/components/contracts/cards-composites.contract.css"
+    ]
+  },
+  "components": [
+    {
+      "name": "ProofPanel",
+      "source_required_component": "ProofPanel",
+      "files": [
+        ".maquette/components/cards-composites.replica.html",
+        ".maquette/components/css/cards-composites.components.css"
+      ],
+      "selectors": [
+        ".proof-panel",
+        ".proof-panel__header",
+        ".proof-panel__title",
+        ".proof-panel__meta",
+        ".proof-panel__body",
+        ".proof-panel__code",
+        ".proof-panel__metric",
+        ".proof-panel--inverse",
+        ".proof-panel--signal"
+      ],
+      "implemented_variants": [
+        "default",
+        "inverse",
+        "signal",
+        "code",
+        "metric"
+      ],
+      "implemented_sizes": [
+        "md",
+        "responsive"
+      ],
+      "implemented_states": [
+        "default",
+        "selected"
+      ],
+      "api": {
+        "slots": [
+          "header",
+          "title",
+          "meta",
+          "body",
+          "code",
+          "metrics"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<article class=\"proof-panel proof-panel--signal\">...</article>"
+        ]
+      },
+      "accessibility_notes": [
+        "Use semantic headings inside panels.",
+        "Code panels use internal overflow rather than page overflow."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+        ],
+        "similarity_notes": "Implementation follows tokenized poster contract and preserves calm proof-first surfaces.",
+        "qa_notes": [
+          "Screenshot QA pending."
+        ]
+      },
+      "status": "reviewed"
+    },
+    {
+      "name": "FlowCard",
+      "source_required_component": "FlowStepCard",
+      "files": [
+        ".maquette/components/cards-composites.replica.html",
+        ".maquette/components/css/cards-composites.components.css"
+      ],
+      "selectors": [
+        ".flow-card",
+        ".flow-card__step",
+        ".flow-card__title",
+        ".flow-card__body",
+        ".flow-card__meta",
+        ".flow-card--caution",
+        ".flow-card:hover",
+        ".flow-card:focus-within"
+      ],
+      "implemented_variants": [
+        "default",
+        "caution",
+        "equal-height",
+        "bottom-pinned meta"
+      ],
+      "implemented_sizes": [
+        "md",
+        "responsive"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-within"
+      ],
+      "api": {
+        "slots": [
+          "step",
+          "title",
+          "body",
+          "meta"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<article class=\"flow-card\"><span class=\"flow-card__step\">01 OAuth</span>...</article>"
+        ]
+      },
+      "layout_behavior": {
+        "equal_height_grid": "Cards use height: 100% inside grid rows.",
+        "body_layout": "Card body flexes to absorb copy differences.",
+        "action_row_alignment": "Meta row uses margin-top: auto and remains bottom pinned.",
+        "responsive_notes": "Grid stacks to one column below 860px."
+      },
+      "accessibility_notes": [
+        "Cards can receive focus if they contain interactive content or need focus-within demonstration."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+        ],
+        "similarity_notes": "Equal-height anatomy and bottom-pinned meta match the contract.",
+        "qa_notes": [
+          "Screenshot QA pending."
+        ]
+      },
+      "status": "reviewed"
+    },
+    {
+      "name": "Landing Utility Composites",
+      "source_required_component": "ProofPanel",
+      "files": [
+        ".maquette/components/cards-composites.replica.html",
+        ".maquette/components/css/cards-composites.components.css"
+      ],
+      "selectors": [
+        ".waveform",
+        ".waveform__bar",
+        ".quickstart",
+        ".quickstart__command",
+        ".disclaimer-card",
+        ".footer-cta",
+        ".footer-cta__actions"
+      ],
+      "implemented_variants": [
+        "waveform",
+        "quickstart",
+        "disclaimer",
+        "footer cta"
+      ],
+      "implemented_sizes": [
+        "md",
+        "responsive"
+      ],
+      "implemented_states": [
+        "default"
+      ],
+      "api": {
+        "slots": [
+          "commands",
+          "disclaimer copy",
+          "footer content",
+          "footer actions"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<div class=\"quickstart\"><div class=\"quickstart__command\"><code>pnpm dev</code></div></div>"
+        ]
+      },
+      "accessibility_notes": [
+        "Waveform is decorative unless paired with readable stream status text.",
+        "Reduced motion disables waveform animation."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+        ],
+        "similarity_notes": "Utility composites preserve the unofficial caution language and compact CTA anatomy.",
+        "qa_notes": [
+          "Screenshot QA pending."
+        ]
+      },
+      "status": "reviewed"
+    }
+  ]
+}

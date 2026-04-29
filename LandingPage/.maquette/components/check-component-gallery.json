@@ -1,0 +1,108 @@
+{
+  "target": ".maquette/components/replica-gallery.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/replica-gallery.html",
+  "minContrast": 4.5,
+  "allowMissingContrast": false,
+  "requiredSelectors": [
+    {
+      "selector": ".btn",
+      "alternatives": [
+        ".btn"
+      ],
+      "matchedSelector": ".btn",
+      "found": true
+    },
+    {
+      "selector": ".input|.field__input|input",
+      "alternatives": [
+        ".input",
+        ".field__input",
+        "input"
+      ],
+      "matchedSelector": ".input",
+      "found": true
+    }
+  ],
+  "recommendedSelectors": [
+    {
+      "selector": ".icon-btn",
+      "found": true
+    },
+    {
+      "selector": ".site-nav",
+      "found": true
+    },
+    {
+      "selector": ".data-table",
+      "found": false
+    },
+    {
+      "selector": ".service-card",
+      "found": false
+    },
+    {
+      "selector": ".pricing-card",
+      "found": false
+    },
+    {
+      "selector": ".newsletter",
+      "found": false
+    },
+    {
+      "selector": ".footer-module",
+      "found": false
+    }
+  ],
+  "contrastSamples": {
+    "lightActive": {
+      "selector": ".site-nav:not(.nav--dark) .site-nav__link.is-active",
+      "found": true,
+      "text": "rgb(47, 111, 94)",
+      "background": "rgb(247, 244, 238)",
+      "renderedBackground": "rgb(247, 244, 238)",
+      "ratio": 5.38,
+      "pass": true
+    },
+    "darkActive": {
+      "selector": ".site-nav.nav--dark .site-nav__link.is-active",
+      "found": true,
+      "text": "rgb(247, 244, 238)",
+      "background": "rgb(17, 17, 17)",
+      "renderedBackground": "rgb(17, 17, 17)",
+      "ratio": 17.2,
+      "pass": true
+    },
+    "darkDefault": {
+      "selector": ".site-nav.nav--dark .site-nav__link:not(.is-active)",
+      "found": true,
+      "text": "rgb(230, 226, 217)",
+      "background": "rgb(17, 17, 17)",
+      "renderedBackground": "rgb(17, 17, 17)",
+      "ratio": 14.61,
+      "pass": true
+    },
+    "iconSelected": {
+      "selector": ".icon-btn.is-selected",
+      "found": true,
+      "text": "rgb(247, 244, 238)",
+      "background": "rgb(17, 17, 17)",
+      "renderedBackground": "rgb(17, 17, 17)",
+      "ratio": 17.2,
+      "pass": true
+    }
+  },
+  "apiSmoke": {
+    "reusableFilesLinked": true,
+    "stylesheetHrefs": [
+      "../brand/tokens.css",
+      "css/components.css"
+    ],
+    "scriptSrcs": [
+      "js/components.js"
+    ],
+    "navToggle": true,
+    "navApiReady": true,
+    "componentClasses": true
+  },
+  "pass": true
+}

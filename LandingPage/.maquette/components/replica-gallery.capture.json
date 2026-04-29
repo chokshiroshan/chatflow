@@ -1,0 +1,14 @@
+{
+  "target": ".maquette/components/replica-gallery.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/replica-gallery.html",
+  "outputPath": ".maquette/components/replica-gallery.png",
+  "viewport": {
+    "width": 1440,
+    "height": 2400
+  },
+  "requestedMode": "full-page",
+  "captureMode": "full-page",
+  "clippedFallback": false,
+  "cleanup": "closed",
+  "error": null
+}

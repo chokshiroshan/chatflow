@@ -1,0 +1,660 @@
+{
+  "meta": {
+    "system_name": "ChatFlow Third-Party AI Surface Components",
+    "version": "0.1.0",
+    "based_on_design_system_version": "0.2.0",
+    "status": "approved",
+    "notes": "Reusable component library for the ChatFlow landing page. Built from approved brand board v2 and three CSS-contract poster batches."
+  },
+  "tech": {
+    "html_strategy": "Static semantic HTML with reusable classes, slots, and cataloged examples.",
+    "css_strategy": "CSS custom properties from .maquette/brand/tokens.css; final css/components.css imports batch component CSS.",
+    "js_strategy": "Minimal navigation toggle behavior in js/components.js; other components are static or CSS-only."
+  },
+  "assets": {
+    "tokens_css_path": ".maquette/brand/tokens.css",
+    "sheet_inventory_path": ".maquette/components/sheet-inventory.md",
+    "sheet_implementation_log_path": ".maquette/components/sheet-implementation-log.md",
+    "replica_gallery_html_path": ".maquette/components/replica-gallery.html",
+    "component_reference_html_path": ".maquette/components/replica-gallery.html",
+    "component_sheet_path": ".maquette/components/component-sheet-core-primitives-css-contract-v1.png",
+    "component_sheet_paths": [
+      ".maquette/components/component-sheet-core-primitives-css-contract-v1.png",
+      ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png",
+      ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+    ],
+    "component_contract_paths": [
+      ".maquette/components/contracts/core-primitives.contract.css",
+      ".maquette/components/contracts/navigation-layout.contract.css",
+      ".maquette/components/contracts/cards-composites.contract.css"
+    ],
+    "gallery_screenshot_paths": [
+      ".maquette/components/replica-gallery.png"
+    ],
+    "nav_open_screenshot_paths": [
+      ".maquette/components/navigation-layout-responsive/responsive-nav-open-390.png",
+      ".maquette/components/navigation-layout-responsive/responsive-nav-open-768.png",
+      ".maquette/components/navigation-layout-responsive/responsive-nav-open-1024.png"
+    ],
+    "gallery_review_artifact_paths": [
+      ".maquette/components/core-primitives.review.md",
+      ".maquette/components/navigation-layout.review.md",
+      ".maquette/components/cards-composites.review.md"
+    ],
+    "sheet_implementation_batches": [
+      {
+        "category": "core-primitives",
+        "sheet_path": ".maquette/components/component-sheet-core-primitives-css-contract-v1.png",
+        "contract_path": ".maquette/components/contracts/core-primitives.contract.css",
+        "replica_artifact_paths": [
+          ".maquette/components/core-primitives.replica.html"
+        ],
+        "component_artifact_paths": [
+          ".maquette/components/css/core-primitives.components.css",
+          ".maquette/components/js/core-primitives.components.js"
+        ],
+        "catalog_snapshot_path": ".maquette/components/core-primitives.component-catalog.json",
+        "review_path": ".maquette/components/core-primitives.review.md",
+        "review_artifact_paths": [
+          ".maquette/components/core-primitives.replica.png",
+          ".maquette/components/core-primitives.responsive-audit.json"
+        ],
+        "screenshot_paths": [
+          ".maquette/components/core-primitives.replica.png",
+          ".maquette/components/core-primitives-responsive/responsive-390.png",
+          ".maquette/components/core-primitives-responsive/responsive-768.png",
+          ".maquette/components/core-primitives-responsive/responsive-1024.png",
+          ".maquette/components/core-primitives-responsive/responsive-1280.png",
+          ".maquette/components/core-primitives-responsive/responsive-1440.png"
+        ],
+        "review_mode": "screenshot",
+        "completed_before_next_sheet": true,
+        "rubric_scores": {
+          "coverage": 5,
+          "visual_match": 4,
+          "anatomy_match": 5,
+          "responsive_match": 5,
+          "implementation_quality": 5
+        },
+        "corrections_made": [
+          "Normalized raw poster hex values to approved token variables.",
+          "Added minimum button hit targets."
+        ],
+        "simplifications": [],
+        "deferred_items": [],
+        "status": "implemented"
+      },
+      {
+        "category": "navigation-layout",
+        "sheet_path": ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png",
+        "contract_path": ".maquette/components/contracts/navigation-layout.contract.css",
+        "replica_artifact_paths": [
+          ".maquette/components/navigation-layout.replica.html"
+        ],
+        "component_artifact_paths": [
+          ".maquette/components/css/navigation-layout.components.css",
+          ".maquette/components/js/navigation-layout.components.js"
+        ],
+        "catalog_snapshot_path": ".maquette/components/navigation-layout.component-catalog.json",
+        "review_path": ".maquette/components/navigation-layout.review.md",
+        "review_artifact_paths": [
+          ".maquette/components/navigation-layout.replica.png",
+          ".maquette/components/navigation-layout.responsive-audit.json"
+        ],
+        "screenshot_paths": [
+          ".maquette/components/navigation-layout.replica.png",
+          ".maquette/components/navigation-layout-responsive/responsive-390.png",
+          ".maquette/components/navigation-layout-responsive/responsive-768.png",
+          ".maquette/components/navigation-layout-responsive/responsive-1024.png",
+          ".maquette/components/navigation-layout-responsive/responsive-1280.png",
+          ".maquette/components/navigation-layout-responsive/responsive-1440.png"
+        ],
+        "review_mode": "screenshot",
+        "completed_before_next_sheet": true,
+        "rubric_scores": {
+          "coverage": 5,
+          "visual_match": 4,
+          "anatomy_match": 5,
+          "responsive_match": 5,
+          "implementation_quality": 5
+        },
+        "corrections_made": [
+          "Corrected generated token aliases.",
+          "Widened compact navigation breakpoint to 1024px after responsive audit."
+        ],
+        "simplifications": [],
+        "deferred_items": [],
+        "status": "implemented"
+      },
+      {
+        "category": "cards-composites",
+        "sheet_path": ".maquette/components/component-sheet-cards-composites-css-contract-v1.png",
+        "contract_path": ".maquette/components/contracts/cards-composites.contract.css",
+        "replica_artifact_paths": [
+          ".maquette/components/cards-composites.replica.html"
+        ],
+        "component_artifact_paths": [
+          ".maquette/components/css/cards-composites.components.css",
+          ".maquette/components/js/cards-composites.components.js"
+        ],
+        "catalog_snapshot_path": ".maquette/components/cards-composites.component-catalog.json",
+        "review_path": ".maquette/components/cards-composites.review.md",
+        "review_artifact_paths": [
+          ".maquette/components/cards-composites.replica.png",
+          ".maquette/components/cards-composites.responsive-audit.json"
+        ],
+        "screenshot_paths": [
+          ".maquette/components/cards-composites.replica.png",
+          ".maquette/components/cards-composites-responsive/responsive-390.png",
+          ".maquette/components/cards-composites-responsive/responsive-768.png",
+          ".maquette/components/cards-composites-responsive/responsive-1024.png",
+          ".maquette/components/cards-composites-responsive/responsive-1280.png",
+          ".maquette/components/cards-composites-responsive/responsive-1440.png"
+        ],
+        "review_mode": "screenshot",
+        "completed_before_next_sheet": true,
+        "rubric_scores": {
+          "coverage": 5,
+          "visual_match": 4,
+          "anatomy_match": 5,
+          "responsive_match": 5,
+          "implementation_quality": 5
+        },
+        "corrections_made": [
+          "Generated in main workflow after image-worker usage limit.",
+          "Normalized token aliases.",
+          "Added border-box sizing after screenshot inspection."
+        ],
+        "simplifications": [],
+        "deferred_items": [],
+        "status": "implemented"
+      }
+    ],
+    "replica_fidelity_review": {
+      "reference_sheet_paths": [
+        ".maquette/components/component-sheet-core-primitives-css-contract-v1.png",
+        ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png",
+        ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+      ],
+      "gallery_screenshot_paths": [
+        ".maquette/components/replica-gallery.png"
+      ],
+      "gallery_review_artifact_paths": [
+        ".maquette/components/approved.md"
+      ],
+      "review_mode": "screenshot",
+      "rubric_scores": {
+        "coverage": 5,
+        "visual_match": 4,
+        "anatomy_match": 5,
+        "responsive_match": 5,
+        "implementation_quality": 5
+      },
+      "coverage_summary": "Core CTAs, labels, responsive nav, layout shell/grid, proof panels, code panels, flow cards, waveform, quickstart rows, disclaimer, and footer CTA are implemented.",
+      "failed_categories": [],
+      "corrections_made": [
+        "Normalized generated poster tokens and corrected responsive nav breakpoint.",
+        "Fixed flow-card sizing after screenshot review."
+      ],
+      "simplifications": [],
+      "status": "matches"
+    },
+    "reusable_component_review": {
+      "status": "ready",
+      "api_summary": "Page-ready reusable classes include .btn, .chip, .site-nav, .layout-shell, .layout-grid, .flow-card, .proof-panel, .quickstart, .disclaimer-card, and .footer-cta.",
+      "ready_for_pages": true,
+      "usage_examples_path": ".maquette/components/replica-gallery.html",
+      "gaps": []
+    },
+    "review_notes_path": ".maquette/components/approved.md"
+  },
+  "components": [
+    {
+      "name": "Button",
+      "source_required_component": "Button",
+      "files": [
+        ".maquette/components/css/core-primitives.components.css",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".btn",
+        ".btn__icon",
+        ".btn--primary",
+        ".btn--secondary",
+        ".btn--ghost",
+        ".btn--inverse",
+        ".btn--sm",
+        ".btn--md",
+        ".btn--lg",
+        ".btn[disabled]",
+        ".btn:focus-visible",
+        ".btn:hover",
+        ".btn:active"
+      ],
+      "implemented_variants": [
+        "primary",
+        "secondary",
+        "ghost",
+        "inverse"
+      ],
+      "implemented_sizes": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "active",
+        "disabled"
+      ],
+      "api": {
+        "slots": [
+          "label",
+          "optional icon"
+        ],
+        "required_attributes": [
+          "href for links or type for buttons"
+        ],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<a class=\"btn btn--primary btn--lg\" href=\"#\">clone it</a>"
+        ]
+      },
+      "accessibility_notes": [
+        "Use semantic link/button elements.",
+        "Focus-visible ring is high contrast."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-core-primitives-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Matches core primitive contract with v2 tokens.",
+        "qa_notes": [
+          "Responsive overflow passed in batch QA."
+        ]
+      },
+      "status": "approved"
+    },
+    {
+      "name": "Proof Label Primitives",
+      "source_required_component": "Button",
+      "files": [
+        ".maquette/components/css/core-primitives.components.css",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".kicker",
+        ".chip",
+        ".chip--signal",
+        ".chip--caution",
+        ".chip--muted",
+        ".status-dot",
+        ".inline-link",
+        ".inline-link:hover",
+        ".inline-link:focus-visible"
+      ],
+      "implemented_variants": [
+        "kicker",
+        "signal chip",
+        "caution chip",
+        "muted chip",
+        "status dot",
+        "inline link"
+      ],
+      "implemented_sizes": [
+        "compact"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-visible"
+      ],
+      "api": {
+        "slots": [
+          "label",
+          "optional status dot"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<span class=\"chip chip--signal\"><span class=\"status-dot\"></span>token valid</span>"
+        ]
+      },
+      "accessibility_notes": [
+        "Pair status dots with readable text."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-core-primitives-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Signal/caution/muted labels follow approved brand colors.",
+        "qa_notes": [
+          "Responsive overflow passed in batch QA."
+        ]
+      },
+      "status": "approved"
+    },
+    {
+      "name": "ResponsiveNav",
+      "source_required_component": "ResponsiveNav",
+      "files": [
+        ".maquette/components/css/navigation-layout.components.css",
+        ".maquette/components/js/components.js",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".site-nav",
+        ".site-nav__inner",
+        ".site-nav__brand",
+        ".site-nav__mark",
+        ".site-nav__links",
+        ".site-nav__link",
+        ".site-nav__actions",
+        ".site-nav__toggle",
+        ".site-nav__toggle-icon",
+        ".site-nav__panel",
+        ".site-nav__panel-link",
+        ".site-nav[data-open=\"true\"] .site-nav__panel",
+        ".site-nav__link[aria-current=\"page\"]",
+        ".site-nav__link:hover",
+        ".site-nav__link:focus-visible",
+        ".site-nav__toggle:focus-visible"
+      ],
+      "implemented_variants": [
+        "desktop-inline",
+        "tablet-collapsed",
+        "mobile-collapsed",
+        "mobile-expanded",
+        "active",
+        "focus-visible"
+      ],
+      "implemented_sizes": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-visible",
+        "open",
+        "selected"
+      ],
+      "api": {
+        "slots": [
+          "brand text",
+          "unofficial note",
+          "links",
+          "actions",
+          "mobile panel"
+        ],
+        "required_attributes": [
+          "aria-label",
+          "aria-controls",
+          "aria-expanded",
+          "data-open"
+        ],
+        "js_behavior": "components.js toggles data-open and aria-expanded.",
+        "usage_examples": [
+          "<nav class=\"site-nav\" data-open=\"false\" aria-label=\"Primary\">...</nav>"
+        ]
+      },
+      "accessibility_notes": [
+        "Compact toggle has 44px hit target.",
+        "Open drawer is scrollable and aria-expanded changes."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Matches navigation contract with compact state through 1024px.",
+        "qa_notes": [
+          "Open nav screenshots captured at 390, 768, and 1024px."
+        ]
+      },
+      "status": "approved"
+    },
+    {
+      "name": "Layout Shell",
+      "source_required_component": "ResponsiveNav",
+      "files": [
+        ".maquette/components/css/navigation-layout.components.css",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".layout-shell",
+        ".layout-grid"
+      ],
+      "implemented_variants": [
+        "standard",
+        "responsive"
+      ],
+      "implemented_sizes": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "implemented_states": [
+        "default"
+      ],
+      "api": {
+        "slots": [
+          "content",
+          "grid children"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<main class=\"layout-shell\"><div class=\"layout-grid\">...</div></main>"
+        ]
+      },
+      "accessibility_notes": [
+        "Layout classes do not change semantics."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-navigation-layout-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Uses approved width and gutters.",
+        "qa_notes": [
+          "Responsive collapse covered by nav/layout batch."
+        ]
+      },
+      "status": "approved"
+    },
+    {
+      "name": "ProofPanel",
+      "source_required_component": "ProofPanel",
+      "files": [
+        ".maquette/components/css/cards-composites.components.css",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".proof-panel",
+        ".proof-panel__header",
+        ".proof-panel__title",
+        ".proof-panel__meta",
+        ".proof-panel__body",
+        ".proof-panel__code",
+        ".proof-panel__metric",
+        ".proof-panel--inverse",
+        ".proof-panel--signal"
+      ],
+      "implemented_variants": [
+        "default",
+        "inverse",
+        "signal",
+        "code",
+        "metric"
+      ],
+      "implemented_sizes": [
+        "md",
+        "responsive"
+      ],
+      "implemented_states": [
+        "default",
+        "selected"
+      ],
+      "api": {
+        "slots": [
+          "header",
+          "title",
+          "meta",
+          "body",
+          "code",
+          "metric"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<article class=\"proof-panel proof-panel--signal\">...</article>"
+        ]
+      },
+      "accessibility_notes": [
+        "Use semantic headings and pair metrics with text.",
+        "Code blocks scroll internally."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Proof panels match poster anatomy and v2 tone.",
+        "qa_notes": [
+          "No page-level overflow from code blocks."
+        ]
+      },
+      "status": "approved"
+    },
+    {
+      "name": "FlowCard",
+      "source_required_component": "FlowStepCard",
+      "files": [
+        ".maquette/components/css/cards-composites.components.css",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".flow-card",
+        ".flow-card__step",
+        ".flow-card__title",
+        ".flow-card__body",
+        ".flow-card__meta",
+        ".flow-card--caution",
+        ".flow-card:hover",
+        ".flow-card:focus-within"
+      ],
+      "implemented_variants": [
+        "default",
+        "caution",
+        "equal-height",
+        "bottom-pinned meta"
+      ],
+      "implemented_sizes": [
+        "md",
+        "responsive"
+      ],
+      "implemented_states": [
+        "default",
+        "hover",
+        "focus-within"
+      ],
+      "api": {
+        "slots": [
+          "step",
+          "title",
+          "body",
+          "meta"
+        ],
+        "required_attributes": [],
+        "js_behavior": "None",
+        "usage_examples": [
+          "<article class=\"flow-card\"><span class=\"flow-card__step\">01 OAuth</span>...</article>"
+        ]
+      },
+      "layout_behavior": {
+        "equal_height_grid": "Cards are height: 100% and border-box.",
+        "body_layout": "Body flexes to absorb copy length differences.",
+        "action_row_alignment": "Meta row is pinned with margin-top: auto.",
+        "responsive_notes": "Grid stacks below 860px."
+      },
+      "accessibility_notes": [
+        "Use tabindex only when a card needs focus demonstration or contains interactive content."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Equal-height flow cards match the contract after border-box correction.",
+        "qa_notes": [
+          "Card action/meta rows visually align."
+        ]
+      },
+      "status": "approved"
+    },
+    {
+      "name": "Landing Utility Composites",
+      "source_required_component": "ProofPanel",
+      "files": [
+        ".maquette/components/css/cards-composites.components.css",
+        ".maquette/components/replica-gallery.html"
+      ],
+      "selectors": [
+        ".waveform",
+        ".waveform__bar",
+        ".quickstart",
+        ".quickstart__command",
+        ".disclaimer-card",
+        ".footer-cta",
+        ".footer-cta__actions"
+      ],
+      "implemented_variants": [
+        "waveform",
+        "quickstart",
+        "disclaimer",
+        "footer cta"
+      ],
+      "implemented_sizes": [
+        "md",
+        "responsive"
+      ],
+      "implemented_states": [
+        "default"
+      ],
+      "api": {
+        "slots": [
+          "commands",
+          "disclaimer copy",
+          "footer content",
+          "footer actions"
+        ],
+        "required_attributes": [],
+        "js_behavior": "CSS-only waveform animation; reduced motion disables it.",
+        "usage_examples": [
+          "<aside class=\"disclaimer-card\">Independent project...</aside>"
+        ]
+      },
+      "accessibility_notes": [
+        "Waveform should be decorative unless paired with readable stream status text.",
+        "Quickstart command rows can scroll internally if needed."
+      ],
+      "visual_review": {
+        "reference_image_paths": [
+          ".maquette/components/component-sheet-cards-composites-css-contract-v1.png"
+        ],
+        "latest_screenshot_path": ".maquette/components/replica-gallery.png",
+        "similarity_notes": "Utility composites preserve the unofficial/self-aware tone.",
+        "qa_notes": [
+          "Responsive overflow passed in batch QA."
+        ]
+      },
+      "status": "approved"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "target": ".maquette/components/core-primitives.replica.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/core-primitives.replica.html",
+  "outputPath": ".maquette/components/core-primitives.replica.png",
+  "viewport": {
+    "width": 1440,
+    "height": 1200
+  },
+  "requestedMode": "full-page",
+  "captureMode": "full-page",
+  "clippedFallback": false,
+  "cleanup": "closed",
+  "error": null
+}

@@ -1,0 +1,1211 @@
+{
+  "target": "index.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/index.html",
+  "startedAt": "2026-04-29T09:53:14.491Z",
+  "finishedAt": "2026-04-29T09:53:19.804Z",
+  "allowDocumentOverflow": false,
+  "allowNavFailures": false,
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 1600
+      },
+      "screenshotPath": "landing-page-responsive/responsive-390.png",
+      "windowInnerWidth": 390,
+      "documentElementScrollWidth": 497,
+      "bodyScrollWidth": 497,
+      "documentOverflowPx": 107,
+      "wideComponents": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.token-panel:nth-of-type(1) > pre",
+          "tag": "pre",
+          "clientWidth": 324,
+          "scrollWidth": 324,
+          "rectWidth": 324,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre",
+          "tag": "pre",
+          "clientWidth": 324,
+          "scrollWidth": 469,
+          "rectWidth": 324,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 312,
+          "scrollWidth": 312,
+          "rectWidth": 312,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 312,
+          "scrollWidth": 312,
+          "rectWidth": 312,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card.caution:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 312,
+          "scrollWidth": 312,
+          "rectWidth": 312,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 445,
+          "scrollWidth": 445,
+          "rectWidth": 445.05,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 202,
+          "scrollWidth": 202,
+          "rectWidth": 202.3,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 259,
+          "scrollWidth": 259,
+          "rectWidth": 258.94,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 33,
+          "right": 501.55,
+          "width": 468.55,
+          "overflow": 111.55,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.section-heading.compact:nth-of-type(1)",
+          "tag": "div",
+          "className": "section-heading compact",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.section-heading.compact:nth-of-type(1) > p.eyebrow",
+          "tag": "p",
+          "className": "eyebrow",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.section-heading.compact:nth-of-type(1) > h2",
+          "tag": "h2",
+          "className": "",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2)",
+          "tag": "div",
+          "className": "command-list",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1)",
+          "tag": "button",
+          "className": "command",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2)",
+          "tag": "button",
+          "className": "command",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3)",
+          "tag": "button",
+          "className": "command",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > aside.note",
+          "tag": "aside",
+          "className": "note",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "className": "",
+          "left": 33,
+          "right": 478.05,
+          "width": 445.05,
+          "overflow": 88.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "trueOverflowOffenders": [
+        {
+          "selector": "section#quick-start > div.section-heading.compact:nth-of-type(1)",
+          "tag": "div",
+          "className": "section-heading compact",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.section-heading.compact:nth-of-type(1) > p.eyebrow",
+          "tag": "p",
+          "className": "eyebrow",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.section-heading.compact:nth-of-type(1) > h2",
+          "tag": "h2",
+          "className": "",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2)",
+          "tag": "div",
+          "className": "command-list",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1)",
+          "tag": "button",
+          "className": "command",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2)",
+          "tag": "button",
+          "className": "command",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3)",
+          "tag": "button",
+          "className": "command",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > aside.note",
+          "tag": "aside",
+          "className": "note",
+          "left": 14,
+          "right": 497.05,
+          "width": 483.05,
+          "overflow": 107.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "className": "",
+          "left": 33,
+          "right": 478.05,
+          "width": 445.05,
+          "overflow": 88.05,
+          "acceptedInternalScroll": false,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "acceptedInternalScrollOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 33,
+          "right": 501.55,
+          "width": 468.55,
+          "overflow": 111.55,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 1,
+          "visibleNavControlCount": 2,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body > nav.nav > button.nav-toggle",
+              "ariaControls": "mobile-menu",
+              "ariaExpanded": "false",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 18,
+              "right": 304,
+              "width": 286,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 107,
+          "passNoClippedControls": true,
+          "passTapTargets": false,
+          "passDocumentOverflow": false
+        },
+        "afterOpen": {
+          "compactExpected": true,
+          "navRootCount": 1,
+          "visibleNavControlCount": 7,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body > nav.nav > button.nav-toggle",
+              "ariaControls": "mobile-menu",
+              "ariaExpanded": "true",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 18,
+              "right": 304,
+              "width": 286,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 107,
+          "passNoClippedControls": true,
+          "passTapTargets": false,
+          "passDocumentOverflow": false
+        },
+        "toggleCheck": {
+          "selector": "body > nav.nav > button.nav-toggle",
+          "ariaControls": "mobile-menu",
+          "targetExists": true,
+          "beforeAriaExpanded": "false",
+          "afterAriaExpanded": "true",
+          "ariaExpandedChanged": true
+        },
+        "drawerScrollability": {
+          "targetExists": true,
+          "drawerVisible": true,
+          "clientHeight": 268,
+          "scrollHeight": 268,
+          "viewportHeight": 1600,
+          "overflowY": "visible",
+          "overscrollBehaviorY": "auto",
+          "hasInternalOverflow": false,
+          "contentExceedsViewport": false,
+          "bodyScrollLocked": false,
+          "overscrollContained": false,
+          "closeControlReachable": true,
+          "visibleDrawerLinkCount": 5,
+          "unreachableLinkCount": 0,
+          "scrollableWhenNeeded": true,
+          "bodyLockDoesNotBlockDrawer": true,
+          "passDrawerScrollability": true
+        },
+        "openScreenshotPath": "landing-page-responsive/responsive-nav-open-390.png",
+        "passResponsiveNavigation": false
+      },
+      "passDocumentOverflow": false,
+      "passResponsiveNavigation": false
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1600
+      },
+      "screenshotPath": "landing-page-responsive/responsive-768.png",
+      "windowInnerWidth": 768,
+      "documentElementScrollWidth": 768,
+      "bodyScrollWidth": 768,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.token-panel:nth-of-type(1) > pre",
+          "tag": "pre",
+          "clientWidth": 312,
+          "scrollWidth": 315,
+          "rectWidth": 312.11,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre",
+          "tag": "pre",
+          "clientWidth": 312,
+          "scrollWidth": 469,
+          "rectWidth": 312.13,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 177,
+          "scrollWidth": 210,
+          "rectWidth": 177.41,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 177,
+          "scrollWidth": 218,
+          "rectWidth": 177.41,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card.caution:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 177,
+          "scrollWidth": 188,
+          "rectWidth": 177.41,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 445,
+          "scrollWidth": 445,
+          "rectWidth": 445.05,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 202,
+          "scrollWidth": 202,
+          "rectWidth": 202.3,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 259,
+          "scrollWidth": 259,
+          "rectWidth": 258.94,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 409.98,
+          "right": 878.53,
+          "width": 468.55,
+          "overflow": 110.53,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 409.98,
+          "right": 878.53,
+          "width": 468.55,
+          "overflow": 110.53,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 1,
+          "visibleNavControlCount": 2,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body > nav.nav > button.nav-toggle",
+              "ariaControls": "mobile-menu",
+              "ariaExpanded": "false",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 30.72,
+              "right": 669.28,
+              "width": 638.56,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": false,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": {
+          "compactExpected": true,
+          "navRootCount": 1,
+          "visibleNavControlCount": 7,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body > nav.nav > button.nav-toggle",
+              "ariaControls": "mobile-menu",
+              "ariaExpanded": "true",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 30.72,
+              "right": 669.28,
+              "width": 638.56,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": false,
+          "passDocumentOverflow": true
+        },
+        "toggleCheck": {
+          "selector": "body > nav.nav > button.nav-toggle",
+          "ariaControls": "mobile-menu",
+          "targetExists": true,
+          "beforeAriaExpanded": "false",
+          "afterAriaExpanded": "true",
+          "ariaExpandedChanged": true
+        },
+        "drawerScrollability": {
+          "targetExists": true,
+          "drawerVisible": true,
+          "clientHeight": 268,
+          "scrollHeight": 268,
+          "viewportHeight": 1600,
+          "overflowY": "visible",
+          "overscrollBehaviorY": "auto",
+          "hasInternalOverflow": false,
+          "contentExceedsViewport": false,
+          "bodyScrollLocked": false,
+          "overscrollContained": false,
+          "closeControlReachable": true,
+          "visibleDrawerLinkCount": 5,
+          "unreachableLinkCount": 0,
+          "scrollableWhenNeeded": true,
+          "bodyLockDoesNotBlockDrawer": true,
+          "passDrawerScrollability": true
+        },
+        "openScreenshotPath": "landing-page-responsive/responsive-nav-open-768.png",
+        "passResponsiveNavigation": false
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": false
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 1600
+      },
+      "screenshotPath": "landing-page-responsive/responsive-1024.png",
+      "windowInnerWidth": 1024,
+      "documentElementScrollWidth": 1024,
+      "bodyScrollWidth": 1024,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.token-panel:nth-of-type(1) > pre",
+          "tag": "pre",
+          "clientWidth": 431,
+          "scrollWidth": 431,
+          "rectWidth": 431.16,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre",
+          "tag": "pre",
+          "clientWidth": 431,
+          "scrollWidth": 469,
+          "rectWidth": 431.16,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 257,
+          "scrollWidth": 257,
+          "rectWidth": 256.77,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 257,
+          "scrollWidth": 257,
+          "rectWidth": 256.77,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card.caution:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 257,
+          "scrollWidth": 257,
+          "rectWidth": 256.78,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 445,
+          "scrollWidth": 445,
+          "rectWidth": 445.05,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 202,
+          "scrollWidth": 202,
+          "rectWidth": 202.3,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 259,
+          "scrollWidth": 259,
+          "rectWidth": 258.94,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 1,
+          "visibleNavControlCount": 2,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body > nav.nav > button.nav-toggle",
+              "ariaControls": "mobile-menu",
+              "ariaExpanded": "false",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 40.95,
+              "right": 915.05,
+              "width": 874.09,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": false,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": {
+          "compactExpected": true,
+          "navRootCount": 1,
+          "visibleNavControlCount": 7,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body > nav.nav > button.nav-toggle",
+              "ariaControls": "mobile-menu",
+              "ariaExpanded": "true",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 40.95,
+              "right": 915.05,
+              "width": 874.09,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": false,
+          "passDocumentOverflow": true
+        },
+        "toggleCheck": {
+          "selector": "body > nav.nav > button.nav-toggle",
+          "ariaControls": "mobile-menu",
+          "targetExists": true,
+          "beforeAriaExpanded": "false",
+          "afterAriaExpanded": "true",
+          "ariaExpandedChanged": true
+        },
+        "drawerScrollability": {
+          "targetExists": true,
+          "drawerVisible": true,
+          "clientHeight": 268,
+          "scrollHeight": 268,
+          "viewportHeight": 1600,
+          "overflowY": "visible",
+          "overscrollBehaviorY": "auto",
+          "hasInternalOverflow": false,
+          "contentExceedsViewport": false,
+          "bodyScrollLocked": false,
+          "overscrollContained": false,
+          "closeControlReachable": true,
+          "visibleDrawerLinkCount": 5,
+          "unreachableLinkCount": 0,
+          "scrollableWhenNeeded": true,
+          "bodyLockDoesNotBlockDrawer": true,
+          "passDrawerScrollability": true
+        },
+        "openScreenshotPath": "landing-page-responsive/responsive-nav-open-1024.png",
+        "passResponsiveNavigation": false
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": false
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 1600
+      },
+      "screenshotPath": "landing-page-responsive/responsive-1280.png",
+      "windowInnerWidth": 1280,
+      "documentElementScrollWidth": 1280,
+      "bodyScrollWidth": 1280,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.token-panel:nth-of-type(1) > pre",
+          "tag": "pre",
+          "clientWidth": 246,
+          "scrollWidth": 315,
+          "rectWidth": 245.84,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre",
+          "tag": "pre",
+          "clientWidth": 246,
+          "scrollWidth": 469,
+          "rectWidth": 245.84,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 333,
+          "scrollWidth": 333,
+          "rectWidth": 332.66,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 333,
+          "scrollWidth": 333,
+          "rectWidth": 332.67,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card.caution:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 333,
+          "scrollWidth": 333,
+          "rectWidth": 332.66,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 445,
+          "scrollWidth": 445,
+          "rectWidth": 445.05,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 202,
+          "scrollWidth": 202,
+          "rectWidth": 202.3,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 259,
+          "scrollWidth": 259,
+          "rectWidth": 258.94,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 965.14,
+          "right": 1433.69,
+          "width": 468.55,
+          "overflow": 153.69,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 965.14,
+          "right": 1433.69,
+          "width": 468.55,
+          "overflow": 153.69,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": false,
+        "before": {
+          "compactExpected": false,
+          "navRootCount": 1,
+          "visibleNavControlCount": 6,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 48,
+              "right": 491.58,
+              "width": 443.58,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            },
+            {
+              "selector": "body > nav.nav > div.nav-links:nth-of-type(1) > a:nth-of-type(1)",
+              "tag": "a",
+              "text": "the trick",
+              "left": 515.58,
+              "right": 583.2,
+              "width": 67.63,
+              "height": 15,
+              "clipped": false,
+              "smallTapTarget": true
+            },
+            {
+              "selector": "body > nav.nav > div.nav-links:nth-of-type(1) > a:nth-of-type(2)",
+              "tag": "a",
+              "text": "quick start",
+              "left": 621.2,
+              "right": 703.86,
+              "width": 82.66,
+              "height": 15,
+              "clipped": false,
+              "smallTapTarget": true
+            },
+            {
+              "selector": "body > nav.nav > div.nav-links:nth-of-type(1) > a:nth-of-type(3)",
+              "tag": "a",
+              "text": "CYA",
+              "left": 741.86,
+              "right": 764.41,
+              "width": 22.55,
+              "height": 15,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "screenshotPath": "landing-page-responsive/responsive-1440.png",
+      "windowInnerWidth": 1440,
+      "documentElementScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.token-panel:nth-of-type(1) > pre",
+          "tag": "pre",
+          "clientWidth": 246,
+          "scrollWidth": 315,
+          "rectWidth": 245.84,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre",
+          "tag": "pre",
+          "clientWidth": 246,
+          "scrollWidth": 469,
+          "rectWidth": 245.84,
+          "hasInternalHorizontalScroll": true
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 333,
+          "scrollWidth": 333,
+          "rectWidth": 332.66,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 333,
+          "scrollWidth": 333,
+          "rectWidth": 332.67,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#trick > div.flow-grid:nth-of-type(2) > article.flow-card.caution:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 333,
+          "scrollWidth": 333,
+          "rectWidth": 332.66,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 445,
+          "scrollWidth": 445,
+          "rectWidth": 445.05,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 202,
+          "scrollWidth": 202,
+          "rectWidth": 202.3,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "section#quick-start > div.command-list:nth-of-type(2) > button.command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 259,
+          "scrollWidth": 259,
+          "rectWidth": 258.94,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 1045.14,
+          "right": 1513.69,
+          "width": 468.55,
+          "overflow": 73.69,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [
+        {
+          "selector": "main#top > section.hero.shell:nth-of-type(1) > div.hero-demo:nth-of-type(2) > article.panel.stream-panel:nth-of-type(2) > pre > code",
+          "tag": "code",
+          "className": "",
+          "left": 1045.14,
+          "right": 1513.69,
+          "width": 468.55,
+          "overflow": 73.69,
+          "acceptedInternalScroll": true,
+          "acceptedClosedOffscreenDrawer": false,
+          "offscreenDrawerSelector": ""
+        }
+      ],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": false,
+        "before": {
+          "compactExpected": false,
+          "navRootCount": 1,
+          "visibleNavControlCount": 6,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [
+            {
+              "selector": "body > nav.nav > a.brand",
+              "tag": "a",
+              "text": "ChatFlow\nunofficial / macOS",
+              "left": 48,
+              "right": 571.58,
+              "width": 523.58,
+              "height": 31,
+              "clipped": false,
+              "smallTapTarget": true
+            },
+            {
+              "selector": "body > nav.nav > div.nav-links:nth-of-type(1) > a:nth-of-type(1)",
+              "tag": "a",
+              "text": "the trick",
+              "left": 595.58,
+              "right": 663.2,
+              "width": 67.63,
+              "height": 15,
+              "clipped": false,
+              "smallTapTarget": true
+            },
+            {
+              "selector": "body > nav.nav > div.nav-links:nth-of-type(1) > a:nth-of-type(2)",
+              "tag": "a",
+              "text": "quick start",
+              "left": 701.2,
+              "right": 783.86,
+              "width": 82.66,
+              "height": 15,
+              "clipped": false,
+              "smallTapTarget": true
+            },
+            {
+              "selector": "body > nav.nav > div.nav-links:nth-of-type(1) > a:nth-of-type(3)",
+              "tag": "a",
+              "text": "CYA",
+              "left": 821.86,
+              "right": 844.41,
+              "width": 22.55,
+              "height": 15,
+              "clipped": false,
+              "smallTapTarget": true
+            }
+          ],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    }
+  ],
+  "pass": false
+}

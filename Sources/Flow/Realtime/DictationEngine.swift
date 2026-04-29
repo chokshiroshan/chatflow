@@ -38,7 +38,18 @@ final class DictationEngine {
     }
 
     func activate() {
-        hotkey.start()
+        guard hotkey.start() else {
+            let missing = PermissionsManager.shared.checkAll().missing
+            let message: String
+            if missing.isEmpty {
+                message = "Global hotkey could not start. Try reopening ChatFlow and re-granting Accessibility/Input Monitoring."
+            } else {
+                message = "Grant \(missing.joined(separator: ", ")) to use the global hotkey."
+            }
+            onStateChanged?(.error(message))
+            print("⚠️ \(message)")
+            return
+        }
         onStateChanged?(.idle)
         print("🎤 Dictation active. Press \(config.hotkey) to start.")
         Task { await preConnect() }

@@ -1,0 +1,608 @@
+{
+  "target": ".maquette/components/replica-gallery.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/.maquette/components/replica-gallery.html",
+  "startedAt": "2026-04-29T09:39:02.539Z",
+  "finishedAt": "2026-04-29T09:39:06.754Z",
+  "allowDocumentOverflow": false,
+  "allowNavFailures": false,
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 1600
+      },
+      "screenshotPath": ".maquette/components/replica-gallery-responsive/responsive-390.png",
+      "windowInnerWidth": 390,
+      "documentElementScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--signal:nth-of-type(1) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 314,
+          "scrollWidth": 314,
+          "rectWidth": 316,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--inverse:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 314,
+          "scrollWidth": 314,
+          "rectWidth": 316,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 253,
+          "scrollWidth": 253,
+          "rectWidth": 253.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.09,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.06,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 2,
+          "visibleNavControlCount": 3,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+              "ariaControls": "site-nav-panel",
+              "ariaExpanded": "false",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": {
+          "compactExpected": true,
+          "navRootCount": 2,
+          "visibleNavControlCount": 8,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+              "ariaControls": "site-nav-panel",
+              "ariaExpanded": "true",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "toggleCheck": {
+          "selector": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+          "ariaControls": "site-nav-panel",
+          "targetExists": true,
+          "beforeAriaExpanded": "false",
+          "afterAriaExpanded": "true",
+          "ariaExpandedChanged": true
+        },
+        "drawerScrollability": {
+          "targetExists": true,
+          "drawerVisible": true,
+          "clientHeight": 32,
+          "scrollHeight": 372,
+          "viewportHeight": 1600,
+          "overflowY": "auto",
+          "overscrollBehaviorY": "contain",
+          "hasInternalOverflow": true,
+          "contentExceedsViewport": false,
+          "bodyScrollLocked": false,
+          "overscrollContained": true,
+          "closeControlReachable": true,
+          "visibleDrawerLinkCount": 5,
+          "unreachableLinkCount": 0,
+          "scrollableWhenNeeded": true,
+          "bodyLockDoesNotBlockDrawer": true,
+          "passDrawerScrollability": true
+        },
+        "openScreenshotPath": ".maquette/components/replica-gallery-responsive/responsive-nav-open-390.png",
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1600
+      },
+      "screenshotPath": ".maquette/components/replica-gallery-responsive/responsive-768.png",
+      "windowInnerWidth": 768,
+      "documentElementScrollWidth": 768,
+      "bodyScrollWidth": 768,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--signal:nth-of-type(1) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 692,
+          "scrollWidth": 692,
+          "rectWidth": 694,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--inverse:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 692,
+          "scrollWidth": 692,
+          "rectWidth": 694,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 2,
+          "visibleNavControlCount": 3,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+              "ariaControls": "site-nav-panel",
+              "ariaExpanded": "false",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": {
+          "compactExpected": true,
+          "navRootCount": 2,
+          "visibleNavControlCount": 8,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+              "ariaControls": "site-nav-panel",
+              "ariaExpanded": "true",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "toggleCheck": {
+          "selector": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+          "ariaControls": "site-nav-panel",
+          "targetExists": true,
+          "beforeAriaExpanded": "false",
+          "afterAriaExpanded": "true",
+          "ariaExpandedChanged": true
+        },
+        "drawerScrollability": {
+          "targetExists": true,
+          "drawerVisible": true,
+          "clientHeight": 32,
+          "scrollHeight": 372,
+          "viewportHeight": 1600,
+          "overflowY": "auto",
+          "overscrollBehaviorY": "contain",
+          "hasInternalOverflow": true,
+          "contentExceedsViewport": false,
+          "bodyScrollLocked": false,
+          "overscrollContained": true,
+          "closeControlReachable": true,
+          "visibleDrawerLinkCount": 5,
+          "unreachableLinkCount": 0,
+          "scrollableWhenNeeded": true,
+          "bodyLockDoesNotBlockDrawer": true,
+          "passDrawerScrollability": true
+        },
+        "openScreenshotPath": ".maquette/components/replica-gallery-responsive/responsive-nav-open-768.png",
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 1600
+      },
+      "screenshotPath": ".maquette/components/replica-gallery-responsive/responsive-1024.png",
+      "windowInnerWidth": 1024,
+      "documentElementScrollWidth": 1024,
+      "bodyScrollWidth": 1024,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--signal:nth-of-type(1) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 486,
+          "scrollWidth": 486,
+          "rectWidth": 488.19,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--inverse:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 390,
+          "scrollWidth": 390,
+          "rectWidth": 391.81,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": true,
+        "before": {
+          "compactExpected": true,
+          "navRootCount": 2,
+          "visibleNavControlCount": 3,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+              "ariaControls": "site-nav-panel",
+              "ariaExpanded": "false",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": {
+          "compactExpected": true,
+          "navRootCount": 2,
+          "visibleNavControlCount": 8,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 1,
+          "toggleCandidates": [
+            {
+              "index": 0,
+              "selector": "[data-maquette-audit-nav-toggle=\"0\"]",
+              "cssPath": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+              "ariaControls": "site-nav-panel",
+              "ariaExpanded": "true",
+              "accessibleLabel": "Open navigation",
+              "targetExists": true,
+              "width": 44,
+              "height": 44,
+              "smallTapTarget": false
+            }
+          ],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "toggleCheck": {
+          "selector": "body.nav-proof > nav.site-nav > div.site-nav__inner:nth-of-type(1) > button.site-nav__toggle",
+          "ariaControls": "site-nav-panel",
+          "targetExists": true,
+          "beforeAriaExpanded": "false",
+          "afterAriaExpanded": "true",
+          "ariaExpandedChanged": true
+        },
+        "drawerScrollability": {
+          "targetExists": true,
+          "drawerVisible": true,
+          "clientHeight": 32,
+          "scrollHeight": 372,
+          "viewportHeight": 1600,
+          "overflowY": "auto",
+          "overscrollBehaviorY": "contain",
+          "hasInternalOverflow": true,
+          "contentExceedsViewport": false,
+          "bodyScrollLocked": false,
+          "overscrollContained": true,
+          "closeControlReachable": true,
+          "visibleDrawerLinkCount": 5,
+          "unreachableLinkCount": 0,
+          "scrollableWhenNeeded": true,
+          "bodyLockDoesNotBlockDrawer": true,
+          "passDrawerScrollability": true
+        },
+        "openScreenshotPath": ".maquette/components/replica-gallery-responsive/responsive-nav-open-1024.png",
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 1600
+      },
+      "screenshotPath": ".maquette/components/replica-gallery-responsive/responsive-1280.png",
+      "windowInnerWidth": 1280,
+      "documentElementScrollWidth": 1280,
+      "bodyScrollWidth": 1280,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--signal:nth-of-type(1) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 594,
+          "scrollWidth": 594,
+          "rectWidth": 596,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--inverse:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 478,
+          "scrollWidth": 478,
+          "rectWidth": 480,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": false,
+        "before": {
+          "compactExpected": false,
+          "navRootCount": 2,
+          "visibleNavControlCount": 9,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1600
+      },
+      "screenshotPath": ".maquette/components/replica-gallery-responsive/responsive-1440.png",
+      "windowInnerWidth": 1440,
+      "documentElementScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "documentOverflowPx": 0,
+      "wideComponents": [
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--signal:nth-of-type(1) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 594,
+          "scrollWidth": 594,
+          "rectWidth": 596,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(3) > article.proof-panel.proof-panel--inverse:nth-of-type(2) > pre.proof-panel__code",
+          "tag": "pre",
+          "clientWidth": 478,
+          "scrollWidth": 478,
+          "rectWidth": 480,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(1) > code",
+          "tag": "code",
+          "clientWidth": 273,
+          "scrollWidth": 273,
+          "rectWidth": 273.39,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(2) > code",
+          "tag": "code",
+          "clientWidth": 99,
+          "scrollWidth": 99,
+          "rectWidth": 99.42,
+          "hasInternalHorizontalScroll": false
+        },
+        {
+          "selector": "body.nav-proof > main.cards-proof__wrap > section.cards-proof__panels:nth-of-type(4) > article.proof-panel > div.quickstart:nth-of-type(2) > div.quickstart__command:nth-of-type(3) > code",
+          "tag": "code",
+          "clientWidth": 66,
+          "scrollWidth": 66,
+          "rectWidth": 66.28,
+          "hasInternalHorizontalScroll": false
+        }
+      ],
+      "overflowOffenders": [],
+      "trueOverflowOffenders": [],
+      "acceptedInternalScrollOffenders": [],
+      "acceptedClosedOffscreenDrawerOffenders": [],
+      "responsiveNavigation": {
+        "compactExpected": false,
+        "before": {
+          "compactExpected": false,
+          "navRootCount": 2,
+          "visibleNavControlCount": 9,
+          "hasPrimaryNav": true,
+          "toggleCandidateCount": 0,
+          "toggleCandidates": [],
+          "clippedControls": [],
+          "smallTapTargets": [],
+          "documentOverflowPx": 0,
+          "passNoClippedControls": true,
+          "passTapTargets": true,
+          "passDocumentOverflow": true
+        },
+        "afterOpen": null,
+        "toggleCheck": null,
+        "drawerScrollability": null,
+        "openScreenshotPath": null,
+        "passResponsiveNavigation": true
+      },
+      "passDocumentOverflow": true,
+      "passResponsiveNavigation": true
+    }
+  ],
+  "pass": true
+}

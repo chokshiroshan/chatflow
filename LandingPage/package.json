@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m http.server 4173",
+    "check": "node --check script.js"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "playwright": "^1.59.1"
+  }
+}

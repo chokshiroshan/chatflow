@@ -1,0 +1,14 @@
+{
+  "target": "index.html",
+  "targetUrl": "file:///Users/roshanchokshi/Documents/Projects/chatflow/LandingPage/index.html",
+  "outputPath": "landing-page.png",
+  "viewport": {
+    "width": 1440,
+    "height": 2200
+  },
+  "requestedMode": "full-page",
+  "captureMode": "full-page",
+  "clippedFallback": false,
+  "cleanup": "closed",
+  "error": null
+}

@@ -96,7 +96,6 @@ struct FloatingPill: View {
         case .connecting: return FlowColors.accentOrange
         case .processing: return FlowColors.accentPurple
         case .injecting: return FlowColors.accentGreen
-        case .speaking: return FlowColors.accentGreen
         case .error: return Color(red: 1.0, green: 0.35, blue: 0.35)
         default: return FlowColors.textTertiary
         }

@@ -9,7 +9,6 @@ enum FlowState: Equatable {
     case recording
     case processing
     case injecting
-    case speaking
     case error(String)
 
     var isRecording: Bool { self == .recording }
@@ -179,7 +178,34 @@ struct FlowConfig: Codable {
             }
         }
 
+        cleanupDeprecatedKeys()
+
         return config
+    }
+
+    /// Remove deprecated keys from the config file on disk.
+    /// Called once after loading to clean up old config files.
+    private static func cleanupDeprecatedKeys() {
+        guard let data = try? Data(contentsOf: configPath),
+              var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return
+        }
+        let deprecated = ["shouldMuteAudio"]
+        var changed = false
+        for key in deprecated {
+            if json[key] != nil {
+                json.removeValue(forKey: key)
+                changed = true
+            }
+        }
+        if changed {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            if let cleaned = try? encoder.encode(json) {
+                try? cleaned.write(to: configPath)
+                print("📋 Cleaned up deprecated config keys")
+            }
+        }
     }
 
     func save() {

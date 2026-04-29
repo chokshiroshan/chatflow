@@ -15,10 +15,6 @@ final class RealtimeClient {
     var onDisconnected: (() -> Void)?
     var onPartialTranscript: ((String) -> Void)?
     var onFinalTranscript: ((String) -> Void)?
-    var onAudioResponse: ((Data) -> Void)?
-    var onSpeechStarted: (() -> Void)?
-    var onSpeechEnded: (() -> Void)?
-    var onResponseComplete: (() -> Void)?
     var onError: ((String) -> Void)?
 
     // MARK: - State
@@ -33,7 +29,7 @@ final class RealtimeClient {
         case dictation(language: String)
     }
 
-    func connect(accessToken: String, model: String = FlowConfig.load().realtimeModel, mode: ConnectionMode, backendMode: Bool = false) async throws {
+    func connect(accessToken: String, model: String = FlowConfig.load().realtimeModel, mode: ConnectionMode) async throws {
         let urlString = "wss://api.openai.com/v1/realtime?model=\(model)"
 
         guard let url = URL(string: urlString) else {
@@ -44,7 +40,7 @@ final class RealtimeClient {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
-        print("🔌 Connecting to Realtime API: \(urlString) (backend: \(backendMode))")
+        print("🔌 Connecting to Realtime API: \(urlString)")
 
         let session = URLSession(configuration: .ephemeral)
         let ws = session.webSocketTask(with: request)
@@ -346,37 +342,17 @@ final class RealtimeClient {
                 onFinalTranscript?(t)
             }
 
-        // Response audio (future voice chat mode)
-        case "response.audio.delta":
-            if let b64 = obj["delta"] as? String,
-               let audioData = Data(base64Encoded: b64) {
-                onAudioResponse?(audioData)
-            }
-
-        case "response.audio.done":
-            break
-
         // Rate limits
         case "rate_limits.updated":
             print("  📊 Rate limits raw: \(json)")
 
         // Response lifecycle
         case "response.done":
-            onResponseComplete?()
             partialText = ""
 
-        // Speech detection
-        case "input_audio_buffer.speech_started":
-            onSpeechStarted?()
-
-        case "input_audio_buffer.speech_stopped":
-            onSpeechEnded?()
-
-        // Audio buffer
         case "input_audio_buffer.committed":
             break
 
-        // Conversation item
         case "conversation.item.created":
             break
 

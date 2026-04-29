@@ -1,5 +1,4 @@
 import Foundation
-import AVFoundation
 import AppKit
 
 /// Lightweight sound effects for recording state transitions.

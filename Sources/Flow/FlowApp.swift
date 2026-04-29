@@ -57,7 +57,6 @@ private struct MenuBarLabel: View {
         case .processing: return "ellipsis.circle.fill"
         case .injecting: return "checkmark.circle.fill"
         case .error: return "exclamationmark.circle.fill"
-        case .speaking: return "speaker.wave.2.fill"
         }
     }
 
@@ -79,7 +78,6 @@ private struct MenuBarLabel: View {
         case .processing: return "ChatFlow — Transcribing"
         case .injecting: return "ChatFlow — Injecting text"
         case .error(let msg): return "ChatFlow — Error: \(msg)"
-        case .speaking: return "ChatFlow — Active"
         }
     }
 }

@@ -1,6 +1,5 @@
 import Foundation
 import ApplicationServices
-import CoreGraphics
 
 /// Structured context about what's in the currently focused text field.
 ///

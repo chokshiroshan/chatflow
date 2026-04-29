@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Dictation engine using OpenAI's Realtime API for streaming transcription.
 ///
@@ -161,7 +162,8 @@ final class DictationEngine {
         // Snapshot the focused text field before recording starts
         dictationTextContext = EditedTextManager.shared.getTextContext()
 
-        // Refresh instructions with current active app + build transcription prompt
+        // Refresh instructions with current active app context
+        client?.refreshInstructions(language: config.language)
 
         isRecording = true
         isFinishing = false
@@ -291,27 +293,36 @@ final class DictationEngine {
         // or the text may auto-submit (browser chat apps)
         DictatedTextEditWatcher.shared.prePinElement()
 
-        let result = TextInjector.injectWithResult(cleaned)
-        switch result {
-        case .success:
-            print("✅ Text injected successfully")
+        if config.autoPasteEnabled {
+            let result = TextInjector.injectWithResult(cleaned)
+            switch result {
+            case .success:
+                print("✅ Text injected successfully")
+                onStateChanged?(.idle)
+
+                // Start watching for edits to detect vocabulary corrections
+                let before = dictationTextContext?.beforeCursor ?? ""
+                let after = dictationTextContext?.afterCursor ?? ""
+                DictatedTextEditWatcher.shared.startWatching(
+                    transcript: cleaned,
+                    beforeCursor: before,
+                    afterCursor: after
+                )
+
+            case .failed(let reason):
+                print("❌ Text injection failed: \(reason)")
+                onStateChanged?(.error("Text injection failed: \(reason)"))
+            case .blocked:
+                print("⚠️ Text injection blocked (readonly field?)")
+                onStateChanged?(.error("Paste blocked — text field may be readonly"))
+            }
+        } else {
+            // Auto-paste disabled — copy to clipboard instead
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.setString(cleaned, forType: .string)
+            print("📋 Copied to clipboard (auto-paste disabled)")
             onStateChanged?(.idle)
-
-            // Start watching for edits to detect vocabulary corrections
-            let before = dictationTextContext?.beforeCursor ?? ""
-            let after = dictationTextContext?.afterCursor ?? ""
-            DictatedTextEditWatcher.shared.startWatching(
-                transcript: cleaned,
-                beforeCursor: before,
-                afterCursor: after
-            )
-
-        case .failed(let reason):
-            print("❌ Text injection failed: \(reason)")
-            onStateChanged?(.error("Text injection failed: \(reason)"))
-        case .blocked:
-            print("⚠️ Text injection blocked (readonly field?)")
-            onStateChanged?(.error("Paste blocked — text field may be readonly"))
         }
 
         // Reconnect for next session

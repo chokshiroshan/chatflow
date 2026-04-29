@@ -1,7 +1,5 @@
 import Foundation
-import AppKit
 import CryptoKit
-import CommonCrypto
 
 /// Authenticates with ChatGPT via OAuth PKCE — exactly matching the Codex CLI flow.
 ///

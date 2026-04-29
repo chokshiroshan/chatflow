@@ -108,7 +108,9 @@ struct FlowConfig: Codable {
 
     /// System instructions — behavior template (templates swap this entirely).
     /// Controls HOW the model transcribes (verbatim, clean, code-friendly, etc.).
-    var systemInstructions: String = "Transcribe exactly what was said. Output only the spoken words. Do not correct, interpret, or rephrase anything. Preserve the speaker's exact wording including informal speech, pauses as commas, and natural sentence structure. If there is no clear speech, output nothing."
+    /// Default: context-aware mode (Wispr Flow-inspired) — cleans speech, formats per app,
+    /// applies user context, punctuates smartly, matches existing text style.
+    var systemInstructions: String = "You are a dictation engine. The user speaks, you produce ready-to-use text. Rules: 1) Clean up speech: remove filler words (um, uh, like, you know), fix grammar, smooth run-on sentences. Keep the speaker's meaning and tone — don't over-formalize. 2) Add smart punctuation: periods, commas, question marks, exclamation points based on natural speech patterns. Capitalize properly. 3) Format for the active app: if in a code editor, preserve technical terms and use code formatting where appropriate; if in a chat app (Discord, Slack, iMessage), keep it casual with minimal punctuation; if in email or document editor, use proper formal English; if in a terminal, keep output raw and technical. 4) Preserve proper nouns, technical terms, and names exactly — never misspell them. 5) If the user dictates code, preserve syntax keywords literally (def, function, class, return, etc.). 6) Output ONLY the final text. No explanations, no prefixes, no quotes around the output. 7) If there is no clear speech, output nothing."
 
     /// User context — personal names, terms, projects, abbreviations.
     /// Survives template switches. Appended to systemInstructions every session.

@@ -65,12 +65,13 @@ final class ContextManager {
     }
 
     /// Build the full instructions string with context injected.
+    /// Wispr Flow-inspired: rich context-aware instructions that adapt output per app.
     func buildInstructions(config: FlowConfig = FlowConfig.load()) -> String {
         var parts = [config.systemInstructions]
 
         // Add user context (survives template switches)
         if !config.userContext.isEmpty {
-            parts.append("User context (use this to correctly transcribe names, terms, and abbreviations): \(config.userContext)")
+            parts.append("User context — always use these spellings: \(config.userContext)")
         }
 
         // Add vocabulary corrections
@@ -78,9 +79,10 @@ final class ContextManager {
             parts.append(vocabSnippet)
         }
 
-        // Add active app context
+        // Add rich app-specific context with formatting rules
         if config.includeAppContext, let app = Self.frontmostApp() {
-            parts.append("The user is currently in \(app). Use this to interpret ambiguous words.")
+            let appRules = Self.appFormattingRules(app)
+            parts.append(appRules)
         }
 
         // NOTE: text field context now goes into input_audio_transcription.prompt
@@ -88,6 +90,41 @@ final class ContextManager {
         //       screen context goes into conversation.item.create system messages
 
         return parts.joined(separator: " ")
+    }
+
+    // MARK: - App-Specific Formatting
+
+    /// Return formatting instructions tailored to the active app.
+    private static func appFormattingRules(_ app: String) -> String {
+        let lower = app.lowercased()
+
+        // Chat/messaging apps — casual, minimal punctuation
+        if ["discord", "slack", "telegram", "messages", "imessage", "whatsapp", "signal", "messenger", "teams", "irc"].contains(where: { lower.contains($0) }) {
+            return "Active app: \(app). This is a chat app — keep output casual and conversational. Light punctuation (mostly just periods at sentence end). No capitalization enforcement unless it's a proper noun. Preserve abbreviations (lol, omg, tbh, idk). Keep it natural — like texting a friend."
+        }
+
+        // Code editors — technical, preserve syntax
+        if ["xcode", "vscode", "code", "vim", "nvim", "emacs", "sublime", "cursor", "windsurf", "zed", "fleet", "intellij", "android studio"].contains(where: { lower.contains($0) }) {
+            return "Active app: \(app). This is a code editor — output should be technical and precise. Preserve code syntax keywords literally (def, function, class, return, import, const, let, var). Keep variable names in camelCase or snake_case as spoken. If the user dictates code, format it as valid code. Don't add periods at the end of code lines."
+        }
+
+        // Terminal/shell — raw, technical
+        if ["terminal", "iterm", "warp", "hyper", "kitty", "alacritty", "ghostty"].contains(where: { lower.contains($0) }) {
+            return "Active app: \(app). This is a terminal — output should be raw and technical. Preserve command syntax (flags like -a, --verbose). Keep paths and URLs literal. No trailing punctuation. Output exactly what would be typed."
+        }
+
+        // Email — formal, proper grammar
+        if ["mail", "gmail", "outlook", "spark", "airmail", "thunderbird", "protonmail"].contains(where: { lower.contains($0) }) {
+            return "Active app: \(app). This is an email client — use proper formal English. Complete sentences, proper grammar, correct punctuation. Capitalize appropriately. Format as readable prose."
+        }
+
+        // Document/note editors — clean prose
+        if ["pages", "word", "docs", "notion", "obsidian", "bear", "ulysses", "ia writer", "typora", "markor"].contains(where: { lower.contains($0) }) {
+            return "Active app: \(app). This is a document editor — output clean, well-formatted prose. Proper grammar and punctuation. Natural sentence structure. Preserve markdown formatting if the user dictates it (headers, lists, bold)."
+        }
+
+        // Default — balanced
+        return "Active app: \(app). Use this to interpret ambiguous words and adjust output style."
     }
 
     // MARK: - Active App Detection

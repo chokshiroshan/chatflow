@@ -52,6 +52,15 @@ final class ScreenContextExtractor {
 
     /// Capture the display that currently has the mouse cursor.
     private func captureActiveDisplay() -> CGImage? {
+        // Check/request screen recording permission (macOS 10.15+)
+        // Returns true if permission is already granted, or opens System Settings.
+        // For debug builds, each swift build creates a new binary — permission must be re-granted.
+        if !CGPreflightScreenCaptureAccess() {
+            print("📸 Screen recording permission not granted — opening System Settings")
+            CGRequestScreenCaptureAccess()
+            return nil
+        }
+
         guard let screen = NSScreen.screenWithMouse ?? NSScreen.main else {
             print("📸 No screen found (screenWithMouse=nil, main=nil)")
             return nil

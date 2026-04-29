@@ -199,6 +199,48 @@ final class RealtimeClient {
         print("📋 System message sent: \(text.prefix(150))\(text.count > 150 ? "..." : "")")
     }
 
+    /// Send a screenshot image to the Realtime API for vision-based context.
+    /// Uses the native `input_image` content type — the model sees the screenshot
+    /// alongside audio and uses it for better transcription accuracy.
+    /// No separate vision API call needed.
+    func sendImage(base64PNG: String, width: Int, height: Int, prompt: String = "Look at this screenshot. Extract ONLY information that helps accurately transcribe someone's speech: application name, visible text labels, technical terms, variable/function names, names of people/projects/products, domain-specific vocabulary. Respond with a concise paragraph of context facts.") {
+        guard isConnected else { return }
+
+        // Build multimodal user message with image + text prompt
+        // Using JSONSerialization to safely handle large base64 strings
+        let content: [[String: Any]] = [
+            [
+                "type": "input_image",
+                "image_url": "data:image/png;base64,\(base64PNG)",
+                "detail": "low"
+            ],
+            [
+                "type": "input_text",
+                "text": prompt
+            ]
+        ]
+
+        let item: [String: Any] = [
+            "type": "message",
+            "role": "user",
+            "content": content
+        ]
+
+        let event: [String: Any] = [
+            "type": "conversation.item.create",
+            "item": item
+        ]
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: event)
+            guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+            try send(jsonString)
+            print("📸 Screenshot sent via Realtime API (\(width)x\(height), \(base64PNG.count) chars base64)")
+        } catch {
+            print("⚠️ Failed to send screenshot image: \(error)")
+        }
+    }
+
     func cancelResponse() {
         guard isConnected else { return }
         try? send("""

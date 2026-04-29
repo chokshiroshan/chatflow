@@ -181,13 +181,16 @@ final class DictationEngine {
         // Uses curKeysDown tracking from HotkeyManager for reliable state
         isEnhancedMode = hotkey.isEnhancedTrigger
         if isEnhancedMode {
-            print("📸 Enhanced mode — capturing screen context...")
-            Task {
-                guard let token = await auth.ensureValidToken() else { return }
-                if let screenContext = await ScreenContextExtractor.shared.extractContext(token: token) {
-                    // Inject screen context into the live session
-                    injectScreenContext(screenContext)
-                }
+            print("📸 Enhanced mode — capturing screenshot for vision context...")
+            // Capture screenshot and send directly via Realtime API WebSocket
+            // No separate HTTP call — the model handles vision natively
+            if let screenshot = ScreenContextExtractor.shared.captureScreenshot() {
+                client?.sendImage(
+                    base64PNG: screenshot.base64PNG,
+                    width: screenshot.width,
+                    height: screenshot.height
+                )
+                screenContextInjected = true
             }
         }
 
@@ -265,17 +268,6 @@ final class DictationEngine {
         isRecording = false
         isFinishing = false
         onStateChanged?(.idle)
-    }
-
-    /// Inject screen context via system message (lighter than session.update).
-    /// This tells the model what's on screen for better accuracy.
-    @MainActor
-    private func injectScreenContext(_ context: String) {
-        guard isRecording, !screenContextInjected else { return }
-        screenContextInjected = true
-
-        client?.sendSystemMessage("Screen context (what the user sees — use for vocabulary and terms): \(context)")
-        print("📸 Screen context injected via system message")
     }
 
     private func handleTranscript(_ text: String) {

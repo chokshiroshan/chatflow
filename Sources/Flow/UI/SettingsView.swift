@@ -153,27 +153,21 @@ struct SettingsView: View {
 
     private let instructionTemplates: [InstructionTemplate] = [
         InstructionTemplate(
+            name: "Smart",
+            icon: "sparkles",
+            description: "Cleans speech, formats per app",
+            instructions: "You are a dictation engine. The user speaks, you produce ready-to-use text. Rules: 1) Clean up speech: remove filler words (um, uh, like, you know), fix grammar, smooth run-on sentences. Keep the speaker's meaning and tone — don't over-formalize. 2) Add smart punctuation: periods, commas, question marks, exclamation points based on natural speech patterns. Capitalize properly. 3) Format for the active app: if in a code editor, preserve technical terms and use code formatting where appropriate; if in a chat app (Discord, Slack, iMessage), keep it casual with minimal punctuation; if in email or document editor, use proper formal English; if in a terminal, keep output raw and technical. 4) Preserve proper nouns, technical terms, and names exactly — never misspell them. 5) If the user dictates code, preserve syntax keywords literally (def, function, class, return, etc.). 6) Output ONLY the final text. No explanations, no prefixes, no quotes around the output. 7) If there is no clear speech, output nothing."
+        ),
+        InstructionTemplate(
             name: "Verbatim",
             icon: "text.quote",
             description: "Exact words, no corrections",
             instructions: "Transcribe exactly what was said. Output only the spoken words. Do not correct, interpret, or rephrase anything. Preserve the speaker's exact wording including informal speech, pauses as commas, and natural sentence structure. If there is no clear speech, output nothing."
         ),
         InstructionTemplate(
-            name: "Clean & Formal",
-            icon: "sparkles",
-            description: "Grammar fixes, polished output",
-            instructions: "Transcribe the user's speech and output clean, well-formed text. Fix grammar mistakes, remove filler words (um, uh, like), add proper punctuation, and format the result as polished written text. Preserve the original meaning but improve readability."
-        ),
-        InstructionTemplate(
-            name: "Overly Eager",
-            icon: "bolt.fill",
-            description: "Expands abbreviations, adds context",
-            instructions: "Transcribe and enhance the user's speech. Expand abbreviations to their full form, add missing context, format lists and structures clearly. If the user says something ambiguous, choose the most likely intended meaning. Be helpful and interpret generously."
-        ),
-        InstructionTemplate(
-            name: "Code Friendly",
+            name: "Code",
             icon: "chevron.left.forwardslash.chevron.right",
-            description: "Optimized for technical terms",
+            description: "Technical terms, code syntax",
             instructions: "Transcribe speech with technical accuracy. Properly capitalize and format programming terms, API names, variable names, and technical jargon. Use camelCase, PascalCase, or snake_case where appropriate for code terms. Format code snippets on separate lines."
         ),
         InstructionTemplate(
@@ -211,7 +205,6 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // Template grid
                     LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 10),
                         GridItem(.flexible(), spacing: 10),
                         GridItem(.flexible(), spacing: 10)
                     ], spacing: 10) {

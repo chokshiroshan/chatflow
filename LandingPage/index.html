@@ -5,229 +5,341 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="ChatFlow is a native macOS dictation app that uses ChatGPT auth, the OpenAI Realtime API, and a very funny amount of Codex-shaped duct tape."
+      content="ChatFlow is native macOS dictation that feels like Wispr Flow, runs on your ChatGPT plan, and quietly does a Codex-shaped OAuth dance under the hood."
     >
-    <title>ChatFlow — macOS dictation through the side door</title>
+    <title>ChatFlow — macOS dictation, powered by your ChatGPT plan</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <nav class="nav" data-open="false" aria-label="Primary navigation">
       <a class="brand" href="#top" aria-label="ChatFlow home">
-        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
         <span>
           <strong>ChatFlow</strong>
-          <small>unofficial / macOS</small>
+          <small>flow mode / macOS</small>
         </span>
       </a>
 
       <div class="nav-links">
-        <a href="#trick">the trick</a>
+        <a href="#flow-mode">flow mode</a>
+        <a href="#receipts">receipts</a>
         <a href="#quick-start">quick start</a>
         <a href="#cya">CYA</a>
       </div>
 
       <div class="nav-actions">
         <a class="button button-secondary" href="https://github.com/chokshiroshan/chatflow">read the code</a>
-        <a class="button button-primary" href="https://github.com/chokshiroshan/chatflow">clone it</a>
+        <a class="button button-primary" href="https://github.com/chokshiroshan/chatflow/releases/latest">download dmg</a>
       </div>
 
-      <button class="nav-toggle" type="button" data-nav-toggle aria-controls="mobile-menu" aria-expanded="false" aria-label="Open navigation">
+      <button
+        class="nav-toggle"
+        type="button"
+        data-nav-toggle
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        aria-label="Open navigation"
+      >
         <span></span>
       </button>
 
       <div class="mobile-menu" id="mobile-menu">
-        <a href="#trick">the trick</a>
+        <a href="#flow-mode">flow mode</a>
+        <a href="#receipts">receipts</a>
         <a href="#quick-start">quick start</a>
         <a href="#cya">CYA</a>
         <a href="https://github.com/chokshiroshan/chatflow">read the code</a>
-        <a href="https://github.com/chokshiroshan/chatflow">clone it</a>
+        <a href="https://github.com/chokshiroshan/chatflow/releases/latest">download dmg</a>
       </div>
     </nav>
 
     <main id="top">
       <section class="hero shell">
-        <div class="hero-copy">
-          <span class="chip chip-green"><span></span>built outside the building</span>
-          <h1>Mac dictation, through the side door.</h1>
+        <div class="hero-copy" data-reveal>
+          <div class="hero-meta">
+            <span class="chip chip-green"><span></span>native macOS · powered by your ChatGPT plan</span>
+          </div>
+
+          <h1>Hold hotkey. Speak. Release. Text lands <span class="hero-accent">anywhere.</span></h1>
+
           <p>
-            Hold a hotkey, speak, release. ChatFlow streams your mic to OpenAI Realtime,
-            gets the transcript back, and pastes it into whatever app is focused.
+            ChatFlow is a native macOS dictation app. Dictate into any app. Enhanced mode
+            can capture screen context when you want it.
           </p>
+
           <p class="subcopy">
-            The juggadu: it matches the Codex CLI OAuth PKCE flow, stores the ChatGPT token in
-            Keychain, and talks to Realtime without an API key or billing page.
+            Under the hood it is still delightfully juggadu: ChatGPT sign-in, Codex-style
+            OAuth PKCE, a realtime WebSocket, then text injected back into the focused app.
           </p>
+
           <div class="hero-actions">
             <a class="button button-primary button-large" href="https://github.com/chokshiroshan/chatflow">clone it</a>
-            <a class="button button-secondary button-large" href="#trick">see the trick</a>
-            <a class="button button-ghost button-large" href="#quick-start">run it</a>
+            <a class="button button-secondary button-large" href="https://github.com/chokshiroshan/chatflow">read the code</a>
+            <a class="button button-ghost button-large" href="#receipts">see the proof</a>
+          </div>
+
+          <p class="hero-kicker">Third-party. Unofficial. Built by a dev, for devs.</p>
+
+          <div class="hero-proofline" aria-label="Product summary">
+            <span>macOS 14+</span>
+            <span>Plus / Pro / Team / Enterprise</span>
+            <span>PCM16 24kHz streaming</span>
+            <span>enhanced mode with screen context</span>
           </div>
         </div>
 
-        <div class="hero-demo" aria-label="ChatFlow technical demo">
-          <article class="panel token-panel">
-            <header>
-              <span>1 token trace</span>
-              <span class="live"><i></i>valid</span>
-            </header>
-            <pre><code>GET /oauth/authorize
-  client_id=app_EMoam...
-  code_challenge=S256
-  originator=codex_cli_rs
+        <div class="hero-stage" data-reveal>
+          <article class="workspace-card workspace-visual" aria-label="ChatFlow product preview">
+            <div class="scene-pill">
+              <div class="scene-pill__icon" aria-hidden="true">
+                <span class="pill-wave"><i></i><i></i><i></i><i></i><i></i></span>
+              </div>
+              <div class="scene-pill__copy">
+                <strong>Listening...</strong>
+                <p>draft a short update about the new transcription flow</p>
+                <div class="scene-pill__meta">
+                  <span>Release to insert</span>
+                  <span>0:07</span>
+                </div>
+              </div>
+              <div class="scene-pill__shortcut">Ctrl+Shift+Space</div>
+            </div>
 
-POST /oauth/token
-  grant_type=authorization_code
-  code_verifier=...
+            <div class="scene-editor">
+              <div class="scene-editor__top">
+                <div class="window-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+                <span>Update</span>
+              </div>
+              <div class="scene-editor__body">
+                <p>Team,</p>
+                <p>We shipped the new transcription flow.</p>
+                <p>It is faster, more accurate, and works in any app on macOS.</p>
+              </div>
+            </div>
 
-200 OK
-  access_token=ya29...
-  scope=openid profile email offline_access</code></pre>
-          </article>
-
-          <article class="panel stream-panel">
-            <header>
-              <span>2 realtime stream</span>
-              <span class="live"><i></i>live</span>
-            </header>
-            <pre><code>wss://api.openai.com/v1/realtime
-Authorization: Bearer &lt;chatgpt_token&gt;
-OpenAI-Beta: realtime=v1
-
-{"type":"input_audio_buffer.append"}
-{"type":"conversation.item.input_audio_transcription.delta"}
-{"type":"conversation.item.input_audio_transcription.completed"}</code></pre>
-            <div class="wave" aria-hidden="true">
-              <span></span><span></span><span></span><span></span><span></span><span></span>
+            <div class="scene-toggle">
+              <div>
+                <strong>Enhanced mode</strong>
+                <span>Capture screen context</span>
+              </div>
+              <span class="scene-switch" aria-hidden="true"><i></i></span>
             </div>
           </article>
         </div>
       </section>
 
       <section class="strip shell" aria-label="Product summary">
-        <span>Core Audio mic capture</span>
-        <span>PCM16 · 24kHz · mono</span>
-        <span>ChatGPT OAuth token</span>
-        <span>Realtime WebSocket</span>
-        <span>clipboard + AX paste</span>
+        <span>native menu bar app</span>
+        <span>works in any text field</span>
+        <span>floating pill overlay</span>
+        <span>ChatGPT auth + Keychain</span>
+        <span>AX + clipboard injection</span>
       </section>
 
-      <section class="section shell" id="trick">
+      <section class="section shell" id="flow-mode">
         <div class="section-heading">
-          <p class="eyebrow">the trick</p>
-          <h2>Three steps. One weirdly useful auth path.</h2>
+          <div>
+            <p class="eyebrow">flow mode</p>
+            <h2>Feels like a polished dictation tool. Because that is the bar.</h2>
+          </div>
           <p>
-            This is the part developers care about. No vague magic, just the trail of crumbs.
+            The front half of ChatFlow is intentionally boring in the best way:
+            hotkey, waveform, transcript, done. The back half is where the side quest starts.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">01</span>
+            <h3>Press to talk. Release to paste.</h3>
+            <p>The core loop is native and fast enough to disappear: record, transcribe, inject, keep typing.</p>
+          </article>
+
+          <article class="feature-card feature-accent" data-reveal>
+            <span class="feature-index">02</span>
+            <h3>Enhanced mode gets nosy on purpose.</h3>
+            <p>Hold Shift with the hotkey and ChatFlow uses screen context to stop mangling technical terms and product names.</p>
+          </article>
+
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">03</span>
+            <h3>Works in the app you are already in.</h3>
+            <p>Clipboard, accessibility, and focused-element tricks mean the text goes back where your cursor already lives.</p>
+          </article>
+
+          <article class="feature-card feature-dark" data-reveal>
+            <span class="feature-index">04</span>
+            <h3>Your ChatGPT plan is the payment rail.</h3>
+            <p>No extra API setup. No second billing story. Just sign in with the account you already use.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section shell context-section">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">enhanced mode</p>
+            <h2>When your nouns get weird, hold Shift.</h2>
+          </div>
+          <p>
+            This is the part that makes a dictation app feel less toy and more teammate.
+            Context turns “some AI guessed” into “okay, that actually got the repo name right.”
+          </p>
+        </div>
+
+        <div class="context-layout">
+          <div class="context-rail">
+            <article class="context-node">
+              <span>01</span>
+              <h3>Capture the screen.</h3>
+              <p>Only when you explicitly hold the enhanced shortcut.</p>
+            </article>
+
+            <article class="context-node">
+              <span>02</span>
+              <h3>Extract vocabulary hints.</h3>
+              <p>Open tabs, class names, issue titles, and the jargon already on screen.</p>
+            </article>
+
+            <article class="context-node">
+              <span>03</span>
+              <h3>Feed that back into transcription.</h3>
+              <p>The STT model gets better nouns, so the final paste needs less cleanup.</p>
+            </article>
+          </div>
+
+          <aside class="context-note">
+            <span class="mini-label">good for</span>
+            <h3>API names, startup acronyms, file paths, and the kind of repo words normal dictation apps turn into modern art.</h3>
+            <p>
+              ChatFlow captures context on demand, not constantly. That keeps the feature useful
+              without making it feel creepier than it has to.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section shell" id="receipts">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">the receipts</p>
+            <h2>Your ChatGPT plan is the payment rail. Codex OAuth is the side entrance.</h2>
+          </div>
+          <p>
+            We keep the hack visible on purpose, because that is the interesting bit for builders.
+            The page is allowed to look professional. The proof still needs to be legible.
           </p>
         </div>
 
         <div class="flow-grid">
-          <article class="flow-card">
-            <span class="step">01 OAuth PKCE</span>
-            <h3>Open the same door Codex uses.</h3>
-            <p>
-              ChatFlow builds the Auth0/OpenAI authorize URL with the Codex CLI client ID,
-              S256 verifier, local callback server, and Codex-specific params.
-            </p>
-            <code>/oauth/authorize → localhost:1455/auth/callback</code>
+          <article class="flow-card" data-reveal>
+            <span class="step">01 sign in</span>
+            <h3>Open the ChatGPT auth flow.</h3>
+            <p>ChatFlow mirrors the Codex CLI PKCE dance, including the local callback server and verifier exchange.</p>
+            <code>/oauth/authorize -> localhost callback</code>
           </article>
 
-          <article class="flow-card">
-            <span class="step">02 Token exchange</span>
-            <h3>Swap the code for a token.</h3>
-            <p>
-              The callback code becomes a ChatGPT access token via form-urlencoded
-              `/oauth/token`. Refresh tokens live in Keychain, where they belong.
-            </p>
+          <article class="flow-card" data-reveal>
+            <span class="step">02 keep the token legit</span>
+            <h3>Exchange code, store refresh token.</h3>
+            <p>The callback code becomes a usable access token. Refresh material lives in Keychain, not in some cursed plaintext file.</p>
             <code>grant_type=authorization_code</code>
           </article>
 
-          <article class="flow-card caution">
-            <span class="step">03 Realtime dictation</span>
-            <h3>Stream audio, receive text.</h3>
-            <p>
-              Core Audio feeds PCM16 chunks to the Realtime WebSocket. The server sends
-              transcription deltas and a final transcript, then ChatFlow pastes it.
-            </p>
+          <article class="flow-card caution" data-reveal>
+            <span class="step">03 stream audio</span>
+            <h3>Ship PCM16 to Realtime and wait for text.</h3>
+            <p>Mic audio streams over WebSocket, transcription deltas arrive, and the final text gets injected into the app you started in.</p>
             <code>input_audio_buffer.append</code>
           </article>
         </div>
-      </section>
 
-      <section class="section shell">
-        <div class="section-heading compact">
-          <p class="eyebrow">why this is interesting</p>
-          <h2>It feels like a product because the hack is doing real work.</h2>
-        </div>
-
-        <div class="reason-grid">
-          <article>
-            <strong>No API key</strong>
-            <p>Use your existing ChatGPT account. No API dashboard ceremony.</p>
-          </article>
-          <article>
-            <strong>Native macOS loop</strong>
-            <p>Global hotkey, menu bar UI, permissions onboarding, and focused-app paste.</p>
-          </article>
-          <article>
-            <strong>Realtime by default</strong>
-            <p>Pre-connects when it can, streams chunks as you speak, and waits for deltas.</p>
-          </article>
-          <article>
-            <strong>Works until it doesn’t</strong>
-            <p>Honest shelf-life note. Auth paths move. Duct tape has a calendar.</p>
-          </article>
-        </div>
+        <aside class="receipts-note" data-reveal>
+          <strong>works today, not promised forever</strong>
+          <p>
+            This is still a third-party path. Auth details can move. That is part of the charm
+            and part of the risk, so the site should feel honest about both.
+          </p>
+        </aside>
       </section>
 
       <section class="section shell quick-start" id="quick-start">
         <div class="section-heading compact">
-          <p class="eyebrow">quick start</p>
-          <h2>Clone, build, speak.</h2>
+          <div>
+            <p class="eyebrow">quick start</p>
+            <h2>Try it fast, or inspect it slowly like a civilized goblin.</h2>
+          </div>
+          <p>
+            Pick your level of involvement. The product story is simple even if the plumbing is not.
+          </p>
         </div>
 
-        <div class="command-list" aria-label="Quick start commands">
-          <button class="command" type="button" data-copy="git clone https://github.com/chokshiroshan/chatflow.git">
-            <code>git clone https://github.com/chokshiroshan/chatflow.git</code>
-            <span>copy</span>
-          </button>
-          <button class="command" type="button" data-copy="cd chatflow && ./build.sh">
-            <code>cd chatflow &amp;&amp; ./build.sh</code>
-            <span>copy</span>
-          </button>
-          <button class="command" type="button" data-copy="open .build/release/ChatFlow.app">
-            <code>open .build/release/ChatFlow.app</code>
-            <span>copy</span>
-          </button>
+        <div class="install-grid">
+          <article class="install-card" data-reveal>
+            <span class="step">download</span>
+            <h3>DMG if you just want the app.</h3>
+            <p>Latest release, normal install flow, very little ceremony.</p>
+            <a class="button button-primary" href="https://github.com/chokshiroshan/chatflow/releases/latest">download dmg</a>
+          </article>
+
+          <article class="install-card" data-reveal>
+            <span class="step">brew</span>
+            <h3>Homebrew if you are in a hurry.</h3>
+            <button class="command" type="button" data-copy="brew install --cask chatflow">
+              <code>brew install --cask chatflow</code>
+              <span>copy</span>
+            </button>
+          </article>
+
+          <article class="install-card" data-reveal>
+            <span class="step">source</span>
+            <h3>Source if you want the whole story.</h3>
+            <div class="command-list" aria-label="Source build commands">
+              <button class="command" type="button" data-copy="git clone https://github.com/chokshiroshan/chatflow.git">
+                <code>git clone https://github.com/chokshiroshan/chatflow.git</code>
+                <span>copy</span>
+              </button>
+              <button class="command" type="button" data-copy="cd chatflow && ./build.sh">
+                <code>cd chatflow &amp;&amp; ./build.sh</code>
+                <span>copy</span>
+              </button>
+              <button class="command" type="button" data-copy="open .build/release/ChatFlow.app">
+                <code>open .build/release/ChatFlow.app</code>
+                <span>copy</span>
+              </button>
+            </div>
+          </article>
         </div>
 
         <aside class="note">
-          <strong>First launch asks for the boring macOS things.</strong>
-          Microphone for audio, Accessibility/Input Monitoring for hotkeys and text injection,
-          and ChatGPT sign-in for the token.
+          <strong>First launch asks for the usual macOS permissions.</strong>
+          Microphone for audio, Accessibility and Input Monitoring for hotkeys and text injection,
+          then ChatGPT sign-in so the app can authenticate the realtime session.
         </aside>
       </section>
 
       <section class="section shell cya" id="cya">
         <div>
           <p class="eyebrow">disclaimer / CYA</p>
-          <h2>Unofficial. Useful. Probably fragile.</h2>
+          <h2>Professional enough to trust. Unofficial enough to make lawyers squint.</h2>
         </div>
         <p>
-          ChatFlow is an independent project, not affiliated with or endorsed by OpenAI.
-          It is a research/building artifact for people who like understanding how things work.
-          Use responsibly, don’t be evil, and don’t be shocked if the side door gets renovated.
+          ChatFlow is an independent macOS app and is not affiliated with or endorsed by OpenAI or Wispr.
+          It uses your ChatGPT account, stores tokens in Keychain, and depends on auth paths that may move.
+          Use it responsibly and do not act surprised if the side door gets repainted.
         </p>
-        <span class="stamp">unofficial</span>
+        <span class="stamp">third-party</span>
       </section>
 
       <section class="footer-cta shell">
         <div>
           <p class="eyebrow">ship small, leave receipts</p>
-          <h2>Star it if weird auth paths make your morning coffee taste better.</h2>
+          <h2>If this scratches the exact part of your brain that likes elegant products with suspicious plumbing, star it.</h2>
         </div>
         <div class="hero-actions">
           <a class="button button-primary button-large" href="https://github.com/chokshiroshan/chatflow">star it</a>
           <a class="button button-secondary button-large" href="https://github.com/chokshiroshan/chatflow">read the code</a>
+          <a class="button button-ghost button-large" href="https://github.com/chokshiroshan/chatflow/releases/latest">try it</a>
         </div>
       </section>
     </main>

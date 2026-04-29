@@ -693,7 +693,16 @@ struct RealtimeStressTest {
             return token
         }
 
-        // Method 3: Try file
+        // Method 3: Try ~/.flow/auth.json (where Flow signin actually stores tokens)
+        let authJSON = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".flow/auth.json")
+        if let data = try? Data(contentsOf: authJSON),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let token = json["accessToken"] as? String, !token.isEmpty {
+            return token
+        }
+
+        // Method 4: Try ~/.flow/test-token
         let tokenFile = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".flow/test-token").path
         if let token = try? String(contentsOfFile: tokenFile).trimmingCharacters(in: .whitespacesAndNewlines),
@@ -725,6 +734,7 @@ struct RealtimeStressTest {
 // inside a testTarget. To run: use `swift test --filter RealtimeStressTest/testUntilFailure`.)
 
 struct StressTestRunner {
+    @MainActor
     static func main() async {
         print("🧪 ChatFlow Realtime API Stress Test")
         print("=====================================\n")

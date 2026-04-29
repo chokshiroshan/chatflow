@@ -1,0 +1,6 @@
+node_modules/
+.maquette/
+landing-page.png
+landing-page.capture.json
+landing-page.responsive-audit.json
+landing-page-responsive/

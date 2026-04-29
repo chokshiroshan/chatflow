@@ -6,23 +6,20 @@
 
 ## Regions
 
-- Header/nav: implemented. Sticky plain text identity, unofficial note, desktop links/actions, tablet/mobile collapsed toggle and stacked panel.
-- Hero copy: implemented. Large editorial headline, direct OAuth/token/realtime subhead, casual CTAs, built-outside-the-building chip.
-- Hero proof/demo: implemented. Token trace panel and inverse realtime stream panel with waveform/event lines.
-- Responsive nav callout: implemented differently with reason. The concept shows side annotations; the code implements the actual responsive nav behavior and records open-state screenshots rather than showing separate phone mockups in the final page.
-- The Trick: implemented. Three connected flow cards for OAuth, token exchange, realtime inference.
-- Why interesting: implemented. Four compact cards for no API key, works today, fast demos, likely shelf life, plus a caution note.
-- Quick Start: implemented. Three command rows, copy labels, compact side note.
-- Disclaimer / CYA: implemented. Independent project, not affiliated, research/learning artifact, use responsibly.
-- Footer CTA: implemented. Star/read/ship-small actions with receipt-oriented copy.
-- Raster imagery: intentionally omitted with reason. The concept uses only UI surfaces, diagrams, and simple annotations; no product photos or generated hero imagery are required.
+- Header/nav: implemented. Compact OpenAI-adjacent header with brand, low-friction section links, desktop actions, and tablet/mobile collapsed-open states.
+- Hero copy: implemented. Product-first headline focused on the dictation loop rather than the auth trick, with ChatGPT-plan framing and third-party disclosure.
+- Hero product preview: implemented closely. Large staged macOS-style preview with floating dictation pill, editor window, and enhanced-mode toggle.
+- Proof cards: implemented with adaptation. The concept shows compact proof panels immediately under the hero; the coded page keeps the proof in the dedicated `receipts` section for better reading rhythm on the real page.
+- Feature grid: implemented. Four cards covering hotkey loop, enhanced mode, app injection, and ChatGPT-plan billing path.
+- Enhanced-mode explainer: implemented. Three-step context pipeline plus a side note about technical vocabulary and on-demand capture.
+- Quick start: implemented. Three install paths: DMG, Homebrew, and source.
+- Disclaimer / CYA: implemented. Third-party and unaffiliated language preserved.
+- Footer CTA: implemented. Builder-oriented closing CTA with GitHub-friendly actions.
+- Responsive navigation callouts: implemented behaviorally rather than visually. The concept shows separate tablet/mobile nav callouts; the code implements the actual drawer and records responsive screenshots instead of rendering those callouts in-page.
 
 ## Component Coverage
 
-- Header/nav uses `ResponsiveNav`.
-- Hero CTAs and labels use `Button`, `Proof Label Primitives`.
-- Proof/demo uses `ProofPanel`, `waveform`, and code panel primitives.
-- The Trick and Why cards use `FlowCard`.
-- Quick Start uses `quickstart` and `quickstart__command`.
-- CYA uses `disclaimer-card`.
-- Footer uses `footer-cta`.
+- Header/nav uses the existing responsive navigation pattern.
+- Hero preview uses custom page composition built from existing button/chip/surface primitives.
+- Feature, proof, install, disclaimer, and footer areas reuse the card and CTA component families already established in `.maquette/components/`.
+- Mobile navigation uses the existing toggle/drawer behavior validated by the responsive audit.

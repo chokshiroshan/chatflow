@@ -91,7 +91,7 @@ struct FlowConfig: Codable {
     var language: String = "en"
     var injectMethod: InjectMethod = .clipboard
     var soundEffectsEnabled: Bool = false
-    var shouldMuteAudio: Bool = true
+    var shouldMuteAudio: Bool = false
     var autoPasteEnabled: Bool = true
     var appearance: String = "system"
     var selectedMicDeviceUID: String? = nil

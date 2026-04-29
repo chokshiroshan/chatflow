@@ -18,7 +18,7 @@ final class AppCoordinator: ObservableObject {
     private let floatingPill = FloatingPillWindowController()
     private let vocabPopup = VocabSuggestionWindowController()
     private let sounds = SoundManager.shared
-    private let sounds = SoundManager()
+    private let sounds = SoundManager.shared
     private let permissions = PermissionsManager.shared
     private var cancellables = Set<AnyCancellable>()
     private var sessionStartTime: Date?

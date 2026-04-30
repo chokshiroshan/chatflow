@@ -1,4 +1,5 @@
 import SwiftUI
+import Darwin
 
 @main
 struct FlowApp: App {
@@ -8,15 +9,19 @@ struct FlowApp: App {
         // Start log collection (rotates daily, keeps 7 days)
         _ = LogCollector.shared
 
-        // Single-instance guard — prevent duplicate processes
+        // Single-instance guard using file lock
+        // Uses flock via FileHandle for reliable release on process exit
         let lockPath = NSTemporaryDirectory() + "chatflow.singleton.lock"
-        let distributedLock = NSDistributedLock(path: lockPath)
-        if distributedLock?.try() == false {
-            print("⚠️ Another instance of ChatFlow is already running. Exiting.")
-            // Force exit — can't use NSApp.terminate here since app hasn't launched yet
-            exit(1)
+        let lockFD = open(lockPath, O_RDWR | O_CREAT, 0o644)
+        if lockFD >= 0 {
+            // flock is automatically released when the process exits (even on crash/force-quit)
+            if flock(lockFD, LOCK_EX | LOCK_NB) != 0 {
+                print("⚠️ Another instance of ChatFlow is already running. Exiting.")
+                close(lockFD)
+                exit(1)
+            }
+            // Keep FD open — lock holds as long as process is alive
         }
-        // Never unlock — lock released when process exits
     }
 
     var body: some Scene {

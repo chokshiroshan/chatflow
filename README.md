@@ -13,9 +13,14 @@ Hold a hotkey, speak, release → text appears in any app. Lives in the menu bar
 ### Option 1: DMG (recommended)
 
 1. Download `ChatFlow.dmg` from [Releases](https://github.com/chokshiroshan/chatflow/releases)
-2. Open the DMG
-3. Drag **ChatFlow** to **Applications**
-4. Right-click → Open on first launch (bypasses Gatekeeper)
+2. Open the DMG, drag **ChatFlow** to **Applications**
+3. Open Terminal and run:
+   ```bash
+   xattr -cr /Applications/ChatFlow.app
+   ```
+4. Double-click ChatFlow to launch
+
+> ⚠️ Step 3 is needed because the app is unsigned. After the first launch it opens normally. This goes away once we get an Apple Developer certificate.
 
 ### Option 2: Homebrew
 

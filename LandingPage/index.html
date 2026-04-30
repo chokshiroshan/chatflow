@@ -66,13 +66,18 @@
           <div class="demo-window">
             <div class="demo-titlebar">
               <span class="demo-dots"><i></i><i></i><i></i></span>
-              <span>Slack — #general</span>
+              <span>Slack — #engineering</span>
             </div>
             <div class="demo-body">
-              <div class="demo-message demo-them">
-                <span class="demo-avatar">S</span>
-                <span>hey did you ship the fix?</span>
+              <div class="demo-message">
+                <span class="demo-avatar" style="background:#74b9ff">S</span>
+                <div class="demo-msg-content">
+                  <span class="demo-msg-name">Sarah</span>
+                  <span class="demo-msg-text">hey did you ship the auth fix?</span>
+                  <span class="demo-msg-time">10:42 AM</span>
+                </div>
               </div>
+              <div class="demo-divider"></div>
               <div class="demo-cursor-row">
                 <span class="demo-pill">
                   <span class="pill-bar" style="height:8px"></span>
@@ -81,7 +86,10 @@
                   <span class="pill-bar" style="height:12px"></span>
                   <span class="pill-bar" style="height:16px"></span>
                 </span>
-                <span class="demo-typing">yeah just pushed it, the auth flow was broken because we had the wrong client_id. fixed now, should be live in 5 min</span>
+                <div class="demo-dictating">
+                  <span class="demo-dictating-label">🎙️ Transcribing...</span>
+                  <span class="demo-typing">yeah just pushed it, the auth flow was broken because we had the wrong <strong>client_id</strong>. Fixed now, should be live in 5 min.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -155,6 +163,92 @@
             <span class="bento-tag">Privacy</span>
             <h3>Audio streams directly to OpenAI. Never stored.</h3>
             <p>Your voice goes to OpenAI's Realtime API and back as text. ChatFlow never records, stores, or logs your audio. Enhanced mode screenshots are processed in memory, never saved to disk.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SHOWCASE -->
+      <section class="section showcase-section">
+        <div class="section-header">
+          <p class="eyebrow">See it in action</p>
+          <h2>Same voice, different apps. ChatFlow adapts.</h2>
+        </div>
+
+        <div class="showcase-grid">
+          <!-- Discord -->
+          <div class="showcase-card">
+            <div class="showcase-demo">
+              <div class="mini-window">
+                <div class="mini-titlebar"><span class="mini-dots"><i></i><i></i><i></i></span><span>Discord</span></div>
+                <div class="mini-body">
+                  <div class="mini-input">
+                    <span class="mini-pill-sm">🎙️</span>
+                    <span>ngl that pr was a mess lol but we got it working</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <h3>Discord / Slack</h3>
+              <p>Casual tone, minimal punctuation, abbreviations preserved. Like texting.</p>
+            </div>
+          </div>
+
+          <!-- Code Editor -->
+          <div class="showcase-card">
+            <div class="showcase-demo">
+              <div class="mini-window">
+                <div class="mini-titlebar"><span class="mini-dots"><i></i><i></i><i></i></span><span>VS Code — auth.rs</span></div>
+                <div class="mini-body">
+                  <div class="mini-code">
+                    <span class="mini-pill-sm">🎙️</span>
+                    <span>// TODO: refactor the <strong>OAuth</strong> callback handler to use PKCE instead of implicit flow</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <h3>Code editor</h3>
+              <p>Technical terms preserved. Syntax keywords kept literal. Perfect for comments and docs.</p>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="showcase-card">
+            <div class="showcase-demo">
+              <div class="mini-window">
+                <div class="mini-titlebar"><span class="mini-dots"><i></i><i></i><i></i></span><span>Gmail — Compose</span></div>
+                <div class="mini-body">
+                  <div class="mini-input">
+                    <span class="mini-pill-sm">🎙️</span>
+                    <span>Hi team, I wanted to share a quick update on our progress this quarter. We've shipped three major features and seen a 40% improvement in latency.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <h3>Email / Docs</h3>
+              <p>Proper sentences, formal grammar, clean paragraphs. Ready to send.</p>
+            </div>
+          </div>
+
+          <!-- Terminal -->
+          <div class="showcase-card">
+            <div class="showcase-demo">
+              <div class="mini-window mini-terminal">
+                <div class="mini-titlebar"><span class="mini-dots"><i></i><i></i><i></i></span><span>Terminal — zsh</span></div>
+                <div class="mini-body">
+                  <div class="mini-cmd">
+                    <span class="mini-pill-sm">🎙️</span>
+                    <span>git commit -m "fix: update OAuth client_id to use PKCE flow"</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <h3>Terminal</h3>
+              <p>Raw, technical output. Commands, paths, and flags kept as-is.</p>
+            </div>
           </div>
         </div>
       </section>

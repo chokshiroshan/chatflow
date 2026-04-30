@@ -588,7 +588,198 @@ body {
   text-decoration: underline;
 }
 
-/* ─── RESPONSIVE ─── */
+/* ─── DEMO POLISH ─── */
+.demo-msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demo-msg-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #74b9ff;
+}
+
+.demo-msg-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.demo-msg-time {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.demo-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.demo-dictating {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-dictating-label {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.demo-typing {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.demo-typing strong {
+  background: var(--accent-bg);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* ─── SHOWCASE ─── */
+.showcase-section {
+  background: var(--bg-dark);
+  max-width: none;
+  padding: 100px 24px;
+}
+
+.showcase-section .eyebrow {
+  color: var(--accent-light);
+}
+
+.showcase-section .section-header h2 {
+  color: white;
+}
+
+.showcase-section .section-header {
+  max-width: 1200px;
+  margin: 0 auto 60px;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.showcase-card {
+  background: #141414;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid #222;
+  transition: border-color 0.3s;
+}
+
+.showcase-card:hover {
+  border-color: #333;
+}
+
+.showcase-demo {
+  padding: 20px;
+}
+
+.showcase-info {
+  padding: 0 20px 24px;
+}
+
+.showcase-info h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.showcase-info p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.mini-window {
+  background: #1a1a1a;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #222;
+}
+
+.mini-terminal {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.mini-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #222;
+  font-size: 11px;
+  color: #555;
+}
+
+.mini-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333;
+}
+
+.mini-body {
+  padding: 14px;
+}
+
+.mini-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-input span:last-child,
+.mini-code span:last-child,
+.mini-cmd span:last-child {
+  font-size: 13px;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.mini-code span:last-child {
+  font-family: 'SF Mono', monospace;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.mini-code strong {
+  color: #e17055;
+}
+
+.mini-cmd span:last-child {
+  font-family: 'SF Mono', monospace;
+  font-size: 12px;
+  color: #28c840;
+}
+
+.mini-pill-sm {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .showcase-grid {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;

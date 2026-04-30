@@ -206,6 +206,7 @@ body {
 .hero-visual {
   display: flex;
   justify-content: center;
+  overflow: visible;
 }
 
 .demo-window {
@@ -1005,18 +1006,19 @@ a, button {
 
 .hero-illustration {
   position: absolute;
-  top: -40px;
-  left: -60px;
-  width: 300px;
+  top: -60px;
+  right: -80px;
+  width: 400px;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.25;
+  opacity: 0.5;
   animation: float-illustration 8s ease-in-out infinite alternate;
 }
 
 .hero-illustration img {
   width: 100%;
   height: auto;
+  filter: drop-shadow(0 8px 32px rgba(108, 92, 231, 0.2));
 }
 
 .hero-visual .demo-window {

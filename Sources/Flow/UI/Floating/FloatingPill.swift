@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 // MARK: - Screen Helper
 
@@ -27,7 +26,7 @@ struct FloatingPill: View {
     @State private var scale: CGFloat = 0.8
     @State private var waveOffset: CGFloat = 0
     @State private var dotScales: [CGFloat] = Array(repeating: 0.6, count: 5)
-    @State private var timerCancellable: AnyCancellable?
+    let timer = Timer.publish(every: 0.08, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Group {
@@ -36,13 +35,13 @@ struct FloatingPill: View {
                     .opacity(opacity)
                     .scaleEffect(scale)
                     .offset(dragOffset)
-                    .onAppear {
-                        appearAnimation()
-                        startTimer()
-                    }
+                    .onAppear { appearAnimation() }
                     .onDisappear { disappearAnimation() }
                     .onChange(of: shouldShow) { _, showing in
                         if showing { appearAnimation() } else { disappearAnimation() }
+                    }
+                    .onReceive(timer) { _ in
+                        updateWaveAnimation()
                     }
             }
         }
@@ -126,14 +125,6 @@ struct FloatingPill: View {
         }
     }
 
-    private func startTimer() {
-        timerCancellable = Timer.publish(every: 0.08, on: .main, in: .common)
-            .autoconnect()
-            .sink { _ in
-                updateWaveAnimation()
-            }
-    }
-
     private func updateWaveAnimation() {
         if coordinator.state == .recording {
             waveOffset += 0.3
@@ -165,8 +156,12 @@ final class FloatingPillWindowController {
     func show(coordinator: AppCoordinator) {
         self.coordinator = coordinator
         guard window == nil else { return }
-        rebuildWindow()
-        print("🟢 Floating pill window shown")
+        // Defer to next run loop — NSHostingView with @State crashes if created
+        // synchronously before SwiftUI's scene graph is fully initialized
+        DispatchQueue.main.async { [weak self] in
+            self?.rebuildWindow()
+            print("🟢 Floating pill window shown")
+        }
     }
 
     func reposition() {

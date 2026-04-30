@@ -243,10 +243,7 @@ if [[ "$1" == "dmg" ]]; then
     mkdir -p "$DMG_DIR"
     
     cp -r "$APP_BUNDLE" "$DMG_DIR/${APP_NAME}.app"
-    ln -s /Applications "$DMG_DIR/Applications"
-    
-    cp -r "$APP_BUNDLE" "$DMG_DIR/${APP_NAME}.app"
-    ln -s /Applications "$DMG_DIR/Applications"
+    ln -sf /Applications "$DMG_DIR/Applications"
     
     # Background image
     mkdir -p "$DMG_DIR/.background"

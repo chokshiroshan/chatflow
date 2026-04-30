@@ -1,6 +1,6 @@
 # 🎤 ChatFlow
 
-Voice dictation for macOS, powered by your ChatGPT subscription.
+Voice dictation for macOS, powered by your ChatGPT account. **Works on the free plan.**
 
 Hold a hotkey, speak, release → text appears in any app. Lives in the menu bar.
 
@@ -55,17 +55,19 @@ The onboarding flow walks you through all three. You'll also sign in with your C
 |---|---|
 | **Hold Ctrl+Space** | Start recording. Release to transcribe + inject. |
 | **Hold Ctrl+Shift+Space** | Enhanced mode — captures screen for context-aware transcription. |
-| **Menu bar → Settings** | Change hotkey, sounds, sign-in, privacy info. |
+| **Menu bar → Settings** | Change hotkey, sounds, behavior templates, vocabulary. |
 
 ## Features
 
 - **Real-time transcription** via OpenAI Realtime API
-- **Screen-aware mode** — screenshot + GPT-4o-mini vision for domain vocabulary
+- **Screen-aware mode** — screenshot sent to the model for domain vocabulary
+- **Context-aware formatting** — adapts output per app (chat, code, email, terminal)
 - **Works everywhere** — any text field in any app
 - **Floating pill** — visual feedback while recording
 - **Sound effects** — start/stop/success/error sounds
+- **Vocabulary learning** — detects your manual corrections and auto-applies them
 - **Auto-start at login** — optional
-- **ChatGPT auth** — uses your existing subscription, no API key needed
+- **Free to use** — works with any ChatGPT account, no API key needed
 - **Keychain storage** — tokens stored securely
 
 ## Architecture
@@ -75,12 +77,12 @@ Sources/Flow/
 ├── AppCoordinator.swift       # Central state management
 ├── FlowApp.swift              # SwiftUI app entry (menu bar only)
 ├── Auth/                      # ChatGPT OAuth PKCE authentication
-├── Audio/                     # Mic capture (24kHz PCM16) + playback
+├── Audio/                     # Mic capture (24kHz PCM16)
 ├── Config/                    # Context & instruction building
-├── Context/                   # Screen context extraction (vision API)
+├── Context/                   # Screen context extraction + edit tracking
 ├── Hotkey/                    # CGEventTap global hotkey detection
 ├── Injection/                 # Text injection (clipboard Cmd+V)
-├── Models/                    # FlowState, FlowConfig, AppState
+├── Models/                    # FlowState, FlowConfig
 ├── Permissions/               # macOS permission management
 ├── Realtime/                  # WebSocket Realtime API + dictation engine
 ├── Startup/                   # Launch-at-login management
@@ -103,9 +105,9 @@ Sources/Flow/
 ## Requirements
 
 - macOS 14+ (Sonoma)
-- ChatGPT account (Plus/Pro/Team/Enterprise)
+- ChatGPT account (free plan works)
 - Xcode Command Line Tools (for building from source)
 
 ## License
 
-Private — for personal use.
+[MIT](LICENSE)

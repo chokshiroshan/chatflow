@@ -117,13 +117,14 @@ function animateCounters() {
 // ─── WAVEFORM ANIMATION IN HERO ───
 const pillBars = document.querySelectorAll('.pill-bar');
 if (pillBars.length) {
+  let wavePhase = 0;
   setInterval(() => {
+    wavePhase += 0.4;
     pillBars.forEach((bar, i) => {
-      const heights = [6, 10, 16, 22, 18, 12, 20, 14, 8, 16];
-      const h = heights[Math.floor(Math.random() * heights.length)];
+      const h = 6 + 14 * Math.abs(Math.sin(wavePhase + i * 0.8));
       bar.style.height = h + 'px';
     });
-  }, 200);
+  }, 120);
 }
 
 // ─── NAV BACKGROUND ON SCROLL ───

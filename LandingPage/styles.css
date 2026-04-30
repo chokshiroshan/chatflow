@@ -856,9 +856,9 @@ body {
 /* Scroll reveal */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(60px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-reveal].is-visible {
@@ -866,9 +866,9 @@ body {
   transform: translateY(0);
 }
 
-[data-reveal]:nth-child(2) { transition-delay: 0.1s; }
-[data-reveal]:nth-child(3) { transition-delay: 0.2s; }
-[data-reveal]:nth-child(4) { transition-delay: 0.3s; }
+[data-reveal]:nth-child(2) { transition-delay: 0.15s; }
+[data-reveal]:nth-child(3) { transition-delay: 0.3s; }
+[data-reveal]:nth-child(4) { transition-delay: 0.45s; }
 
 /* Gradient text animation */
 .gradient-text {

@@ -46,14 +46,20 @@ if ("IntersectionObserver" in window) {
         revealObserver.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+  }, { threshold: 0.05, rootMargin: "0px 0px 0px 0px" });
   revealTargets.forEach((t) => revealObserver.observe(t));
 } else {
   revealTargets.forEach((t) => t.classList.add("is-visible"));
 }
 
 window.addEventListener("load", () => {
-  revealTargets.forEach((t) => t.classList.add("is-visible"));
+  // Only reveal elements already above the fold
+  revealTargets.forEach((t) => {
+    const rect = t.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.3) {
+      t.classList.add("is-visible");
+    }
+  });
 });
 
 // ─── SMOOTH SCROLL FOR NAV LINKS ───

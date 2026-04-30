@@ -59,13 +59,20 @@ final class AppCoordinator: ObservableObject {
         let hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         let permStatus = permissions.checkAll()
 
-        if !hasCompletedOnboarding || !permStatus.allGranted {
+        // First launch ever — show full onboarding
+        if !hasCompletedOnboarding {
             showOnboarding = true
-            // Open onboarding window immediately via AppKit (not SwiftUI openWindow)
             DispatchQueue.main.async {
                 self.openOnboardingWindow()
             }
             return
+        }
+
+        // Returning user but permissions lost (common with unsigned apps)
+        // Just log a warning and proceed — the app will prompt when needed
+        if !permStatus.allGranted {
+            let missing = permStatus.missing
+            print("⚠️ Permissions lost: \(missing.joined(separator: ", ")). App will prompt when needed.")
         }
         checkAuth()
     }

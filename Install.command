@@ -1,9 +1,16 @@
 #!/bin/bash
 # ChatFlow Installer
 # Double-click this file to install ChatFlow and bypass Gatekeeper.
+#
+# If macOS blocks this script, run this in Terminal first:
+#   xattr -cr ~/Downloads/ChatFlow.dmg
+# Then re-open the DMG and double-click Install.command again.
 
 # Move to the directory containing this script
 cd "$(dirname "$0")"
+
+# Self-unquarantine (in case the whole DMG was quarantined)
+xattr -cr "$(dirname "$0")" 2>/dev/null
 
 echo "🎤 ChatFlow Installer"
 echo "━━━━━━━━━━━━━━━━━━━━━"

@@ -245,11 +245,12 @@ if [[ "$1" == "dmg" ]]; then
     cp -r "$APP_BUNDLE" "$DMG_DIR/${APP_NAME}.app"
     ln -s /Applications "$DMG_DIR/Applications"
     
-    # Install & uninstall scripts
+    # Install & uninstall scripts + readme
     cp "Install.command" "$DMG_DIR/Install.command"
     chmod +x "$DMG_DIR/Install.command"
     cp "Uninstall.command" "$DMG_DIR/Uninstall.command"
     chmod +x "$DMG_DIR/Uninstall.command"
+    cp "INSTALL.md" "$DMG_DIR/INSTALL.md"
     
     # Background image
     mkdir -p "$DMG_DIR/.background"

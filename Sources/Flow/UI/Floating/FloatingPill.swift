@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Screen Helper
 
@@ -26,7 +27,7 @@ struct FloatingPill: View {
     @State private var scale: CGFloat = 0.8
     @State private var waveOffset: CGFloat = 0
     @State private var dotScales: [CGFloat] = Array(repeating: 0.6, count: 5)
-    @State private var timer = Timer.publish(every: 0.08, on: .main, in: .common).autoconnect()
+    @State private var timerCancellable: AnyCancellable?
 
     var body: some View {
         Group {
@@ -35,13 +36,13 @@ struct FloatingPill: View {
                     .opacity(opacity)
                     .scaleEffect(scale)
                     .offset(dragOffset)
-                    .onAppear { appearAnimation() }
+                    .onAppear {
+                        appearAnimation()
+                        startTimer()
+                    }
                     .onDisappear { disappearAnimation() }
                     .onChange(of: shouldShow) { _, showing in
                         if showing { appearAnimation() } else { disappearAnimation() }
-                    }
-                    .onReceive(timer) { _ in
-                        updateWaveAnimation()
                     }
             }
         }
@@ -123,6 +124,14 @@ struct FloatingPill: View {
             opacity = 0
             scale = 0.9
         }
+    }
+
+    private func startTimer() {
+        timerCancellable = Timer.publish(every: 0.08, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                updateWaveAnimation()
+            }
     }
 
     private func updateWaveAnimation() {

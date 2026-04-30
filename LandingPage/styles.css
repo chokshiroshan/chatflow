@@ -998,26 +998,35 @@ a, button {
   transition: all 0.2s ease;
 }
 
-/* Hero illustration */
+/* Hero illustration - decorative behind demo window */
+.hero-visual {
+  position: relative;
+}
+
 .hero-illustration {
   position: absolute;
-  top: 10%;
-  right: 8%;
-  width: 180px;
-  z-index: 2;
+  top: -40px;
+  left: -60px;
+  width: 300px;
+  z-index: 0;
   pointer-events: none;
-  animation: float-illustration 6s ease-in-out infinite alternate;
+  opacity: 0.25;
+  animation: float-illustration 8s ease-in-out infinite alternate;
 }
 
 .hero-illustration img {
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 8px 24px rgba(108, 92, 231, 0.15));
+}
+
+.hero-visual .demo-window {
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes float-illustration {
-  0% { transform: translateY(0px) rotate(-2deg); }
-  100% { transform: translateY(-12px) rotate(2deg); }
+  0% { transform: translateY(0px) rotate(-3deg); }
+  100% { transform: translateY(-15px) rotate(3deg); }
 }
 
 @media (max-width: 768px) {

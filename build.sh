@@ -216,13 +216,13 @@ create_app_icon "$APP_BUNDLE/Contents/Resources/AppIcon.icns" 2>/dev/null || \
     create_placeholder_icon "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 
 # Code sign with entitlements
+# NOTE: Ad-hoc sign ("-") works without Apple Developer account.
+# Hardened runtime (--options runtime) requires a paid certificate, so we skip it.
+# Users won't see Gatekeeper warnings with ad-hoc signing + entitlements.
 echo "🔐 Code signing with entitlements..."
 if [[ -f "Flow.entitlements" ]]; then
-    codesign --force --deep --sign - --entitlements Flow.entitlements --options runtime "$APP_BUNDLE" 2>/dev/null || {
-        echo "⚠️  Hardened runtime signing failed. Trying basic sign..."
-        codesign --force --deep --sign - --entitlements Flow.entitlements "$APP_BUNDLE" 2>/dev/null || {
-            echo "⚠️  Code signing failed. Users may need: xattr -cr $APP_BUNDLE"
-        }
+    codesign --force --deep --sign - --entitlements Flow.entitlements "$APP_BUNDLE" 2>/dev/null || {
+        echo "⚠️  Code signing failed. Users may need: xattr -cr $APP_BUNDLE"
     }
 else
     codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || true
@@ -278,4 +278,5 @@ echo "    build/${APP_NAME}.dmg"
 echo ""
 fi
 echo "  First launch: right-click → Open to bypass Gatekeeper"
+echo "  Or run: xattr -cr /Applications/ChatFlow.app"
 echo ""

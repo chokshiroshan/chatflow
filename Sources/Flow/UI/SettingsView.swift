@@ -686,6 +686,40 @@ struct SettingsView: View {
                 .font(FlowTypography.caption)
                 .foregroundColor(FlowColors.textTertiary)
                 .multilineTextAlignment(.center)
+
+            Spacer().frame(height: 16)
+
+            // Export logs for debugging
+            Button(action: exportLogs) {
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 12))
+                    Text("Export Logs")
+                        .font(FlowTypography.caption)
+                }
+                .foregroundColor(FlowColors.textTertiary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: FlowRadii.sm)
+                        .stroke(FlowColors.border, lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func exportLogs() {
+        guard let url = LogCollector.shared.exportToFile() else { return }
+        let panel = NSSavePanel()
+        panel.title = "Save ChatFlow Logs"
+        panel.nameFieldStringValue = url.lastPathComponent
+        panel.canCreateDirectories = true
+        panel.begin { response in
+            if response == .OK, let dest = panel.url {
+                try? FileManager.default.copyItem(at: url, to: dest)
+            }
+            try? FileManager.default.removeItem(at: url)
         }
     }
 

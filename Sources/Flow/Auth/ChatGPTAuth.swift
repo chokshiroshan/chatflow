@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import CryptoKit
 
 /// Authenticates with ChatGPT via OAuth PKCE — exactly matching the Codex CLI flow.

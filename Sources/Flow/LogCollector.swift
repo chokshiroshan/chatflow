@@ -37,7 +37,7 @@ final class LogCollector {
     /// Full bundle path for zip export.
     var allLogs: [URL] {
         let files = (try? FileManager.default.contentsOfDirectory(at: logDir, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension == "log" }.sorted()
+        return files.filter { $0.pathExtension == "log" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     // MARK: - Writing
@@ -64,9 +64,9 @@ final class LogCollector {
             currentFileHandle?.seekToEndOfFile()
         }
 
-        let timestamp = DateFormatter.localizedString(by: Date(), dateStyle: .none, timeStyle: .medium)
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
         let line = "[\(timestamp)] \(message)\n"
-        if let data = line.data(using: .utf8) {
+        if let data = line.data(using: String.Encoding.utf8) {
             currentFileHandle?.write(data)
         }
     }

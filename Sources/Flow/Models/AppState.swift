@@ -198,13 +198,10 @@ struct FlowConfig: Codable {
                 changed = true
             }
         }
-        if changed {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            if let cleaned = try? encoder.encode(json) {
-                try? cleaned.write(to: configPath)
-                print("📋 Cleaned up deprecated config keys")
-            }
+        if changed,
+           let cleaned = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+            try? cleaned.write(to: configPath)
+            print("📋 Cleaned up deprecated config keys")
         }
     }
 

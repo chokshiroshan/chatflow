@@ -245,9 +245,11 @@ if [[ "$1" == "dmg" ]]; then
     cp -r "$APP_BUNDLE" "$DMG_DIR/${APP_NAME}.app"
     ln -s /Applications "$DMG_DIR/Applications"
     
-    # Install script (bypasses Gatekeeper for unsigned builds)
+    # Install & uninstall scripts
     cp "Install.command" "$DMG_DIR/Install.command"
     chmod +x "$DMG_DIR/Install.command"
+    cp "Uninstall.command" "$DMG_DIR/Uninstall.command"
+    chmod +x "$DMG_DIR/Uninstall.command"
     
     # Background image
     mkdir -p "$DMG_DIR/.background"
